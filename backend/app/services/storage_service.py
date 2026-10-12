@@ -10,6 +10,8 @@ class StorageService(Protocol):
     def save(self, user_id: uuid.UUID, data: bytes, extension: str) -> str:
         """Persist bytes and return an opaque storage key."""
 
+    def read(self, key: str) -> bytes: ...
+
     def delete(self, key: str) -> None: ...
 
 
@@ -26,6 +28,12 @@ class LocalStorage:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(data)
         return key
+
+    def read(self, key: str) -> bytes:
+        target = (self.base / key).resolve()
+        if self.base not in target.parents:
+            raise ValueError("Invalid storage path")
+        return target.read_bytes()
 
     def delete(self, key: str) -> None:
         target = (self.base / key).resolve()

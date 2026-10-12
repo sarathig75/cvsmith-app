@@ -16,7 +16,10 @@ Codes: `VALIDATION_ERROR` (422), `EMAIL_EXISTS` (409), `INVALID_CREDENTIALS` (40
 User   = { id: string, email: string, email_verified: boolean, created_at: string }
 Token  = { access_token: string, token_type: "bearer", user: User }
 CV     = { id: string, title: string, privacy: "private"|"public",
-           parsing_status: "pending"|"in_progress"|"complete"|"failed", created_at: string }
+           parsing_status: "pending"|"in_progress"|"complete"|"failed",
+           parsing_error: string | null,   // user-facing message when parsing_status is "failed"
+           json_resume: object,            // JSON Resume subset; {} until parsing_status is "complete"
+           created_at: string }
 ```
 
 ## Endpoints
@@ -30,7 +33,7 @@ CV     = { id: string, title: string, privacy: "private"|"public",
 | GET | /api/user | yes | - | 200 `User` |
 | POST | /api/auth/send-verification | yes | - | 202 `{message}` |
 | POST | /api/auth/verify | no | `{token}` | 200 `User` |
-| POST | /api/cv/upload | yes | multipart `file` (PDF/DOCX, max 10MB) | 201 `CV` (parsing_status "pending"; parsing is Week 3) |
+| POST | /api/cv/upload | yes | multipart `file` (PDF/DOCX, max 10MB) | 201 `CV` (parsing_status "pending"; parsing runs in the background, poll `GET /api/cv`) |
 | GET | /api/cv | yes | - | 200 `CV` or 404 `NOT_FOUND` |
 
 ## Rules
@@ -39,6 +42,7 @@ CV     = { id: string, title: string, privacy: "private"|"public",
 - Access token JWT (HS256), 24h expiry, `sub` = user id. No refresh tokens in R1.
 - Passwords hashed with bcrypt; users signed up via Google have null password_hash; login with password for such users returns `INVALID_CREDENTIALS`.
 - Google sign-in with an email that already has an account links to that account (Google must report the email as verified). If that account's email was never verified, its password is removed on linking, so only the Google owner can sign in; a verified account keeps its password.
+- CV parsing is asynchronous: pending -> in_progress -> complete | failed. The upload never waits for it. `json_resume` uses JSON Resume field names for: basics (incl. location, profiles), work, education, skills, certificates.
 - One CV per user in R1 (new upload replaces the existing record). New CVs default `privacy = "public"`.
 - CORS origins from env `CORS_ORIGINS`.
 - No Apple sign-in in Release 1.

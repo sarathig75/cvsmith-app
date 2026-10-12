@@ -17,7 +17,27 @@ export type CV = {
   title: string;
   privacy: 'private' | 'public';
   parsing_status: 'pending' | 'in_progress' | 'complete' | 'failed';
+  parsing_error: string | null;
+  json_resume: JsonResume;
   created_at: string;
+};
+
+/** The JSON Resume subset the backend fills when parsing completes ({} before that). Every field is optional. */
+export type JsonResume = {
+  basics?: {
+    name?: string;
+    label?: string;
+    email?: string;
+    phone?: string;
+    url?: string;
+    summary?: string;
+    location?: { city?: string; region?: string; countryCode?: string };
+    profiles?: { network?: string; url?: string; username?: string }[];
+  };
+  work?: { name?: string; position?: string; location?: string; startDate?: string; endDate?: string; summary?: string; highlights?: string[] }[];
+  education?: { institution?: string; area?: string; studyType?: string; startDate?: string; endDate?: string; score?: string }[];
+  skills?: { name?: string; keywords?: string[] }[];
+  certificates?: { name?: string; issuer?: string; date?: string; url?: string }[];
 };
 
 export type ApiErrorCode =

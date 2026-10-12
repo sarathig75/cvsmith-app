@@ -1,4 +1,7 @@
+import logging
+
 from fastapi import APIRouter, Depends, File, UploadFile, status
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -7,8 +10,11 @@ from app.models.user import User
 from app.routes.deps import get_current_user
 from app.schemas.cv import CVOut
 from app.services import cv_service
+from app.services.parse_queue import ParseQueue, get_parse_queue
 from app.services.storage_service import StorageService, get_storage
 from app.utils import errors
+
+logger = logging.getLogger("cvsmith.parsing")
 
 router = APIRouter(prefix="/api/cv", tags=["cv"])
 
@@ -19,13 +25,23 @@ async def upload_cv(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
     storage: StorageService = Depends(get_storage),
+    enqueue: ParseQueue = Depends(get_parse_queue),
 ):
     max_size = get_settings().MAX_UPLOAD_SIZE
     # Read at most max+1 bytes so oversized bodies are not fully buffered.
     data = await file.read(max_size + 1)
-    return cv_service.save_upload(
+    cv = cv_service.save_upload(
         db, storage, user, file.filename or "", file.content_type, data
     )
+    # Parsing runs in the background worker; the upload response does not wait for it.
+    try:
+        await run_in_threadpool(enqueue, cv.id, cv.raw_upload_path)
+    except Exception:
+        logger.exception("Could not queue parsing for CV %s", cv.id)
+        cv.parsing_status = "failed"
+        cv.parsing_error = "We could not start processing your CV. Please try uploading it again."
+        db.commit()
+    return cv
 
 
 @router.get("", response_model=CVOut)

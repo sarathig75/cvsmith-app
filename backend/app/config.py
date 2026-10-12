@@ -35,6 +35,14 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
 
+    # CV parsing (Celery worker + Claude API). The Anthropic SDK reads ANTHROPIC_API_KEY itself.
+    REDIS_URL: str = "redis://localhost:6379/0"
+    CLAUDE_MODEL: str = "claude-sonnet-5-5"
+    # Below this many characters of extracted text, a PDF is treated as scanned and sent to Claude as a file.
+    MIN_EXTRACTED_TEXT_CHARS: int = 200
+    # Refuse (rather than silently truncate) CVs whose text is longer than this.
+    MAX_CV_TEXT_CHARS: int = 200_000
+
     @property
     def cors_origins_list(self) -> List[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]

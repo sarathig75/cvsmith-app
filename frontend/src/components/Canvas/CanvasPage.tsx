@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import type { CV } from '../../types';
 import type { CvDraft } from '../../types/cvDraft';
+import { mergeParsedIntoDraft, resumeToDraft } from '../../utils/resumeToDraft';
 import { Button } from '../Common/Button';
 import { CvStatus } from './CvStatus';
 import { EntryListSection } from './EntryListSection';
@@ -23,6 +24,25 @@ export function CanvasPage() {
     certifications: [],
   });
   const patch = (p: Partial<CvDraft>) => setDraft((d) => ({ ...d, ...p }));
+
+  // Parsing finishes in the background while the user may already be typing: fill only
+  // the fields they have left empty, and apply each parsed result once.
+  const appliedResume = useRef<string | null>(null);
+  const privacyLoaded = useRef(false);
+  const onCvLoaded = (cv: CV | null) => {
+    if (!cv) return;
+    // CvStatus reports on every status check; take privacy from the server only once so a
+    // toggle made while parsing runs is not reset.
+    if (!privacyLoaded.current) {
+      privacyLoaded.current = true;
+      setPrivacy(cv.privacy);
+    }
+    if (cv.parsing_status !== 'complete') return;
+    const key = JSON.stringify(cv.json_resume);
+    if (appliedResume.current === key) return;
+    appliedResume.current = key;
+    setDraft((d) => mergeParsedIntoDraft(d, resumeToDraft(cv.json_resume)));
+  };
 
   return (
     <div className="mx-auto max-w-page px-4 py-6 md:px-6 lg:px-8">
@@ -48,7 +68,7 @@ export function CanvasPage() {
 
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="card lg:col-span-3">
-          <CvStatus onLoaded={(cv) => cv && setPrivacy(cv.privacy)} />
+          <CvStatus onLoaded={onCvLoaded} />
           <p className="mb-6 rounded-sm bg-warning-bg p-3 text-sm text-warning-text" role="note">
             Edits are kept on this page only for now. Saving your CV is coming soon.
           </p>

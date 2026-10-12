@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Literal
+from typing import Any, Dict, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, field_serializer
 
@@ -14,6 +14,8 @@ class CVOut(BaseModel):
     title: str
     privacy: Literal["private", "public"]
     parsing_status: Literal["pending", "in_progress", "complete", "failed"]
+    parsing_error: Optional[str] = None
+    json_resume: Dict[str, Any] = {}
     created_at: datetime
 
     @field_serializer("created_at")

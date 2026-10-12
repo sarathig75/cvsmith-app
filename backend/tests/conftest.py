@@ -12,6 +12,7 @@ from sqlalchemy.orm import sessionmaker  # noqa: E402
 from app.config import get_settings  # noqa: E402
 from app.database import Base, get_db, make_engine  # noqa: E402
 from app.main import app  # noqa: E402
+from app.services.parse_queue import get_parse_queue  # noqa: E402
 
 PASSWORD = "Passw0rdOK"
 
@@ -31,10 +32,14 @@ def client(tmp_path, monkeypatch):
         finally:
             db.close()
 
+    # Record parse jobs instead of sending them to Redis/Celery.
+    queued = []
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[get_parse_queue] = lambda: (lambda cv_id, key: queued.append((cv_id, key)))
     with TestClient(app) as c:
         c.session_factory = Session
         c.upload_dir = tmp_path / "uploads"
+        c.queued_parse_jobs = queued
         yield c
     app.dependency_overrides.clear()
     engine.dispose()
