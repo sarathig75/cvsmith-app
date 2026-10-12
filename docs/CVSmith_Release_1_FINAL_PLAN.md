@@ -1,0 +1,578 @@
+# CVSmith Release 1: Final Consolidated Plan
+
+**Status:** READY FOR IMPLEMENTATION  
+**Timeline:** 10 weeks (Weeks 1–10)  
+**Team:** 4–5 people (Backend, Frontend, ML/LLM, QA, PM)  
+**Estimated Cost:** $80K–100K (team) + $5K–10K (infra)
+
+---
+
+## Executive Summary
+
+### What You're Building
+A minimal MVP that validates the core loop: candidate uploads CV → edits in live canvas → gets AI suggestions → downloads PDF + exports JSON Resume.
+
+### Key Features (In Scope)
+- ✅ Google sign-in + email/password signup (Apple sign-in deferred to a later release)
+- ✅ Single-page onboarding (email, password, CV upload)
+- ✅ PDF/Word CV upload with background parsing
+- ✅ Live canvas editor with auto-save
+- ✅ Field-level AI suggestions (Professional Summary, Experience, etc.)
+- ✅ Free first suggestion to demonstrate value
+- ✅ Privacy toggle (Private/Public, default Public)
+- ✅ PDF download + JSON export
+- ✅ Pro tier ($9.99/mo) with suggestion quota (50/month)
+- ✅ Free tier (1 suggestion/month, then upgrade)
+
+### What's NOT In Release 1
+- ❌ LinkedIn import (Release 2)
+- ❌ Microsite publishing (Release 3)
+- ❌ Role-based CV variants (Release 2)
+- ❌ Recruiter search (Release 2)
+- ❌ Word download (PDF only)
+- ❌ Section/field-level privacy (Release 2)
+
+---
+
+## User Journey (Complete)
+
+```
+ONBOARDING (Single Page - ZERO FRICTION)
+├─ Email input
+├─ Password input
+├─ CV upload (PDF/Word, drag-drop)
+├─ OR: Google sign-in
+└─ "Get Started" → Instant to dashboard (no email verification blocking)
+
+PARSING (Background)
+└─ Extract text → Claude parses → JSON Resume created
+└─ Optional: Email verification available in Settings (not blocking)
+
+LIVE CANVAS (Immediate)
+├─ Personal Info (name, email, phone, location, LinkedIn URL, Portfolio URL) - pre-filled from CV
+├─ Professional Summary (💡 Suggestion available)
+├─ Work Experience (add/edit/delete jobs) (💡 Suggestion per job)
+├─ Education (add/edit/delete degrees)
+├─ Skills (add/edit/delete skills)
+├─ Certifications (add/edit/delete - name, issuer, issue date)
+├─ Auto-save every 2 seconds
+└─ Right panel: Live PDF preview
+
+FIELD-LEVEL SUGGESTIONS (Smart Monetization)
+├─ 1 FREE suggestion available (first interaction)
+├─ Click 💡 icon on any field → See AI improvement
+├─ Example fields: Professional Summary, Job Description, Skills
+├─ Show current → Suggested with reasoning
+├─ Accept/Decline → Applies to canvas
+├─ After free suggestion used → Show upgrade prompt
+└─ Pro tier: 50 suggestions/month (unlimited field improvements)
+
+CV PREVIEW
+└─ Updates in real-time as user edits
+
+PRIVACY CONTROL (Default PUBLIC)
+├─ Toggle: 🌍 PUBLIC (default) ↔ 🔒 PRIVATE
+├─ Info: "Public makes CV eligible for recruiter search (launching soon)"
+└─ JSON Resume marked with privacy flag
+
+DOWNLOAD & EXPORT
+├─ Download PDF (single professional template)
+├─ Export JSON Resume
+└─ Show: "Your CV saved. You can regenerate anytime."
+
+ACCOUNT SETTINGS (No blockers)
+├─ Email verification (optional)
+├─ Phone (optional)
+├─ Billing & upgrade
+├─ Data export / delete account
+```
+
+---
+
+## Database Schema (Final)
+
+```sql
+-- Users
+CREATE TABLE users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password_hash VARCHAR(255),
+  email_verified BOOLEAN DEFAULT FALSE,
+  email_verified_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- CVs
+CREATE TABLE cvs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title VARCHAR(255) DEFAULT 'My CV',
+  json_resume JSONB NOT NULL,
+  privacy ENUM('private', 'public') DEFAULT 'private',
+  parsing_status ENUM('pending', 'in_progress', 'complete', 'failed') DEFAULT 'pending',
+  parsing_error TEXT,
+  raw_upload_path VARCHAR(512),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id) -- One CV per user in Release 1
+);
+
+-- Suggestions
+CREATE TABLE suggestions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  cv_id UUID NOT NULL REFERENCES cvs(id) ON DELETE CASCADE,
+  suggestion_type VARCHAR(50), -- 'structure', 'clarity', 'completeness', 'phrasing'
+  original_text TEXT,
+  suggested_text TEXT,
+  accepted BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Billing
+CREATE TABLE billing (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  stripe_customer_id VARCHAR(255),
+  tier ENUM('free', 'pro') DEFAULT 'free',
+  suggestion_count_this_month INT DEFAULT 0,
+  billing_period_start DATE,
+  billing_period_end DATE,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Analytics
+CREATE TABLE events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  event_type VARCHAR(50), -- 'signup', 'upload', 'edit', 'suggestion', 'download', 'upgrade'
+  metadata JSONB,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create indexes
+CREATE INDEX idx_cvs_user_id ON cvs(user_id);
+CREATE INDEX idx_suggestions_user_id ON suggestions(user_id);
+CREATE INDEX idx_suggestions_cv_id ON suggestions(cv_id);
+CREATE INDEX idx_events_user_id ON events(user_id);
+CREATE INDEX idx_events_created_at ON events(created_at);
+```
+
+---
+
+## API Endpoints (Complete)
+
+### Auth
+```
+POST   /api/auth/signup              → Register email + password
+POST   /api/auth/verify              → Verify email token
+POST   /api/auth/login               → Login (email + password)
+POST   /api/auth/logout              → Logout
+POST   /api/auth/password-reset      → Request reset link
+PATCH  /api/auth/password-reset/{token} → Reset password
+```
+
+### CV Management
+```
+POST   /api/cv/upload                → Upload PDF/Word
+GET    /api/cv                       → Get CV (JSON Resume + metadata)
+PATCH  /api/cv                       → Update CV fields
+PATCH  /api/cv/privacy               → Toggle privacy (private/public)
+GET    /api/cv/download              → Download PDF
+GET    /api/cv/export                → Export JSON Resume
+DELETE /api/cv                       → Delete CV
+```
+
+### Suggestions
+```
+POST   /api/suggestions              → Request AI suggestions
+GET    /api/suggestions              → List suggestions for CV
+PATCH  /api/suggestions/{id}         → Accept/reject/edit suggestion
+GET    /api/user/suggestion-quota    → Check remaining suggestions
+```
+
+### User
+```
+GET    /api/user                     → Get profile
+PATCH  /api/user                     → Update profile
+GET    /api/user/events              → Activity log
+DELETE /api/user                     → Delete account
+```
+
+### Billing (Minimal for R1)
+```
+POST   /api/billing/checkout         → Initiate Stripe checkout
+GET    /api/billing/status           → Check billing status
+```
+
+---
+
+## Technology Stack (Final)
+
+### Backend
+- **Language:** Python 3.11+
+- **Framework:** FastAPI
+- **Database:** PostgreSQL 14+
+- **Cache:** Redis (optional, for session management)
+- **Job Queue:** Celery + Redis
+- **File Storage:** AWS S3 (or MinIO for local dev)
+- **Auth:** JWT (self-hosted)
+
+### Frontend
+- **Framework:** React 18 + TypeScript
+- **Build Tool:** Vite
+- **Styling:** Tailwind CSS
+- **HTTP Client:** Axios
+- **PDF Preview:** react-pdf
+- **State Management:** React Query / Zustand
+
+### External Services
+- **Email:** SendGrid
+- **Payment:** Stripe
+- **LLM:** Claude API (Anthropic)
+- **PDF Generation:** ReportLab (Python)
+- **Hosting:** AWS EC2 / ECS or Railway
+
+### DevOps
+- **VCS:** GitHub
+- **CI/CD:** GitHub Actions
+- **Container:** Docker
+- **Secrets:** GitHub Secrets / AWS Secrets Manager
+
+---
+
+## Implementation Timeline (Detailed)
+
+### Week 1–2: Foundation & Auth
+- [ ] Set up GitHub repo (backend + frontend)
+- [ ] Configure GitHub Actions (CI/CD)
+- [ ] Set up PostgreSQL, Redis, S3
+- [ ] Implement JWT auth system
+- [ ] Email/password signup + login endpoints
+- [ ] Google OAuth integration
+- [ ] Optional email verification (non-blocking, available in Settings)
+- [ ] Frontend: Single-page onboarding (email, password, CV upload)
+- [ ] Frontend: Google sign-in button
+- [ ] Frontend: Login modal for returning users
+- [ ] Basic error handling + validation
+
+**Definition of Done:** User can signup/login with email or social, upload CV, proceed to dashboard without blocking verification
+
+---
+
+### Week 3–4: CV Upload & Parsing
+- [ ] File upload endpoint (POST /api/cv/upload)
+- [ ] Temp file storage (S3 or local)
+- [ ] PDF/Word text extraction (PyPDF2, python-docx)
+- [ ] CV parsing worker (Claude API to structure CV)
+- [ ] cvs table + migrations
+- [ ] parsing_status tracking
+- [ ] Frontend: CVUpload component (drag-drop, progress)
+- [ ] Error handling (unsupported format, parse failure)
+
+**Definition of Done:** User can upload PDF/Word, parsing completes, JSON Resume created
+
+---
+
+### Week 5–6: Live Canvas & Preview
+- [ ] Dashboard layout (canvas + preview)
+- [ ] LiveCanvas component (editable sections)
+- [ ] Auto-save logic (PATCH /api/cv every 2 seconds)
+- [ ] PDF preview rendering (right panel)
+- [ ] Merge conflict resolution (parsing + edits)
+- [ ] Session persistence (restore canvas state)
+- [ ] Frontend: Dashboard, LiveCanvas, CVPreview components
+
+**Definition of Done:** User can edit CV in real-time, see live preview, edits auto-save
+
+---
+
+### Week 7–8: Field-Level AI Suggestions
+- [ ] POST /api/suggestions/{field} endpoint (field-specific suggestions)
+- [ ] Claude API integration (per-field improvement generation)
+- [ ] suggestions table + queries (track which fields have been suggested)
+- [ ] Suggestion quota tracking (free: 1 suggestion/month free, Pro: 50/month)
+- [ ] Track "free suggestion used" flag per user
+- [ ] Frontend: SuggestionModal component (show current → improved → accept/decline)
+- [ ] Frontend: 💡 Bulb icon on fields with suggestions available
+- [ ] Frontend: Upgrade prompt after free suggestion used
+- [ ] Accept/reject/apply suggestion flow
+- [ ] Track suggestion metrics for analytics
+
+**Definition of Done:** User can click 💡 on any field, see AI improvement, accept/reject, free suggestion converts to upgrade prompt
+
+---
+
+### Week 9: Download, Export & Privacy
+- [ ] PDF rendering (ReportLab + template)
+- [ ] GET /api/cv/download endpoint
+- [ ] JSON Resume export
+- [ ] Privacy toggle (PATCH /api/cv/privacy)
+- [ ] Default privacy to PUBLIC (not private)
+- [ ] Frontend: PrivacyToggle component (🌍 Public / 🔒 Private)
+- [ ] Frontend: Download button + file stream
+- [ ] Update JSON Resume with privacy flag + cvsmith metadata
+- [ ] Show privacy status badge on dashboard (🌍 Public or 🔒 Private)
+
+**Definition of Done:** User can download PDF, export JSON, toggle privacy (default Public), see privacy status
+
+---
+
+### Week 10: Billing & Pro Tier
+- [ ] Stripe integration (checkout session)
+- [ ] billing table + migrations
+- [ ] POST /api/billing/checkout endpoint
+- [ ] Webhook handling (payment success/failure)
+- [ ] Suggestion quota enforcement (middleware)
+- [ ] Frontend: Upgrade button, Pro badge, pricing
+- [ ] Email confirmations (receipt, Pro activated)
+- [ ] Admin dashboard (basic: user metrics, events)
+
+**Definition of Done:** User can upgrade to Pro, suggestion quota enforced, payment working
+
+---
+
+### Week 11: Testing, QA & Polish
+- [ ] Unit tests (auth, CV operations, suggestions)
+- [ ] Integration tests (full user flow)
+- [ ] E2E tests (Cypress or Playwright)
+- [ ] Manual QA (all user flows)
+- [ ] Performance testing (file upload, PDF generation)
+- [ ] Security audit (JWT, file handling, SQL injection)
+- [ ] Bug fixes + edge cases
+
+**Definition of Done:** All tests pass, zero critical bugs, ready for production
+
+---
+
+### Week 12: Deployment & Monitoring
+- [ ] Set up production environment (AWS/Railway)
+- [ ] Database migrations (production)
+- [ ] Environment variables + secrets
+- [ ] SSL/TLS certificates
+- [ ] Logging + monitoring (DataDog/New Relic)
+- [ ] Backups + disaster recovery
+- [ ] Deploy backend + frontend
+- [ ] Monitor for 48 hours, hotfixes
+
+**Definition of Done:** System live, no critical errors, team trained on monitoring
+
+---
+
+## Success Metrics (Release 1)
+
+### Critical KPIs
+| Metric | Target | By End of Week 2 |
+|--------|--------|-----------------|
+| Signup rate | 100 signups | Collect feedback |
+| Upload rate | >60% of signups | Validate UX |
+| Parse success rate | >85% | Adjust parsing logic |
+| First download rate | >40% | **GO/NO-GO decision** |
+| Pro conversion | >10% | **GO/NO-GO decision** |
+| Suggestion acceptance | >50% | **GO/NO-GO decision** |
+
+### Secondary Metrics
+- Time to first download (target: <10 min)
+- Parsing time (target: <60 sec)
+- Suggestion request latency (target: <5 sec)
+- Churn rate week 2→3 (target: <5%)
+
+### Go/No-Go Decisions
+
+**If >40% download + >10% Pro conversion:**
+- ✅ **GO to Release 2** (LinkedIn import, role-based CVs, recruiter search)
+
+**If 20–40% download and 5–10% Pro:**
+- ⚠️ **ITERATE** (improve parsing, UX, or pricing)
+
+**If <20% download or <5% Pro:**
+- ❌ **PIVOT** (fundamental value prop issue; rethink approach)
+
+---
+
+## Risk Mitigation
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|-----------|
+| **Parsing accuracy poor** | Medium | High | Test with 50+ real CVs; set low expectations ("This is a draft"); require manual review |
+| **Merge conflicts (parsing + edits)** | Medium | Medium | Timestamp-based resolution; user edits always win if newer |
+| **LLM hallucination in suggestions** | Medium | High | Filter suggestions; don't suggest fabricated jobs; watermark as AI |
+| **Slow parsing (>60s)** | Low | Medium | Set timeout; allow editing while parsing; show progress |
+| **Payment processing fails** | Low | High | Implement idempotency; retry logic; manual verification endpoint |
+| **Security: API key exposure** | Low | Critical | Use environment variables; rotate keys monthly; audit logs |
+| **Database: Data corruption** | Very Low | Critical | Daily backups; test restore weekly |
+
+---
+
+## Definition of MVP Complete
+
+✅ User can sign up with email  
+✅ User can upload PDF or Word CV  
+✅ System parses CV in background → JSON Resume  
+✅ User can edit CV in live canvas  
+✅ User sees live PDF preview  
+✅ User can request AI suggestions (Pro tier)  
+✅ User can download PDF + export JSON  
+✅ User can toggle privacy (Private/Public)  
+✅ User can upgrade to Pro tier ($9.99/mo)  
+✅ Suggestion quota enforced (1/mo free, 50/mo Pro)  
+✅ System logs events + basic analytics  
+✅ All tests pass, zero critical bugs  
+✅ System deployed to production  
+
+---
+
+## Post-Release 1: Release 2 Roadmap (Preview)
+
+### Release 2 (Weeks 13–22, 10 weeks)
+- LinkedIn profile import
+- Role-based CV variants (unlimited beyond 2 free)
+- Recruiter beta (invite-only)
+  - MCP integration
+  - Private search endpoint
+  - Recruiter tokens (scoped, revocable)
+- Section-level privacy controls
+- Advanced analytics
+
+### Release 3 (Weeks 23+)
+- Microsite publishing ($9.99/mo)
+  - Custom domain support
+  - SEO optimization
+  - Analytics
+- AI prompt CV creation
+- Field-level privacy
+- Recruiter accounts + subscriptions
+
+---
+
+## Team & Responsibilities
+
+### Backend Lead (1 FTE)
+- Architect FastAPI app + database
+- Implement auth, CV operations, suggestions
+- CV parsing worker
+- Stripe integration
+- API testing
+
+### Frontend Lead (1 FTE)
+- React app architecture
+- Dashboard, live canvas, components
+- PDF preview integration
+- Stripe checkout UI
+- E2E testing
+
+### ML/LLM Engineer (1 FTE, 0.5 FTE for R1)
+- Claude API integration
+- CV parsing logic
+- Suggestion generation
+- Prompt engineering
+- Cost optimization
+
+### QA Engineer (1 FTE, 0.5 FTE for R1)
+- Test plan + cases
+- Manual testing
+- Bug reporting
+- Performance testing
+- Security audit
+
+### Product Manager (1 FTE)
+- Requirements + prioritization
+- Metrics tracking
+- User feedback
+- Release coordination
+- Roadmap planning
+
+---
+
+## Estimated Costs
+
+### Team (10 weeks)
+- Backend Lead: $15K
+- Frontend Lead: $15K
+- ML/LLM: $8K (0.5 FTE)
+- QA: $5K (0.5 FTE)
+- PM: $8K (0.5 FTE)
+- **Subtotal: $51K**
+
+### Infrastructure
+- AWS (EC2, RDS, S3): $2K
+- Stripe processing: $300 (payment fees)
+- Claude API: $500 (parsing + suggestions)
+- SendGrid: $100
+- Monitoring/logging: $500
+- **Subtotal: $3.4K**
+
+### Tools & Services
+- GitHub (free)
+- VS Code (free)
+- AWS (includes free tier)
+- PostgreSQL (free)
+- Redis (free)
+- **Subtotal: $0K**
+
+### **Total Estimated Cost: $54.4K**
+
+(Higher estimates include senior salaries, benefits, overhead)
+
+---
+
+## Success = Go to Release 2
+
+```
+Week 12: Production live
+  ↓
+Week 13: Monitor, collect feedback
+  ↓
+Week 14: Analyze metrics
+  ↓
+Are metrics met?
+  ├─ YES (>40% download, >10% Pro) → GO to Release 2
+  └─ NO → Iterate or pivot
+```
+
+---
+
+## Checklist: Ready to Build
+
+- [x] Feature scope finalized (in/out of scope)
+- [x] User journey mapped
+- [x] Database schema designed
+- [x] API endpoints defined
+- [x] Tech stack chosen
+- [x] Timeline detailed (by week)
+- [x] Risks identified + mitigated
+- [x] Success metrics defined
+- [x] Team roles assigned
+- [x] Cost estimated
+- [ ] **GitHub repo created** ← Next step
+- [ ] **Local dev environment set up** ← Next step
+- [ ] **Folder structure established** ← Next step
+- [ ] **First sprint planned** ← Next step
+
+---
+
+## Next Steps
+
+1. **GitHub Setup** (Today)
+   - Create repo: cvsmith-app
+   - Branch strategy: main, develop, feature branches
+   - Folder structure: /backend, /frontend
+
+2. **Local Development** (Today)
+   - Clone repo
+   - Set up virtual environments (Python + Node)
+   - Configure .env files
+   - Install dependencies
+
+3. **First Sprint** (Week 1)
+   - Assign tasks
+   - Stand-up meetings (daily 15 min)
+   - Kanban board (GitHub Projects)
+   - Kick off backend + frontend in parallel
+
+---
+
+## READY TO IMPLEMENT ✅
+

@@ -1,0 +1,49 @@
+import { useState } from 'react';
+import { Button } from '../Common/Button';
+import { Header } from '../Common/Header';
+import { CvDropzone } from './CvDropzone';
+import { GoogleSignIn } from './GoogleSignIn';
+import { LoginModal } from './LoginModal';
+import { SignupModal } from './SignupModal';
+
+export function OnboardingScreen() {
+  const [modal, setModal] = useState<'signup' | 'login' | null>(null);
+  return (
+    <>
+      <Header showNav={false} />
+      <main className="flex justify-center px-4 pb-12 pt-24 md:pt-28">
+        <div className="card w-full max-w-[440px] md:p-8">
+          <div className="mb-6 text-center">
+            <h1 className="text-3xl font-semibold">✨ CVSmith</h1>
+            <p className="mt-1 text-slate-600">Create your CV in seconds with AI</p>
+          </div>
+
+          <CvDropzone />
+
+          <Button fullWidth onClick={() => setModal('signup')} className="mb-4">
+            Get Started with Email
+          </Button>
+
+          <div className="my-6 flex items-center gap-3 text-sm text-slate-600" role="separator" aria-label="Or">
+            <span className="h-px flex-1 bg-slate-200" />
+            Or
+            <span className="h-px flex-1 bg-slate-200" />
+          </div>
+
+          <div className="mb-6">
+            <GoogleSignIn />
+          </div>
+
+          <p className="text-center text-sm text-slate-600">
+            Already have an account?{' '}
+            <button type="button" onClick={() => setModal('login')} className="font-medium text-brand hover:underline">
+              Log in
+            </button>
+          </p>
+        </div>
+      </main>
+      {modal === 'signup' && <SignupModal onClose={() => setModal(null)} onSwitchToLogin={() => setModal('login')} />}
+      {modal === 'login' && <LoginModal onClose={() => setModal(null)} onSwitchToSignup={() => setModal('signup')} />}
+    </>
+  );
+}

@@ -1,0 +1,122 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useAuthStore } from '../../store/authStore';
+import type { CV } from '../../types';
+import type { CvDraft } from '../../types/cvDraft';
+import { Button } from '../Common/Button';
+import { CvStatus } from './CvStatus';
+import { EntryListSection } from './EntryListSection';
+import { PersonalInfoSection } from './PersonalInfoSection';
+import { PreviewPanel } from './PreviewPanel';
+import { PrivacyToggle } from './PrivacyToggle';
+import { SkillsSection } from './SkillsSection';
+
+export function CanvasPage() {
+  const user = useAuthStore((s) => s.user);
+  const [privacy, setPrivacy] = useState<CV['privacy']>('public');
+  const [draft, setDraft] = useState<CvDraft>({
+    personal: { name: '', email: user?.email ?? '', phone: '', location: '', linkedin: '', portfolio: '' },
+    summary: '',
+    experience: [],
+    education: [],
+    skills: [],
+    certifications: [],
+  });
+  const patch = (p: Partial<CvDraft>) => setDraft((d) => ({ ...d, ...p }));
+
+  return (
+    <div className="mx-auto max-w-page px-4 py-6 md:px-6 lg:px-8">
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Your CV</h1>
+          <span className="mt-1 inline-block rounded-full bg-brand-light px-3 py-0.5 text-sm font-medium text-brand-dark">
+            {privacy === 'public' ? '🌍 Public' : '🔒 Private'}
+          </span>
+        </div>
+        <div className="flex gap-3">
+          <Button disabled title="PDF download is coming in a later release">
+            Download PDF
+          </Button>
+          <Link
+            to="/settings"
+            className="inline-flex min-h-[44px] items-center rounded-sm border border-slate-200 bg-slate-100 px-6 py-3 font-medium hover:bg-slate-200"
+          >
+            Settings
+          </Link>
+        </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="card lg:col-span-3">
+          <CvStatus onLoaded={(cv) => cv && setPrivacy(cv.privacy)} />
+          <p className="mb-6 rounded-sm bg-warning-bg p-3 text-sm text-warning-text" role="note">
+            Edits are kept on this page only for now. Saving your CV is coming soon.
+          </p>
+          <PersonalInfoSection value={draft.personal} onChange={(personal) => patch({ personal })} />
+
+          <section aria-labelledby="summary-title" className="mb-6">
+            <h3 id="summary-title" className="mb-4 border-b border-slate-200 pb-2 text-lg font-semibold">
+              Professional Summary
+            </h3>
+            <label htmlFor="summary" className="sr-only">
+              Professional Summary
+            </label>
+            <textarea
+              id="summary"
+              rows={4}
+              className="field-input"
+              placeholder="Brief overview of your experience..."
+              value={draft.summary}
+              onChange={(e) => patch({ summary: e.target.value })}
+            />
+          </section>
+
+          <EntryListSection
+            title="Work Experience"
+            itemLabel="Experience"
+            addLabel="Add Experience"
+            entries={draft.experience}
+            onChange={(experience) => patch({ experience })}
+            fields={[
+              { key: 'title', label: 'Job Title', placeholder: 'Senior Software Engineer' },
+              { key: 'company', label: 'Company', placeholder: 'Acme Corp' },
+              { key: 'start', label: 'Start Date', type: 'month' },
+              { key: 'end', label: 'End Date', type: 'month' },
+              { key: 'description', label: 'Description', type: 'textarea', placeholder: 'What did you achieve?' },
+            ]}
+          />
+          <EntryListSection
+            title="Education"
+            itemLabel="Education"
+            addLabel="Add Education"
+            entries={draft.education}
+            onChange={(education) => patch({ education })}
+            fields={[
+              { key: 'degree', label: 'Degree', placeholder: 'BSc Computer Science' },
+              { key: 'school', label: 'School', placeholder: 'University name' },
+              { key: 'start', label: 'Start Date', type: 'month' },
+              { key: 'end', label: 'End Date', type: 'month' },
+            ]}
+          />
+          <SkillsSection skills={draft.skills} onChange={(skills) => patch({ skills })} />
+          <EntryListSection
+            title="Certifications"
+            itemLabel="Certification"
+            addLabel="Add Certification"
+            entries={draft.certifications}
+            onChange={(certifications) => patch({ certifications })}
+            fields={[
+              { key: 'name', label: 'Certification Name', placeholder: 'AWS Certified Solutions Architect' },
+              { key: 'issuer', label: 'Issuer', placeholder: 'Amazon Web Services' },
+              { key: 'date', label: 'Issue Date', type: 'month' },
+            ]}
+          />
+          <PrivacyToggle value={privacy} onChange={setPrivacy} />
+        </div>
+        <div className="lg:col-span-2">
+          <PreviewPanel draft={draft} />
+        </div>
+      </div>
+    </div>
+  );
+}

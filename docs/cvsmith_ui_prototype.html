@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVSmith UI Prototype</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-primary: #2563EB;
+            --color-primary-dark: #1E40AF;
+            --color-primary-light: #DBEAFE;
+            --color-success: #10B981;
+            --color-warning: #F59E0B;
+            --color-error: #EF4444;
+            --color-slate-50: #F8FAFC;
+            --color-slate-100: #F1F5F9;
+            --color-slate-200: #E2E8F0;
+            --color-slate-400: #94A3B8;
+            --color-slate-600: #475569;
+            --color-slate-800: #1E293B;
+            --color-slate-900: #0F172A;
+            --spacing-sm: 8px;
+            --spacing-md: 16px;
+            --spacing-lg: 24px;
+            --spacing-xl: 32px;
+            --radius-sm: 6px;
+            --radius-md: 12px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: var(--color-slate-50);
+            color: var(--color-slate-900);
+            line-height: 1.6;
+        }
+
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 64px;
+            background: white;
+            border-bottom: 1px solid var(--color-slate-200);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--spacing-xl);
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+
+        .nav {
+            display: flex;
+            gap: var(--spacing-lg);
+        }
+
+        .nav a {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--color-slate-600);
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.2s;
+            padding: 20px 0;
+            border-bottom: 3px solid transparent;
+        }
+
+        .nav a:hover {
+            color: var(--color-slate-900);
+        }
+
+        .nav a.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        main {
+            margin-top: 64px;
+            min-height: 100vh;
+        }
+
+        .screen {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .container-narrow {
+            max-width: 400px;
+            width: 90%;
+            margin: 0 auto;
+        }
+
+        .container-wide {
+            max-width: 1200px;
+            width: 90%;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: var(--spacing-md);
+            color: var(--color-slate-900);
+        }
+
+        h2 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: var(--color-slate-600);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: var(--radius-sm);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            margin: var(--spacing-sm);
+        }
+
+        .button-primary {
+            background: var(--color-primary);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .button-primary:hover {
+            background: var(--color-primary-dark);
+            box-shadow: var(--shadow-md);
+        }
+
+        .button-secondary {
+            background: var(--color-slate-100);
+            color: var(--color-slate-900);
+            border: 1px solid var(--color-slate-200);
+        }
+
+        .button-secondary:hover {
+            background: var(--color-slate-200);
+        }
+
+        .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: var(--spacing-sm);
+            color: var(--color-slate-900);
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 16px;
+            border: 1px solid var(--color-slate-200);
+            border-radius: var(--radius-sm);
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            background: var(--color-primary-light);
+        }
+
+        .card {
+            background: white;
+            border: 1px solid var(--color-slate-200);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* Landing - Onboarding Page */
+        .screen-onboarding.active {
+            display: flex !important;
+        }
+
+        .screen-onboarding {
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 64px);
+            background: linear-gradient(135deg, var(--color-primary-light) 0%, white 100%);
+            padding: var(--spacing-xl);
+        }
+
+        .onboarding-card {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: var(--spacing-xl);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 450px;
+            width: 100%;
+        }
+
+        .onboarding-header {
+            text-align: center;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .onboarding-header h1 {
+            font-size: 32px;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .drag-drop {
+            border: 2px dashed var(--color-primary);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-xl);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--color-primary-light);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .drag-drop:hover {
+            border-color: var(--color-primary-dark);
+            background: #c8dff5;
+        }
+
+        .drag-drop-text {
+            font-size: 14px;
+            color: var(--color-primary);
+            font-weight: 500;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: var(--spacing-lg);
+            font-size: 14px;
+            color: var(--color-slate-600);
+        }
+
+        .login-link a {
+            color: var(--color-primary);
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* Dashboard */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            padding: var(--spacing-lg);
+            background: white;
+            border-bottom: 1px solid var(--color-slate-200);
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 60% 40%;
+            gap: var(--spacing-lg);
+            padding: var(--spacing-lg);
+            height: calc(100vh - 64px - 80px);
+        }
+
+        .canvas-section {
+            background: white;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-slate-200);
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+        }
+
+        .preview-section {
+            background: white;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-slate-200);
+            padding: var(--spacing-lg);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pdf-preview {
+            flex: 1;
+            background: #f5f5f5;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-slate-400);
+            font-size: 14px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: var(--spacing-lg);
+            margin-bottom: var(--spacing-md);
+            color: var(--color-slate-900);
+        }
+
+        .suggestion-banner {
+            background: #f0f9ff;
+            border: 1px solid var(--color-primary-light);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .suggestion-banner.pro {
+            background: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .suggestion-text {
+            font-size: 14px;
+            color: var(--color-slate-600);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: var(--color-primary-light);
+            color: var(--color-primary);
+            border-radius: var(--radius-sm);
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge.public {
+            background: #ecfdf5;
+            color: var(--color-success);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: center;
+        }
+
+        .privacy-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--spacing-md);
+            background: var(--color-slate-100);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .toggle-buttons {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .toggle-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--color-slate-200);
+            background: white;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toggle-btn.active {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        /* Login Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 200;
+        }
+
+        .modal {
+            background: white;
+            border-radius: var(--radius-md);
+            max-width: 400px;
+            width: 90%;
+            padding: var(--spacing-xl);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+        }
+
+        .modal h2 {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: var(--spacing-lg);
+            right: var(--spacing-lg);
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--color-slate-600);
+        }
+
+        /* Pricing Modal */
+        .pricing-banner {
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            border-radius: var(--radius-md);
+            padding: var(--spacing-lg);
+            margin: var(--spacing-lg) 0;
+            text-align: center;
+        }
+
+        .pricing-banner h3 {
+            color: var(--color-warning);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .pricing-banner p {
+            font-size: 14px;
+            color: var(--color-slate-600);
+            margin-bottom: var(--spacing-md);
+        }
+
+        /* Settings */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-lg);
+        }
+
+        .settings-container {
+            padding: var(--spacing-xl);
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+                height: auto;
+                gap: var(--spacing-md);
+            }
+
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 32px;
+            }
+
+            .nav {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">CVSmith</div>
+        <nav class="nav" id="authenticated-nav" style="display: none;">
+            <a class="nav-link active" data-screen="canvas">Canvas</a>
+            <a class="nav-link" data-screen="pricing">Pricing</a>
+            <a class="nav-link" data-screen="settings">Settings</a>
+        </nav>
+    </header>
+
+    <main>
+        <!-- Onboarding Screen (Landing + Signup combined) -->
+        <div class="screen screen-onboarding active" data-screen-id="onboarding">
+            <div class="onboarding-card">
+                <div class="onboarding-header">
+                    <h1>✨ CVSmith</h1>
+                    <p class="subtitle">Create your CV in seconds with AI</p>
+                </div>
+
+                <div class="form-group">
+                    <label>Upload Your CV</label>
+                    <div class="drag-drop" onclick="alert('File upload dialog would open')">
+                        <div style="font-size: 32px; margin-bottom: var(--spacing-sm);">📄</div>
+                        <div class="drag-drop-text">Drag & drop or click to upload</div>
+                        <div style="font-size: 12px; color: var(--color-slate-600); margin-top: var(--spacing-sm);">PDF or Word (Max 5MB)</div>
+                    </div>
+                </div>
+
+                <button class="button button-primary" style="width: 100%; margin-bottom: var(--spacing-md);" onclick="navigateTo('email-signup')">Get Started with Email</button>
+
+                <div style="text-align: center; margin: var(--spacing-lg) 0; color: var(--color-slate-600); font-size: 14px;">
+                    Or
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: var(--spacing-sm); margin-bottom: var(--spacing-lg);">
+                    <button class="button button-secondary" style="width: 100%; background: white; display: flex; align-items: center; justify-content: center;" onclick="alert('Google sign-in would open'); navigateTo('canvas')">
+                        <span style="font-size: 18px; margin-right: 8px;">🔵</span> Continue with Google
+                    </button>
+                </div>
+
+                <div class="login-link">
+                    Already have an account? <a onclick="navigateTo('login')">Log in</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Screen -->
+        <div class="screen" data-screen-id="canvas">
+            <div class="dashboard-header">
+                <div>
+                    <h2 style="margin-bottom: 8px;">Your CV</h2>
+                    <span class="badge public">🌍 Public</span>
+                </div>
+                <div class="header-actions">
+                    <button class="button button-primary" onclick="navigateTo('download')">Download PDF</button>
+                    <button class="button button-secondary" onclick="navigateTo('settings')">Settings</button>
+                </div>
+            </div>
+
+            <div class="dashboard">
+                <div class="canvas-section">
+                    <div class="suggestion-banner">
+                        <div class="suggestion-text">
+                            <strong>💡 1 Free Suggestion Available</strong> • Click the bulb icons to improve specific fields
+                        </div>
+                    </div>
+
+                    <div class="section-title">Personal Info</div>
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" value="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" value="john@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="tel" value="+1 (555) 123-4567">
+                    </div>
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" value="San Francisco, CA">
+                    </div>
+                    <div class="form-group">
+                        <label>LinkedIn URL</label>
+                        <input type="url" placeholder="https://linkedin.com/in/johndoe">
+                    </div>
+                    <div class="form-group">
+                        <label>Portfolio URL</label>
+                        <input type="url" placeholder="https://johndoe.com">
+                    </div>
+
+                    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Professional Summary</span>
+                        <button class="button button-secondary" style="padding: 4px 12px; font-size: 12px; margin: 0;" onclick="showSuggestion('summary')">💡 Suggestion</button>
+                    </div>
+                    <textarea rows="3" placeholder="Brief overview of your experience...">Senior Software Engineer with 5+ years of experience building scalable systems.</textarea>
+
+                    <div class="section-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Work Experience</span>
+                        <button class="button button-secondary" style="padding: 4px 12px; font-size: 12px; margin: 0;" onclick="showSuggestion('experience')">💡 Suggestion</button>
+                    </div>
+                    <div class="card" style="background: var(--color-slate-100);">
+                        <strong>Senior Software Engineer</strong><br>
+                        <span style="color: var(--color-slate-600);">Acme Corp • 2022 - Present</span><br>
+                        <span style="font-size: 14px; color: var(--color-slate-600);">Led development of Python microservices architecture...</span>
+                    </div>
+
+                    <button class="button button-secondary" style="width: 100%; margin-bottom: var(--spacing-lg);">+ Add Experience</button>
+
+                    <div class="section-title">Certifications</div>
+                    <div class="form-group">
+                        <label>Certification Name</label>
+                        <input type="text" placeholder="AWS Certified Solutions Architect">
+                    </div>
+                    <div class="form-group">
+                        <label>Issuer</label>
+                        <input type="text" placeholder="Amazon Web Services">
+                    </div>
+                    <div class="form-group">
+                        <label>Issue Date</label>
+                        <input type="month" value="2023-06">
+                    </div>
+                    <button class="button button-secondary" style="width: 100%; margin-bottom: var(--spacing-lg);">+ Add Certification</button>
+
+                    <div class="privacy-toggle">
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 4px;">CV Visibility</div>
+                            <div style="font-size: 14px; color: var(--color-slate-600);">Choose who can find your CV</div>
+                        </div>
+                        <div class="toggle-buttons">
+                            <button class="toggle-btn active" onclick="togglePrivacy(this)">🌍 Public</button>
+                            <button class="toggle-btn" onclick="togglePrivacy(this)">🔒 Private</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="preview-section">
+                    <h3 style="margin-bottom: var(--spacing-md); font-size: 16px;">📄 PDF Preview</h3>
+                    <div class="pdf-preview">
+                        PDF renders here as you edit (live update)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Email Signup Modal -->
+        <div class="screen" data-screen-id="email-signup">
+            <div class="modal-overlay">
+                <div class="modal">
+                    <button class="modal-close" onclick="navigateTo('onboarding')">✕</button>
+                    <h2>Create Account</h2>
+                    <p class="subtitle">Set up your account with email</p>
+
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" placeholder="you@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" placeholder="Min 8 characters">
+                    </div>
+
+                    <button class="button button-primary" style="width: 100%; margin-bottom: var(--spacing-md);" onclick="navigateTo('canvas')">Create Account & Continue</button>
+
+                    <div style="text-align: center; margin-top: var(--spacing-md);">
+                        <p style="font-size: 14px; color: var(--color-slate-600);">
+                            Already have an account? <a onclick="navigateTo('login')" style="color: var(--color-primary); cursor: pointer;">Log in</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pricing Screen (shown when free user clicks "Get More") -->
+        <div class="screen" data-screen-id="pricing">
+            <div class="dashboard-header">
+                <h2>Upgrade to Pro</h2>
+            </div>
+
+            <div style="padding: var(--spacing-xl); max-width: 900px; margin: 0 auto;">
+                <div class="card">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-xl);">
+                        <!-- Free Plan -->
+                        <div style="padding: var(--spacing-lg); border: 1px solid var(--color-slate-200); border-radius: var(--radius-md);">
+                            <h3 style="margin-bottom: var(--spacing-md);">Free</h3>
+                            <div style="font-size: 28px; font-weight: 700; margin-bottom: var(--spacing-sm);">$0</div>
+                            <p style="color: var(--color-slate-600); margin-bottom: var(--spacing-lg); font-size: 14px;">per month</p>
+                            <ul style="list-style: none; color: var(--color-slate-600); margin-bottom: var(--spacing-lg);">
+                                <li style="margin-bottom: 8px;">✓ 1 AI suggestion/month</li>
+                                <li style="margin-bottom: 8px;">✓ Live CV editor</li>
+                                <li>✓ PDF download</li>
+                            </ul>
+                            <button class="button button-secondary" style="width: 100%;" onclick="navigateTo('canvas')">Current Plan</button>
+                        </div>
+
+                        <!-- Pro Plan -->
+                        <div style="padding: var(--spacing-lg); background: var(--color-primary-light); border: 2px solid var(--color-primary); border-radius: var(--radius-md);">
+                            <h3 style="margin-bottom: var(--spacing-md); color: var(--color-primary);">Pro</h3>
+                            <div style="font-size: 28px; font-weight: 700; color: var(--color-primary); margin-bottom: var(--spacing-sm);">$9.99</div>
+                            <p style="color: var(--color-slate-600); margin-bottom: var(--spacing-lg); font-size: 14px;">per month</p>
+                            <ul style="list-style: none; color: var(--color-slate-600); margin-bottom: var(--spacing-lg);">
+                                <li style="margin-bottom: 8px;">✓ 50 AI suggestions/month</li>
+                                <li style="margin-bottom: 8px;">✓ Advanced editing</li>
+                                <li>✓ Priority support</li>
+                            </ul>
+                            <button class="button button-primary" style="width: 100%;" onclick="alert('Stripe checkout would open')">Upgrade Now</button>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="button button-secondary" style="margin-top: var(--spacing-lg);" onclick="navigateTo('canvas')">Back to Dashboard</button>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div class="screen" data-screen-id="settings">
+            <div class="settings-container">
+                <h2 style="margin-bottom: var(--spacing-xl);">Settings</h2>
+
+                <div class="card">
+                    <h3 style="margin-bottom: var(--spacing-lg);">Account</h3>
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" value="john@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Verify Email</label>
+                        <button class="button button-secondary">Send Verification Link</button>
+                        <p style="font-size: 12px; color: var(--color-slate-600); margin-top: 8px;">Optional - helps with account recovery</p>
+                    </div>
+                    <div class="form-group">
+                        <label>Phone (Optional)</label>
+                        <input type="tel" placeholder="+1 (555) 000-0000">
+                    </div>
+                    <div class="form-group">
+                        <label>Change Password</label>
+                        <button class="button button-secondary">Update Password</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: var(--spacing-lg);">Billing</h3>
+                    <div style="margin-bottom: var(--spacing-lg);">
+                        <strong>Current Plan: Free</strong>
+                        <p style="font-size: 14px; color: var(--color-slate-600); margin-top: 4px;">1 AI suggestion per month</p>
+                    </div>
+                    <button class="button button-primary" onclick="navigateTo('pricing')">Upgrade to Pro - $9.99/mo</button>
+                </div>
+
+                <div class="card">
+                    <h3 style="margin-bottom: var(--spacing-lg);">Data</h3>
+                    <button class="button button-secondary" style="margin-right: var(--spacing-md);">Download JSON Resume</button>
+                    <button class="button" style="background: #fee2e2; color: var(--color-error); border: 1px solid #fecaca;">Delete Account</button>
+                </div>
+
+                <button class="button button-secondary" style="margin-top: var(--spacing-lg);" onclick="navigateTo('canvas')">Back to Dashboard</button>
+            </div>
+        </div>
+
+        <!-- Download Modal -->
+        <div class="screen" data-screen-id="download">
+            <div class="modal-overlay">
+                <div class="modal">
+                    <button class="modal-close" onclick="navigateTo('canvas')">✕</button>
+                    <h2>Download Your CV</h2>
+                    <p class="subtitle">Your CV is ready to download</p>
+
+                    <div class="card" style="margin-bottom: var(--spacing-md); background: var(--color-primary-light); border-color: var(--color-primary);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>📄 PDF</strong>
+                                <p style="font-size: 14px; color: var(--color-slate-600);">Professional, ATS-friendly format</p>
+                            </div>
+                            <input type="radio" name="format" checked>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: var(--spacing-lg);">
+                        <p style="font-size: 14px; color: var(--color-slate-600);">
+                            <strong>💾 Your JSON Resume</strong> is always available in Settings → Data for importing to other tools.
+                        </p>
+                    </div>
+
+                    <div style="display: flex; gap: var(--spacing-md);">
+                        <button class="button button-secondary" style="flex: 1;" onclick="navigateTo('canvas')">Cancel</button>
+                        <button class="button button-primary" style="flex: 1;" onclick="alert('PDF downloading...'); navigateTo('canvas')">Download PDF</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Suggestion Modal (Overlay on Canvas) -->
+        <div id="suggestion-modal" style="display: none;">
+            <div class="modal-overlay" onclick="closeSuggestion()">
+                <div class="modal" onclick="event.stopPropagation()">
+                    <button class="modal-close" onclick="closeSuggestion()">✕</button>
+                    <h2>✨ AI Suggestion</h2>
+                    <p class="subtitle" id="suggestion-field">Professional Summary</p>
+
+                    <div style="background: var(--color-primary-light); border-radius: var(--radius-md); padding: var(--spacing-lg); margin-bottom: var(--spacing-lg);">
+                        <p style="font-size: 12px; color: var(--color-slate-600); margin-bottom: var(--spacing-sm); text-transform: uppercase; font-weight: 600;">Current</p>
+                        <p id="suggestion-current" style="color: var(--color-slate-900); margin-bottom: var(--spacing-lg);">Senior Software Engineer with 5+ years of experience building scalable systems.</p>
+
+                        <p style="font-size: 12px; color: var(--color-slate-600); margin-bottom: var(--spacing-sm); text-transform: uppercase; font-weight: 600;">Suggested</p>
+                        <p id="suggestion-improved" style="color: var(--color-primary); font-weight: 500;">Results-driven Senior Software Engineer with 5+ years of proven expertise architecting and scaling distributed systems. Passionate about clean code and mentoring high-performing teams.</p>
+                    </div>
+
+                    <p style="font-size: 14px; color: var(--color-slate-600); margin-bottom: var(--spacing-lg);">
+                        <strong>Why this works:</strong> More specific impact, includes leadership, shows what you're passionate about.
+                    </p>
+
+                    <div style="display: flex; gap: var(--spacing-md);">
+                        <button class="button button-secondary" style="flex: 1;" onclick="closeSuggestion()">Decline</button>
+                        <button class="button button-primary" style="flex: 1;" onclick="acceptSuggestion()">Accept & Use</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upgrade After Free Modal -->
+        <div class="screen" data-screen-id="upgrade-prompt">
+            <div class="modal-overlay">
+                <div class="modal">
+                    <button class="modal-close" onclick="navigateTo('canvas')">✕</button>
+                    <h2>💡 Love the suggestions?</h2>
+                    <p class="subtitle">You've used your 1 free suggestion. Upgrade to see more.</p>
+
+                    <div class="card" style="background: #f0fdf4; border-color: var(--color-success); margin-bottom: var(--spacing-lg);">
+                        <div style="font-size: 24px; margin-bottom: var(--spacing-sm);">✓ What you get with Pro:</div>
+                        <ul style="list-style: none; color: var(--color-slate-600);">
+                            <li style="margin-bottom: 8px;">✓ 50 AI suggestions per month</li>
+                            <li style="margin-bottom: 8px;">✓ Suggestions on every field</li>
+                            <li style="margin-bottom: 8px;">✓ Real-time improvements as you type</li>
+                            <li>✓ Priority support</li>
+                        </ul>
+                    </div>
+
+                    <div style="background: var(--color-primary-light); border-radius: var(--radius-md); padding: var(--spacing-lg); text-align: center; margin-bottom: var(--spacing-lg);">
+                        <div style="font-size: 32px; font-weight: 700; color: var(--color-primary);">$9.99</div>
+                        <div style="color: var(--color-slate-600); font-size: 14px;">per month</div>
+                    </div>
+
+                    <div style="display: flex; gap: var(--spacing-md);">
+                        <button class="button button-secondary" style="flex: 1;" onclick="navigateTo('canvas')">Maybe Later</button>
+                        <button class="button button-primary" style="flex: 1;" onclick="alert('Stripe checkout would open'); navigateTo('canvas')">Upgrade Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Login Modal (for existing users) -->
+        <div class="screen" data-screen-id="login">
+            <div class="modal-overlay">
+                <div class="modal">
+                    <button class="modal-close" onclick="navigateTo('onboarding')">✕</button>
+                    <h2>Log In</h2>
+                    <p class="subtitle">Welcome back</p>
+
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" placeholder="you@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" placeholder="Your password">
+                    </div>
+
+                    <button class="button button-primary" style="width: 100%; margin-bottom: var(--spacing-md);" onclick="navigateTo('canvas')">Log In</button>
+
+                    <div style="text-align: center;">
+                        <a onclick="navigateTo('onboarding')" style="color: var(--color-primary); cursor: pointer; font-size: 14px;">← Back to sign up</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let freeSuggestionsUsed = 0;
+        const MAX_FREE_SUGGESTIONS = 1;
+
+        const suggestionData = {
+            'summary': {
+                field: 'Professional Summary',
+                current: 'Senior Software Engineer with 5+ years of experience building scalable systems.',
+                improved: 'Results-driven Senior Software Engineer with 5+ years of proven expertise architecting and scaling distributed systems. Passionate about clean code and mentoring high-performing teams.',
+                reason: 'More specific impact, includes leadership, shows what you\'re passionate about.'
+            },
+            'experience': {
+                field: 'Work Experience - Acme Corp',
+                current: 'Led development of Python microservices architecture...',
+                improved: 'Led architecture and delivery of microservices platform serving 2M+ users. Reduced latency by 40% through optimization and mentored 3 junior engineers.',
+                reason: 'Includes metrics, impact scope, and demonstrates leadership ability.'
+            }
+        };
+
+        function navigateTo(screenId) {
+            // Hide all screens
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+
+            // Show selected screen
+            document.querySelector(`[data-screen-id="${screenId}"]`).classList.add('active');
+
+            // Show/hide nav based on authenticated vs non-authenticated screens
+            const authenticatedScreens = ['canvas', 'settings', 'pricing'];
+            const nav = document.getElementById('authenticated-nav');
+            if (authenticatedScreens.includes(screenId)) {
+                nav.style.display = 'flex';
+            } else {
+                nav.style.display = 'none';
+            }
+
+            // Update nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            const navLink = document.querySelector(`[data-screen="${screenId}"]`);
+            if (navLink) navLink.classList.add('active');
+
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+
+        function togglePrivacy(btn) {
+            const parent = btn.parentElement;
+            parent.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        function showSuggestion(fieldId) {
+            if (freeSuggestionsUsed >= MAX_FREE_SUGGESTIONS) {
+                navigateTo('upgrade-prompt');
+                return;
+            }
+
+            const suggestion = suggestionData[fieldId];
+            if (suggestion) {
+                document.getElementById('suggestion-field').textContent = suggestion.field;
+                document.getElementById('suggestion-current').textContent = suggestion.current;
+                document.getElementById('suggestion-improved').textContent = suggestion.improved;
+                document.getElementById('suggestion-improved').title = 'Why: ' + suggestion.reason;
+                document.getElementById('suggestion-modal').style.display = 'block';
+            }
+        }
+
+        function closeSuggestion() {
+            document.getElementById('suggestion-modal').style.display = 'none';
+        }
+
+        function acceptSuggestion() {
+            freeSuggestionsUsed++;
+            alert('✓ Suggestion applied!');
+            closeSuggestion();
+
+            // Show upgrade prompt if no more free suggestions
+            if (freeSuggestionsUsed >= MAX_FREE_SUGGESTIONS) {
+                setTimeout(() => {
+                    const banner = document.querySelector('.suggestion-banner');
+                    if (banner) {
+                        banner.innerHTML = '<div class="suggestion-text"><strong>💡 Free suggestions used</strong> • Upgrade to Pro for unlimited suggestions</div><button class="button button-primary" style="padding: 8px 16px; font-size: 14px;" onclick="navigateTo(\'pricing\')">View Plans</button>';
+                    }
+                }, 300);
+            }
+        }
+
+        // Initialize nav click handlers
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateTo(link.getAttribute('data-screen'));
+            });
+        });
+    </script>
+</body>
+</html>

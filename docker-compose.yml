@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: cvsmith-postgres
+    environment:
+      POSTGRES_USER: cvsmith_user
+      POSTGRES_PASSWORD: cvsmith_password
+      POSTGRES_DB: cvsmith_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - cvsmith-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cvsmith_user -d cvsmith_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cvsmith-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - cvsmith-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend FastAPI
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cvsmith-backend
+    environment:
+      DATABASE_URL: postgresql://cvsmith_user:cvsmith_password@postgres:5432/cvsmith_db
+      REDIS_URL: redis://redis:6379/0
+      JWT_SECRET: dev-secret-key-change-in-production
+      JWT_ALGORITHM: HS256
+      JWT_EXPIRATION_HOURS: 24
+      ENVIRONMENT: development
+      DEBUG: "true"
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - cvsmith-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Celery Worker
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cvsmith-celery
+    environment:
+      DATABASE_URL: postgresql://cvsmith_user:cvsmith_password@postgres:5432/cvsmith_db
+      REDIS_URL: redis://redis:6379/0
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY}
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - cvsmith-network
+    command: celery -A app.workers.celery_app worker --loglevel=info
+
+  # Frontend Vite
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: cvsmith-frontend
+    environment:
+      VITE_API_URL: http://localhost:8000
+      VITE_STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
+      VITE_GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - cvsmith-network
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  cvsmith-network:
+    driver: bridge
