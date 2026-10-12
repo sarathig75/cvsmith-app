@@ -16,7 +16,8 @@ class EmailSender(Protocol):
 
 def verification_link(token: str) -> str:
     base = get_settings().FRONTEND_URL.rstrip("/")
-    return f"{base}/verify-email?token={quote(token)}"
+    # Must match the frontend route in frontend/src/App.tsx (<Route path="/verify">).
+    return f"{base}/verify?token={quote(token)}"
 
 
 class LoggingEmailSender:

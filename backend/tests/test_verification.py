@@ -7,6 +7,7 @@ import jwt
 
 from app.config import get_settings
 from app.models.user import User
+from app.services.email_service import verification_link
 from app.utils.jwt_handler import create_access_token, create_verification_token
 from tests.conftest import signup
 
@@ -17,6 +18,11 @@ def _logged_token(caplog):
         if m:
             return m.group(1)
     return None
+
+
+def test_verification_link_targets_frontend_verify_route():
+    base = get_settings().FRONTEND_URL.rstrip("/")
+    assert verification_link("abc.def") == f"{base}/verify?token=abc.def"
 
 
 def test_send_verification_requires_auth(client):

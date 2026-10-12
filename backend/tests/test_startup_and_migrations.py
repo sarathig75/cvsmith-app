@@ -3,11 +3,12 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import create_engine, inspect
 
-from app.config import Settings
+from app.config import DEFAULT_JWT_SECRET, Settings
 
 
 def test_refuses_default_secret_outside_development():
-    s = Settings(ENVIRONMENT="production", _env_file=None)
+    # Pass the default explicitly: conftest sets a strong JWT_SECRET in the environment.
+    s = Settings(ENVIRONMENT="production", JWT_SECRET=DEFAULT_JWT_SECRET, _env_file=None)
     with pytest.raises(RuntimeError):
         s.validate_for_startup()
     with pytest.raises(RuntimeError):
