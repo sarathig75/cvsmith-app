@@ -103,6 +103,43 @@ def test_google_login_existing_user_links_and_reuses_account(client, monkeypatch
         assert db.query(User).count() == 1
 
 
+def test_google_link_removes_password_of_unverified_account(client, monkeypatch):
+    # Someone pre-registers the address with a password, never verifying it.
+    signup(client, "victim@example.com")
+    monkeypatch.setattr(
+        google_service,
+        "verify_google_id_token",
+        lambda t: {"sub": "g-v", "email": "victim@example.com", "email_verified": True},
+    )
+    assert client.post("/api/auth/google", json={"id_token": "t"}).status_code == 200
+    r = client.post("/api/auth/login", json={"email": "victim@example.com", "password": PASSWORD})
+    assert r.status_code == 401 and err(r)["code"] == "INVALID_CREDENTIALS"
+    with client.session_factory() as db:
+        assert db.query(User).one().password_hash is None
+
+
+def test_google_link_keeps_password_of_verified_account(client, monkeypatch, caplog):
+    import logging
+    import re
+
+    headers = {"Authorization": f"Bearer {signup(client, 'owner@example.com').json()['access_token']}"}
+    with caplog.at_level(logging.INFO, logger="cvsmith.email"):
+        client.post("/api/auth/send-verification", headers=headers)
+    token = next(
+        m.group(1) for rec in caplog.records if (m := re.search(r"token=([\w\-.]+)", rec.getMessage()))
+    )
+    assert client.post("/api/auth/verify", json={"token": token}).status_code == 200
+
+    monkeypatch.setattr(
+        google_service,
+        "verify_google_id_token",
+        lambda t: {"sub": "g-o", "email": "owner@example.com", "email_verified": True},
+    )
+    assert client.post("/api/auth/google", json={"id_token": "t"}).status_code == 200
+    r = client.post("/api/auth/login", json={"email": "owner@example.com", "password": PASSWORD})
+    assert r.status_code == 200
+
+
 def test_google_login_rejects_invalid_token_and_unverified_email(client, monkeypatch):
     def bad(token):
         raise google_service.GoogleVerificationError("bad")

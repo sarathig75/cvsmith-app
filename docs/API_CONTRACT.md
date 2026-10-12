@@ -38,6 +38,7 @@ CV     = { id: string, title: string, privacy: "private"|"public",
 - Signup/login/google never block on email verification.
 - Access token JWT (HS256), 24h expiry, `sub` = user id. No refresh tokens in R1.
 - Passwords hashed with bcrypt; users signed up via Google have null password_hash; login with password for such users returns `INVALID_CREDENTIALS`.
+- Google sign-in with an email that already has an account links to that account (Google must report the email as verified). If that account's email was never verified, its password is removed on linking, so only the Google owner can sign in; a verified account keeps its password.
 - One CV per user in R1 (new upload replaces the existing record). New CVs default `privacy = "public"`.
 - CORS origins from env `CORS_ORIGINS`.
 - No Apple sign-in in Release 1.

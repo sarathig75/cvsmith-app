@@ -58,6 +58,10 @@ def google_login(db: Session, id_token: str) -> User:
             # Link: Google asserts it verified this email address.
             user.google_id = google_id
             if not user.email_verified:
+                # Nobody proved ownership of this email when the password was set, so it
+                # may belong to someone who pre-registered the address. Drop it: from now
+                # on only the verified Google owner can sign in.
+                user.password_hash = None
                 user.email_verified = True
                 user.email_verified_at = datetime.now(timezone.utc)
         else:
