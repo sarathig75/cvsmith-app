@@ -25,6 +25,7 @@ abbreviations automatically, leave unknown ones
   volunteering, interests, user-named custom sections). New content types go into Others
   (`frontend/src/utils/otherKinds.ts`), not new sections. Preview follows the same order.
 - PowerPoint uploads are not accepted (PDF and DOCX only).
+- Drop-off metrics: our own `events` table (option A), steps listed in the plan; no CV content.
 - Release 2: current-employer shield for recruiter search (see plan doc).
 
 ## Current state
@@ -46,14 +47,16 @@ abbreviations automatically, leave unknown ones
   skills as tags (92ae610, b2f19c0); plan doc records the layout and re-order suggestions (8f4b182).
 - `cv-house-style` skill drafted and revised with the user (f6a6183, 7cbe7f2, fd6ced6); the user
   uploaded it to their claude.ai account.
-- Progressive parsing: contract, migration 0002, parser, worker and canvas (118c72b).
+- Progressive parsing: contract, migration 0002, parser, worker and canvas (118c72b), merged.
+- Funnel tracking planned for Week 5–6 (plan doc).
 
 ## Next steps
 1. Progressive parsing is built (see Done). Next: watch it in the running app with a real upload.
 2. Parsing quality: bullets covering a whole employer land under its latest title (open).
    Text that belongs to no single role stays in the summary (user decision 2026-10-13, option a).
 3. Test a real scanned PDF and a full upload through the running app (docker-compose).
-4. Week 5–6: save canvas edits to the backend (PATCH /api/cv) and session restore.
+4. Week 5–6: save canvas edits to the backend (PATCH /api/cv), session restore, and funnel
+   tracking (own events table, plan doc "Funnel tracking"; never record CV content).
 5. Week 7–8 Suggestions: build its prompt from `.claude/skills/cv-house-style/SKILL.md`.
 
 ## Open questions for the user

@@ -147,7 +147,7 @@ CREATE TABLE billing (
 CREATE TABLE events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-  event_type VARCHAR(50), -- 'signup', 'upload', 'edit', 'suggestion', 'download', 'upgrade'
+  event_type VARCHAR(50), -- funnel steps; see "Funnel tracking" under Week 5–6
   metadata JSONB,
   created_at TIMESTAMP DEFAULT NOW()
 );
@@ -284,8 +284,25 @@ GET    /api/billing/status           → Check billing status
 - [ ] Merge conflict resolution (parsing + edits)
 - [ ] Session persistence (restore canvas state)
 - [ ] Frontend: Dashboard, LiveCanvas, CVPreview components
+- [ ] Funnel tracking (see below): events table + migration, record each step, funnel SQL report
 
-**Definition of Done:** User can edit CV in real-time, see live preview, edits auto-save
+**Definition of Done:** User can edit CV in real-time, see live preview, edits auto-save; each
+funnel step is recorded and a funnel report shows how many users reach each step
+
+**Funnel tracking (agreed 2026-10-13, option A: our own events table).** Goal: see where users
+drop off. One row per step a user reaches, recorded by the backend where possible (the frontend
+only for steps the server cannot see):
+1. `signup` · 2. `email_verified` · 3. `cv_uploaded` · 4. `parsing_finished` (metadata: complete
+   or failed, failed parts) · 5. `first_edit` · 6. `suggestion_requested` · 7. `upgrade_prompt_shown`
+   · 8. `upgraded` · 9. `pdf_downloaded`
+- Record only the step, time, user id and small metadata (e.g. part names, plan). **Never CV
+  content**, names, emails or file names.
+- "Once per user" steps (`first_edit`, `email_verified`) are recorded once; the report counts
+  distinct users per step.
+- Report: one SQL query (distinct users per step, optionally per signup week) in `docs/`, run by
+  hand at first; a dashboard can come later.
+- Recording must never break or slow the user's action: failures are logged and ignored.
+- Steps 6–9 belong to later weeks; add each event when that feature is built.
 
 **Canvas layout (agreed 2026-10-13).** Five fixed groups: Personal details (incl. headline),
 Professional details (summary, work, projects), Education (incl. grade/score), Skills &
