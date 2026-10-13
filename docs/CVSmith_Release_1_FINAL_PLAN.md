@@ -303,10 +303,27 @@ GET    /api/billing/status           → Check billing status
 
 **Definition of Done:** User can click 💡 on any field, see AI improvement, accept/reject, free suggestion converts to upgrade prompt
 
+**Writing rules (house style for suggestions).** Agreed 2026-10-13. These rules apply to
+suggestions only, never to parsing: parsing keeps the candidate's own wording so the canvas
+matches their CV, and every rewrite is shown to the user to accept or reject.
+- Use concise professional language.
+- Prefer active verbs and strong action words.
+- Focus on outcomes, ownership, scale and impact.
+- Remove vague phrases and unnecessary repetition.
+- Avoid first-person pronouns ("Led", not "I led").
+- Do not use decorative language unsupported by evidence.
+- Preserve accurate job titles and employment dates.
+- Use terminology appropriate to the candidate's profession.
+- Expand uncommon abbreviations on first use (show the expansion to the user to confirm;
+  never guess an expansion the CV does not support).
+- Keep sentences concise; split long sentences into multiple bullet points.
+- Never add facts that are not in the CV (same rule as parsing).
+
 ---
 
 ### Week 9: Download, Export & Privacy
 - [ ] PDF rendering (ReportLab + template)
+- [ ] ATS-readable template: real text only, single reading order, no text in images, graphics or tables (writing rule agreed 2026-10-13)
 - [ ] GET /api/cv/download endpoint
 - [ ] JSON Resume export
 - [ ] Privacy toggle (PATCH /api/cv/privacy)
