@@ -21,7 +21,8 @@ SQLite is used by default (`DATABASE_URL=sqlite:///./cvsmith.db`); set a
 ### CV parsing worker
 Uploads return immediately; parsing runs in a Celery worker (Redis broker) that extracts
 text (pypdf / python-docx) and asks Claude to structure it as JSON Resume. Scanned PDFs with
-no text layer are sent to Claude as a PDF. Needs `ANTHROPIC_API_KEY` and a running Redis:
+no text layer are sent to Claude as a PDF. Needs `ANTHROPIC_API_KEY` (or `CVSMITH_CLAUDE_KEY`,
+for hosts that reserve `ANTHROPIC_*` names, such as Claude Code cloud environments) and a running Redis:
 ```bash
 redis-server                                   # or: docker compose up redis
 celery -A app.workers.celery_app worker --loglevel=info

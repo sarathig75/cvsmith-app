@@ -1,8 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-13 · Last commit on main: 4059506 docs: add handoff note and handoff skill
-Unmerged work: branch `claude/trusting-darwin-wwr74d` (6 commits ahead of main, see below).
-Note: read this file from that branch until it is merged; main still has the older note.
+Updated: 2026-10-13 · main contains all work below (merged from `claude/trusting-darwin-wwr74d`;
+see `git log` for the latest commit).
 
 ## Product decisions (stable)
 - Google sign-in only for social login (no Apple in Release 1).
@@ -26,39 +25,31 @@ Note: read this file from that branch until it is merged; main still has the old
   docs/CVSmith_Release_1_FINAL_PLAN.md; design points still open).
 
 ## Current state
-- Backend: pytest 62/62 passing, flake8 clean.
+- Backend: pytest 63/63 passing, flake8 clean.
 - Frontend: type-check clean, vitest 42/42 passing, `vite build` OK.
 - End-to-end run (API + real Redis + real Celery worker, Claude faked) succeeded: upload
   responds in ~0.02s, parsed data stored. With Redis down, upload still succeeds and the
   CV shows a clear "please upload again" error.
-- **Not yet tested against the real Claude API** (no `ANTHROPIC_API_KEY` in this environment).
-- Open branches / PRs: `claude/trusting-darwin-wwr74d` → not merged, no PR. Contains:
-  - 49b5f35 fix(auth): drop unverified password when Google links an account
-  - 973ea8f feat: background CV parsing with Claude and live canvas pre-fill
-  - b67c5e4 docs: update handoff with parsing work and open decisions
-  - aaef571 feat(canvas): month/year date pickers with "Years only", prefer CV email
-  - a2aaded docs: update handoff (date pickers, CV email, open questions)
-  - c0412be feat(canvas): "I currently work here"; plan current-employer shield
+- **Not yet tested against the real Claude API** (key not yet visible in a session; see Setup notes).
+- Open branches / PRs: none (session branch fully merged into main).
 
 ## Done this session
 - Restored session-1 scaffold from the git bundle; pushed `main` (d15b2d5).
 - Got all checks green; fixed verify-email link to `/verify` (3021a55, merged).
 - Added handoff note + `handoff` skill (4059506, merged).
-- Google account-linking fix, option A (49b5f35, on branch).
-- Week 3–4 CV parsing, backend + frontend (973ea8f, on branch).
-- Date pickers with "Years only" and CV-email preference (aaef571, on branch).
-- "I currently work here" + explicit `current` flag in parsing; employer shield planned (c0412be, on branch).
+- Google account-linking fix, option A (49b5f35).
+- Week 3–4 CV parsing, backend + frontend (973ea8f).
+- Date pickers with "Years only" and CV-email preference (aaef571).
+- "I currently work here" + explicit `current` flag in parsing; employer shield planned (c0412be).
 
 ## Next steps
-1. User: create an Anthropic API key and add it to the environment (see Setup notes).
+1. Confirm the key is visible as `CVSMITH_CLAUDE_KEY` and works (one tiny test request).
 2. Run 3–5 real CVs (text PDF, Word, scanned PDF, two-column layout) through the parser and
    check the results by eye. Needs the key; costs a few cents.
-3. Merge `claude/trusting-darwin-wwr74d` into `main` once the user approves.
-4. Then Week 5–6: save canvas edits to the backend (PATCH /api/cv), live PDF preview.
+3. Then Week 5–6: save canvas edits to the backend (PATCH /api/cv), live PDF preview.
 
 ## Open questions for the user
-- Waiting on the user: Anthropic API key (they will say when it is created).
-- Merge the branch into `main` now, or after the real-CV check in step 2?
+- Key exists; verify it in a new session (see Setup notes for the variable name).
 - Sonnet vs Opus: no measured comparison yet. Proposal: when the key exists, parse the same
   5 CVs with both models and compare side by side (well under $1). Approve?
 
@@ -67,9 +58,11 @@ Note: read this file from that branch until it is merged; main still has the old
   Tests need no Postgres, Redis or API key (all faked).
 - Frontend: `cd frontend && npm install`.
 - Parsing worker: Redis + `celery -A app.workers.celery_app worker` (see backend/README.md).
-- API key: create at console.anthropic.com (sign in → add billing credit → API Keys → Create
-  Key). Add it as the environment variable `ANTHROPIC_API_KEY` in the cloud environment
-  settings (environment menu in the session title bar → Edit), or in `backend/.env` locally.
-  Never paste it into chat or commit it.
+- API key: created by the user (Console key name `cvsmith-dev`, Default workspace, ~90-day
+  expiry). In the Claude Code cloud environment it must be stored as the environment variable
+  **`CVSMITH_CLAUDE_KEY`** (value without quotes): `ANTHROPIC_API_KEY` is not passed through
+  there (the platform appears to reserve `ANTHROPIC_*`; it also sets its own
+  `ANTHROPIC_BASE_URL`, which is why the app pins `CLAUDE_API_BASE_URL`). Locally or in Docker,
+  `ANTHROPIC_API_KEY` works. Only new sessions see environment changes. Never paste or commit it.
 - Full stack: `docker-compose.yml` (Postgres, Redis, backend, Celery worker, frontend);
   pass `ANTHROPIC_API_KEY` in the shell or a root `.env`.

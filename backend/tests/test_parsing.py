@@ -272,3 +272,17 @@ def test_current_role_is_explicit_in_schema_and_prompt():
     work = ParsedResume.model_validate({"basics": {}, "work": [{"name": "Acme"}]}).work[0]
     assert work.current is False  # a missing end date alone does not mean "current"
     assert "current to true" in SYSTEM_PROMPT
+
+
+def test_parser_client_uses_cvsmith_key_and_pinned_base_url(monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setenv("CVSMITH_CLAUDE_KEY", "sk-test-cvsmith")
+    monkeypatch.setenv("ANTHROPIC_BASE_URL", "http://host-internal.invalid")
+    get_settings.cache_clear()
+    try:
+        client = ClaudeCvParser().client
+        assert client.api_key == "sk-test-cvsmith"
+        assert str(client.base_url).rstrip("/") == "https://api.anthropic.com"
+    finally:
+        get_settings.cache_clear()

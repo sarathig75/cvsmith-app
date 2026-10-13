@@ -104,8 +104,12 @@ class CvParser(Protocol):
 
 class ClaudeCvParser:
     def __init__(self, client: Optional[anthropic.Anthropic] = None, model: Optional[str] = None):
-        self.client = client or anthropic.Anthropic()
-        self.model = model or get_settings().CLAUDE_MODEL
+        settings = get_settings()
+        self.client = client or anthropic.Anthropic(
+            api_key=settings.CVSMITH_CLAUDE_KEY or None,  # None: SDK reads ANTHROPIC_API_KEY
+            base_url=settings.CLAUDE_API_BASE_URL,
+        )
+        self.model = model or settings.CLAUDE_MODEL
 
     def parse_text(self, text: str) -> Dict[str, Any]:
         return self._parse([{"type": "text", "text": f"<cv>\n{text}\n</cv>"}])

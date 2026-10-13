@@ -35,9 +35,14 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
 
-    # CV parsing (Celery worker + Claude API). The Anthropic SDK reads ANTHROPIC_API_KEY itself.
+    # CV parsing (Celery worker + Claude API).
     REDIS_URL: str = "redis://localhost:6379/0"
     CLAUDE_MODEL: str = "claude-sonnet-5-5"
+    # Claude API key. Use this name where ANTHROPIC_* variables are reserved by the host
+    # (e.g. Claude Code cloud environments); if empty, the SDK falls back to ANTHROPIC_API_KEY.
+    CVSMITH_CLAUDE_KEY: str = ""
+    # Pinned so a host-level ANTHROPIC_BASE_URL (set by some tools for their own use) is not picked up.
+    CLAUDE_API_BASE_URL: str = "https://api.anthropic.com"
     # Below this many characters of extracted text, a PDF is treated as scanned and sent to Claude as a file.
     MIN_EXTRACTED_TEXT_CHARS: int = 200
     # Refuse (rather than silently truncate) CVs whose text is longer than this.

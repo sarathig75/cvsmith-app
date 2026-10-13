@@ -52,6 +52,7 @@ services:
       ENVIRONMENT: development
       DEBUG: "true"
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      CVSMITH_CLAUDE_KEY: ${CVSMITH_CLAUDE_KEY:-}
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5-5}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
@@ -81,6 +82,7 @@ services:
       DATABASE_URL: postgresql://cvsmith_user:cvsmith_password@postgres:5432/cvsmith_db
       REDIS_URL: redis://redis:6379/0
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      CVSMITH_CLAUDE_KEY: ${CVSMITH_CLAUDE_KEY:-}
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5-5}
     volumes:
       - ./backend:/app
