@@ -60,7 +60,8 @@ together with the canvas work: "docs: update handoff").
    such text belongs, then adjust the prompt and re-run the 5 CVs on Sonnet (~$0.15).
 3. Test a real scanned PDF and a full upload through the running app (docker-compose).
 4. Week 5–6: save canvas edits to the backend (PATCH /api/cv) and session restore.
-5. Draft a "CV house style" skill from the writing rules, for cv-writer / cv-jd-tailor and Suggestions.
+5. Week 7–8 Suggestions: build its prompt from `.claude/skills/cv-house-style/SKILL.md` (drafted
+   2026-10-13; review with the user before relying on it).
 
 ## Open questions for the user
 - Where should text that belongs to no single role go (summary vs a new place)?

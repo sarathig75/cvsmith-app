@@ -312,6 +312,8 @@ new item type, not a new canvas section. The PDF preview uses the same order.
 **Writing rules (house style for suggestions).** Agreed 2026-10-13. These rules apply to
 suggestions only, never to parsing: parsing keeps the candidate's own wording so the canvas
 matches their CV, and every rewrite is shown to the user to accept or reject.
+Source of truth: `.claude/skills/cv-house-style/SKILL.md` (rules, how to apply them, suggestion
+format, examples). Change the rules there; the list below is a summary.
 - Use concise professional language.
 - Prefer active verbs and strong action words.
 - Focus on outcomes, ownership, scale and impact.
