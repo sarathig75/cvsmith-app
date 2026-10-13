@@ -1,7 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-13 · Last commit on main before this note: 407c4c7 fix(canvas): show "Saving..." as soon as
-there are unsaved changes (Week 5–6 complete and merged)
+Updated: 2026-10-13 · Last commit on main before this note: 356df9a fix(docker): run database migrations when the
+backend container starts
 
 ## Product decisions (stable)
 - Google sign-in only for social login (no Apple in Release 1).
@@ -58,6 +58,19 @@ there are unsaved changes (Week 5–6 complete and merged)
 - `cv-house-style` skill written with the user and uploaded to their claude.ai account (fd6ced6).
 
 ## Next steps
+0. **In progress: the user is setting up local testing on Windows.** Done so far: Git installed,
+   repo cloned to `$HOME\Documents\cvsmith-app` (PowerShell), `.env` with `ANTHROPIC_API_KEY`
+   presumably created (confirm it is `.env`, not `.env.txt`), Docker Desktop installed for
+   "All users" and the machine is restarting. To resume: open Docker Desktop and wait for
+   "Engine running" (if WSL errors: `wsl --update` in an admin PowerShell); in a new PowerShell
+   run `docker --version`, then `git pull` (gets 356df9a, migrations on start) and
+   `docker compose up --build`; open http://localhost:5173. Checklist to walk through with the
+   user: upload + groups filling in; their real "scanned CV sample.pdf"; edit → "Saving…" /
+   "All changes saved"; reload restores; deleted entry stays deleted; log out, pick a new file,
+   log in → replace prompt (try Keep and Replace); Others/custom section and "Python, SQL" tags;
+   sign up without a file and save. Not bugs: Google sign-in (no local credentials), emails only
+   logged, Download PDF disabled, privacy not saved, no re-upload button. Never tested with
+   Docker by Claude (no Docker daemon in the cloud container).
 1. Week 7–8 Suggestions (next build). Prompt from `.claude/skills/cv-house-style/SKILL.md`;
    quota Free 1/month, Pro 50/month (plan doc). Before coding, confirm with the user: which
    fields get a 💡 first, what counts as "one suggestion" (per field or per bullet), and the
