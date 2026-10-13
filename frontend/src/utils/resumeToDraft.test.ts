@@ -1,9 +1,11 @@
 import { mergeParsedIntoDraft, resumeToDraft } from './resumeToDraft';
+import { emptyDraft } from '../types/cvDraft';
 import type { CvDraft } from '../types/cvDraft';
 
 const resume = {
   basics: {
     name: 'Jane Doe',
+    label: 'Data Analyst',
     email: 'jane@cv.com',
     phone: '+44 1234',
     url: 'https://jane.dev',
@@ -17,20 +19,14 @@ const resume = {
   certificates: [{ name: 'AWS SA', issuer: 'AWS', date: '2022-01' }],
 };
 
-const empty = (): CvDraft => ({
-  personal: { name: '', email: '', phone: '', location: '', linkedin: '', portfolio: '' },
-  summary: '',
-  experience: [],
-  education: [],
-  skills: [],
-  certifications: [],
-});
+const empty = (): CvDraft => emptyDraft();
 
 describe('resumeToDraft', () => {
   it('maps JSON Resume fields onto the canvas draft', () => {
     const d = resumeToDraft(resume);
     expect(d.personal).toEqual({
       name: 'Jane Doe',
+      headline: 'Data Analyst',
       email: 'jane@cv.com',
       phone: '+44 1234',
       location: 'Leeds, GB',
@@ -43,7 +39,8 @@ describe('resumeToDraft', () => {
     });
     // mixed precision: the year-only date is kept as a year, months stay visible
     expect(d.education[0]).toMatchObject({ degree: 'BSc Maths', school: 'Leeds', start: '2015', end: '2018-06', yearOnly: '' });
-    expect(d.skills).toEqual(['Python', 'pandas', 'SQL']);
+    // a skill with keywords is a group: its keywords become tags, not its heading
+    expect(d.skills).toEqual(['pandas', 'python', 'SQL']);
     expect(d.certifications[0]).toMatchObject({ name: 'AWS SA', issuer: 'AWS', date: '2022-01' });
   });
 
@@ -71,6 +68,27 @@ describe('resumeToDraft', () => {
   it('drops dates it cannot understand rather than guessing', () => {
     const d = resumeToDraft({ work: [{ name: 'Acme', startDate: 'Spring', endDate: '2018-13' }] });
     expect(d.experience[0]).toMatchObject({ start: '', end: '2018', yearOnly: 'true' });
+  });
+
+  it('maps projects, education scores and the "Others" sections', () => {
+    const d = resumeToDraft({
+      education: [{ institution: 'SSN', studyType: 'BE', score: 'CGPA 6.1' }],
+      projects: [{ name: 'Portfolio', url: 'https://x.dev', startDate: '2023', description: 'Site.', highlights: ['React'] }],
+      languages: [{ language: 'Tamil', fluency: 'Native' }],
+      awards: [{ title: 'Employee of the month', awarder: 'Acme', date: '2018-08' }],
+      volunteer: [{ position: 'Sponsorship head', organization: 'College fest', startDate: '2017', endDate: '2018' }],
+      interests: [{ name: 'Chess' }],
+    });
+    expect(d.education[0]).toMatchObject({ score: 'CGPA 6.1' });
+    expect(d.projects[0]).toMatchObject({ name: 'Portfolio', url: 'https://x.dev', start: '2023', yearOnly: 'true', description: 'Site.\n• React' });
+    expect(d.others.map((o) => [o.kind, o.title, o.detail])).toEqual([
+      ['language', 'Tamil', 'Native'],
+      ['award', 'Employee of the month', 'Acme'],
+      ['volunteer', 'Sponsorship head', 'College fest'],
+      ['interest', 'Chess', ''],
+    ]);
+    expect(d.others[1]).toMatchObject({ start: '2018-08', yearOnly: '' });
+    expect(d.others[2]).toMatchObject({ start: '2017', end: '2018', yearOnly: 'true' });
   });
 
   it('copes with an empty or partial result', () => {

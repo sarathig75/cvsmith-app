@@ -13,6 +13,8 @@ export type FieldSpec = {
 
 type Props = {
   title: string;
+  /** Show the title as a sub-heading; when false it is kept for screen readers only. */
+  showTitle?: boolean;
   /** Adds an "ongoing" checkbox (e.g. "I currently work here") that clears and hides the given end-date field. */
   currentToggle?: { label: string; endKey: string };
   itemLabel: string;
@@ -22,7 +24,7 @@ type Props = {
   onChange: (entries: Entry[]) => void;
 };
 
-export function EntryListSection({ title, currentToggle, itemLabel, addLabel, fields, entries, onChange }: Props) {
+export function EntryListSection({ title, showTitle = true, currentToggle, itemLabel, addLabel, fields, entries, onChange }: Props) {
   const base = useId();
   const update = (id: string, key: string, value: string) =>
     onChange(entries.map((e) => (e.id === id ? { ...e, [key]: value } : e)));
@@ -45,7 +47,7 @@ export function EntryListSection({ title, currentToggle, itemLabel, addLabel, fi
 
   return (
     <section aria-labelledby={`${base}-t`} className="mb-6">
-      <h3 id={`${base}-t`} className="mb-4 border-b border-slate-200 pb-2 text-lg font-semibold">
+      <h3 id={`${base}-t`} className={showTitle ? 'mb-3 text-base font-semibold' : 'sr-only'}>
         {title}
       </h3>
       <ul className="space-y-4">

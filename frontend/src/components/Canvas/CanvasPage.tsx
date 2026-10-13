@@ -2,11 +2,14 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import type { CV } from '../../types';
+import { emptyDraft } from '../../types/cvDraft';
 import type { CvDraft } from '../../types/cvDraft';
 import { mergeParsedIntoDraft, resumeToDraft } from '../../utils/resumeToDraft';
 import { Button } from '../Common/Button';
+import { CanvasGroup } from './CanvasGroup';
 import { CvStatus } from './CvStatus';
 import { EntryListSection } from './EntryListSection';
+import { OthersSection } from './OthersSection';
 import { PersonalInfoSection } from './PersonalInfoSection';
 import { PreviewPanel } from './PreviewPanel';
 import { PrivacyToggle } from './PrivacyToggle';
@@ -15,14 +18,7 @@ import { SkillsSection } from './SkillsSection';
 export function CanvasPage() {
   const user = useAuthStore((s) => s.user);
   const [privacy, setPrivacy] = useState<CV['privacy']>('public');
-  const [draft, setDraft] = useState<CvDraft>({
-    personal: { name: '', email: user?.email ?? '', phone: '', location: '', linkedin: '', portfolio: '' },
-    summary: '',
-    experience: [],
-    education: [],
-    skills: [],
-    certifications: [],
-  });
+  const [draft, setDraft] = useState<CvDraft>(() => emptyDraft(user?.email ?? ''));
   const patch = (p: Partial<CvDraft>) => setDraft((d) => ({ ...d, ...p }));
 
   // Parsing finishes in the background while the user may already be typing: fill only
@@ -72,66 +68,95 @@ export function CanvasPage() {
           <p className="mb-6 rounded-sm bg-warning-bg p-3 text-sm text-warning-text" role="note">
             Edits are kept on this page only for now. Saving your CV is coming soon.
           </p>
-          <PersonalInfoSection value={draft.personal} onChange={(personal) => patch({ personal })} />
+          {/* Five fixed groups (agreed 2026-10-13). New kinds of CV content go into "Others",
+              so the layout does not change every time a section is added. */}
+          <CanvasGroup title="Personal details">
+            <PersonalInfoSection value={draft.personal} onChange={(personal) => patch({ personal })} />
+          </CanvasGroup>
 
-          <section aria-labelledby="summary-title" className="mb-6">
-            <h3 id="summary-title" className="mb-4 border-b border-slate-200 pb-2 text-lg font-semibold">
-              Professional Summary
-            </h3>
-            <label htmlFor="summary" className="sr-only">
-              Professional Summary
-            </label>
-            <textarea
-              id="summary"
-              rows={4}
-              className="field-input"
-              placeholder="Brief overview of your experience..."
-              value={draft.summary}
-              onChange={(e) => patch({ summary: e.target.value })}
+          <CanvasGroup title="Professional details">
+            <div className="mb-6">
+              <label htmlFor="summary" className="mb-3 block text-base font-semibold">
+                Professional Summary
+              </label>
+              <textarea
+                id="summary"
+                rows={4}
+                className="field-input"
+                placeholder="Brief overview of your experience..."
+                value={draft.summary}
+                onChange={(e) => patch({ summary: e.target.value })}
+              />
+            </div>
+            <EntryListSection
+              title="Work Experience"
+              currentToggle={{ label: 'I currently work here', endKey: 'end' }}
+              itemLabel="Experience"
+              addLabel="Add Experience"
+              entries={draft.experience}
+              onChange={(experience) => patch({ experience })}
+              fields={[
+                { key: 'title', label: 'Job Title', placeholder: 'Senior Software Engineer' },
+                { key: 'company', label: 'Company', placeholder: 'Acme Corp' },
+                { key: 'start', label: 'Start Date', type: 'date' },
+                { key: 'end', label: 'End Date', type: 'date' },
+                { key: 'description', label: 'Description', type: 'textarea', placeholder: 'What did you achieve?' },
+              ]}
             />
-          </section>
+            <EntryListSection
+              title="Projects"
+              itemLabel="Project"
+              addLabel="Add Project"
+              entries={draft.projects}
+              onChange={(projects) => patch({ projects })}
+              fields={[
+                { key: 'name', label: 'Project Name', placeholder: 'Final-year project, app, campaign...' },
+                { key: 'url', label: 'Link', placeholder: 'https://...' },
+                { key: 'start', label: 'Start Date', type: 'date' },
+                { key: 'end', label: 'End Date', type: 'date' },
+                { key: 'description', label: 'Description', type: 'textarea', placeholder: 'What did you build or deliver?' },
+              ]}
+            />
+          </CanvasGroup>
 
-          <EntryListSection
-            title="Work Experience"
-            currentToggle={{ label: 'I currently work here', endKey: 'end' }}
-            itemLabel="Experience"
-            addLabel="Add Experience"
-            entries={draft.experience}
-            onChange={(experience) => patch({ experience })}
-            fields={[
-              { key: 'title', label: 'Job Title', placeholder: 'Senior Software Engineer' },
-              { key: 'company', label: 'Company', placeholder: 'Acme Corp' },
-              { key: 'start', label: 'Start Date', type: 'date' },
-              { key: 'end', label: 'End Date', type: 'date' },
-              { key: 'description', label: 'Description', type: 'textarea', placeholder: 'What did you achieve?' },
-            ]}
-          />
-          <EntryListSection
-            title="Education"
-            itemLabel="Education"
-            addLabel="Add Education"
-            entries={draft.education}
-            onChange={(education) => patch({ education })}
-            fields={[
-              { key: 'degree', label: 'Degree', placeholder: 'BSc Computer Science' },
-              { key: 'school', label: 'School', placeholder: 'University name' },
-              { key: 'start', label: 'Start Date', type: 'date' },
-              { key: 'end', label: 'End Date', type: 'date' },
-            ]}
-          />
-          <SkillsSection skills={draft.skills} onChange={(skills) => patch({ skills })} />
-          <EntryListSection
-            title="Certifications"
-            itemLabel="Certification"
-            addLabel="Add Certification"
-            entries={draft.certifications}
-            onChange={(certifications) => patch({ certifications })}
-            fields={[
-              { key: 'name', label: 'Certification Name', placeholder: 'AWS Certified Solutions Architect' },
-              { key: 'issuer', label: 'Issuer', placeholder: 'Amazon Web Services' },
-              { key: 'date', label: 'Issue Date', type: 'date' },
-            ]}
-          />
+          <CanvasGroup title="Education">
+            <EntryListSection
+              title="Education"
+              showTitle={false}
+              itemLabel="Education"
+              addLabel="Add Education"
+              entries={draft.education}
+              onChange={(education) => patch({ education })}
+              fields={[
+                { key: 'degree', label: 'Degree', placeholder: 'BSc Computer Science' },
+                { key: 'school', label: 'School', placeholder: 'University name' },
+                { key: 'start', label: 'Start Date', type: 'date' },
+                { key: 'end', label: 'End Date', type: 'date' },
+                { key: 'score', label: 'Grade / Score', placeholder: 'e.g. CGPA 8.2, First Class, 92%' },
+              ]}
+            />
+          </CanvasGroup>
+
+          <CanvasGroup title="Skills & Certifications">
+            <SkillsSection skills={draft.skills} onChange={(skills) => patch({ skills })} />
+            <EntryListSection
+              title="Certifications"
+              itemLabel="Certification"
+              addLabel="Add Certification"
+              entries={draft.certifications}
+              onChange={(certifications) => patch({ certifications })}
+              fields={[
+                { key: 'name', label: 'Certification Name', placeholder: 'AWS Certified Solutions Architect' },
+                { key: 'issuer', label: 'Issuer', placeholder: 'Amazon Web Services' },
+                { key: 'date', label: 'Issue Date', type: 'date' },
+              ]}
+            />
+          </CanvasGroup>
+
+          <CanvasGroup title="Others">
+            <OthersSection entries={draft.others} onChange={(others) => patch({ others })} />
+          </CanvasGroup>
+
           <PrivacyToggle value={privacy} onChange={setPrivacy} />
         </div>
         <div className="lg:col-span-2">

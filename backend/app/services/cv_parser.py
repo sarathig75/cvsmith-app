@@ -159,6 +159,8 @@ basics.summary, in the candidate's wording."""
 EXTRA_TASK = """This request fills skills, certificates, languages, awards, volunteer, projects \
 and interests only. Contact details, the summary, work and education are extracted by a \
 separate request: do not repeat them here.
+- Skills are tags: one skills entry per skill, in the CV's wording, with keywords empty. A \
+heading that groups skills (e.g. "Core Competencies") is not a skill.
 - Put spoken languages in languages, not skills.
 - Put prizes, scholarships and recognitions (e.g. "employee of the month") in awards.
 - Put volunteering, positions of responsibility (e.g. class representative, event organiser) \

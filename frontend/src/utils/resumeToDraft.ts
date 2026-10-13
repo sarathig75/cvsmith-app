@@ -1,5 +1,5 @@
 import type { JsonResume } from '../types';
-import type { CvDraft, Entry } from '../types/cvDraft';
+import type { CvDraft, Entry, OtherKind } from '../types/cvDraft';
 import { composeDate, isYearOnly, parseDate } from './dates';
 
 /** Keep "YYYY-MM" or "YYYY" as given (never invent a month); anything else becomes blank. */
@@ -15,6 +15,12 @@ const join = (parts: (string | undefined)[], sep: string) => parts.map((p) => p?
 
 const entry = (fields: Record<string, string>): Entry => ({ id: crypto.randomUUID(), ...fields });
 
+const bullets = (summary: string | undefined, highlights: string[] | undefined) =>
+  join([summary, ...(highlights ?? []).map((h) => `• ${h}`)], '\n');
+
+const other = (kind: OtherKind, fields: Record<string, string>) =>
+  entry({ kind, section: '', title: '', detail: '', start: '', end: '', description: '', yearOnly: '', ...fields });
+
 /** Converts parsed JSON Resume data into the canvas draft shape. */
 export function resumeToDraft(resume: JsonResume): CvDraft {
   const b = resume.basics ?? {};
@@ -22,6 +28,7 @@ export function resumeToDraft(resume: JsonResume): CvDraft {
   return {
     personal: {
       name: b.name ?? '',
+      headline: b.label ?? '',
       email: b.email ?? '',
       phone: b.phone ?? '',
       location: join([b.location?.city, b.location?.region, b.location?.countryCode], ', '),
@@ -37,7 +44,17 @@ export function resumeToDraft(resume: JsonResume): CvDraft {
         end: w.current ? '' : toDate(w.endDate),
         current: w.current ? 'true' : '',
         yearOnly: yearOnlyFlag(w.startDate, w.current ? undefined : w.endDate),
-        description: join([w.summary, ...(w.highlights ?? []).map((h) => `• ${h}`)], '\n'),
+        description: bullets(w.summary, w.highlights),
+      }),
+    ),
+    projects: (resume.projects ?? []).map((p) =>
+      entry({
+        name: p.name ?? '',
+        url: p.url ?? '',
+        start: toDate(p.startDate),
+        end: toDate(p.endDate),
+        yearOnly: yearOnlyFlag(p.startDate, p.endDate),
+        description: bullets(p.description, p.highlights),
       }),
     ),
     education: (resume.education ?? []).map((e) =>
@@ -46,13 +63,39 @@ export function resumeToDraft(resume: JsonResume): CvDraft {
         school: e.institution ?? '',
         start: toDate(e.startDate),
         end: toDate(e.endDate),
+        score: e.score ?? '',
         yearOnly: yearOnlyFlag(e.startDate, e.endDate),
       }),
     ),
-    skills: dedupe((resume.skills ?? []).flatMap((s) => [s.name ?? '', ...(s.keywords ?? [])])),
+    // A skill with keywords is a group ("Core Competencies: ..."): its keywords are the skills,
+    // the group name is only a heading, so it does not become a tag of its own.
+    skills: dedupe((resume.skills ?? []).flatMap((s) => (s.keywords?.length ? s.keywords : [s.name ?? '']))),
     certifications: (resume.certificates ?? []).map((c) =>
       entry({ name: c.name ?? '', issuer: c.issuer ?? '', date: toDate(c.date), yearOnly: yearOnlyFlag(c.date) }),
     ),
+    others: [
+      ...(resume.languages ?? []).map((l) => other('language', { title: l.language ?? '', detail: l.fluency ?? '' })),
+      ...(resume.awards ?? []).map((a) =>
+        other('award', {
+          title: a.title ?? '',
+          detail: a.awarder ?? '',
+          start: toDate(a.date),
+          yearOnly: yearOnlyFlag(a.date),
+          description: a.summary ?? '',
+        }),
+      ),
+      ...(resume.volunteer ?? []).map((v) =>
+        other('volunteer', {
+          title: v.position ?? '',
+          detail: v.organization ?? '',
+          start: toDate(v.startDate),
+          end: toDate(v.endDate),
+          yearOnly: yearOnlyFlag(v.startDate, v.endDate),
+          description: bullets(v.summary, v.highlights),
+        }),
+      ),
+      ...(resume.interests ?? []).map((i) => other('interest', { title: i.name ?? '', detail: join(i.keywords ?? [], ', ') })),
+    ],
   };
 }
 
@@ -80,8 +123,10 @@ export function mergeParsedIntoDraft(current: CvDraft, parsed: CvDraft, accountE
     personal,
     summary: current.summary.trim() ? current.summary : parsed.summary,
     experience: current.experience.length ? current.experience : parsed.experience,
+    projects: current.projects.length ? current.projects : parsed.projects,
     education: current.education.length ? current.education : parsed.education,
     skills: current.skills.length ? current.skills : parsed.skills,
     certifications: current.certifications.length ? current.certifications : parsed.certifications,
+    others: current.others.length ? current.others : parsed.others,
   };
 }

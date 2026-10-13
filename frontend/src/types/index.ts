@@ -47,6 +47,18 @@ export type JsonResume = {
   education?: { institution?: string; area?: string; studyType?: string; startDate?: string; endDate?: string; score?: string }[];
   skills?: { name?: string; keywords?: string[] }[];
   certificates?: { name?: string; issuer?: string; date?: string; url?: string }[];
+  languages?: { language?: string; fluency?: string }[];
+  awards?: { title?: string; awarder?: string; date?: string; summary?: string }[];
+  volunteer?: {
+    organization?: string;
+    position?: string;
+    startDate?: string;
+    endDate?: string;
+    summary?: string;
+    highlights?: string[];
+  }[];
+  projects?: { name?: string; description?: string; startDate?: string; endDate?: string; url?: string; highlights?: string[] }[];
+  interests?: { name?: string; keywords?: string[] }[];
 };
 
 export type ApiErrorCode =

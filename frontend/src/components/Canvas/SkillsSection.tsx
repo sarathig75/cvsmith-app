@@ -6,15 +6,20 @@ type Props = { skills: string[]; onChange: (s: string[]) => void };
 
 export function SkillsSection({ skills, onChange }: Props) {
   const [draft, setDraft] = useState('');
+  // Like LinkedIn: each skill is its own tag. "Python, SQL; Excel" adds three tags, and a
+  // skill already in the list (in any case) is not added twice.
   function add(e: FormEvent) {
     e.preventDefault();
-    const v = draft.trim();
-    if (v && !skills.some((s) => s.toLowerCase() === v.toLowerCase())) onChange([...skills, v]);
+    const next = [...skills];
+    for (const v of draft.split(/[,;\n]/).map((s) => s.trim())) {
+      if (v && !next.some((s) => s.toLowerCase() === v.toLowerCase())) next.push(v);
+    }
+    if (next.length !== skills.length) onChange(next);
     setDraft('');
   }
   return (
     <section aria-labelledby="skills-title" className="mb-6">
-      <h3 id="skills-title" className="mb-4 border-b border-slate-200 pb-2 text-lg font-semibold">
+      <h3 id="skills-title" className="mb-3 text-base font-semibold">
         Skills
       </h3>
       <form onSubmit={add} className="flex gap-2">
@@ -24,7 +29,7 @@ export function SkillsSection({ skills, onChange }: Props) {
         <input
           id="skill-input"
           className="field-input"
-          placeholder="e.g. Python, Leadership"
+          placeholder="Type a skill and press Enter (separate several with commas)"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
         />

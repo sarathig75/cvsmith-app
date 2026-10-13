@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { EntryListSection } from './EntryListSection';
 import { PreviewPanel } from './PreviewPanel';
+import { emptyDraft } from '../../types/cvDraft';
 import type { CvDraft, Entry } from '../../types/cvDraft';
 
 const fields = [
@@ -15,14 +16,7 @@ const fields = [
 /** Section plus live preview, wired the way CanvasPage wires them. */
 function Harness({ initial }: { initial: Entry[] }) {
   const [entries, setEntries] = useState(initial);
-  const draft: CvDraft = {
-    personal: { name: '', email: '', phone: '', location: '', linkedin: '', portfolio: '' },
-    summary: '',
-    experience: entries,
-    education: [],
-    skills: [],
-    certifications: [],
-  };
+  const draft: CvDraft = { ...emptyDraft(), experience: entries };
   return (
     <>
       <EntryListSection
