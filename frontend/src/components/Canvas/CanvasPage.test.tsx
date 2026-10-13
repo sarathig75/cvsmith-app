@@ -18,7 +18,7 @@ const baseCv: CV = {
   json_resume: {},
   created_at: '2026-01-01T00:00:00Z',
 };
-const parsed = { basics: { name: 'Jane From CV', phone: '+44 1234', summary: 'Parsed summary.' } };
+const parsed = { basics: { name: 'Jane From CV', email: 'jobs@jane.dev', phone: '+44 1234', summary: 'Parsed summary.' } };
 
 function renderCanvas() {
   render(
@@ -55,6 +55,7 @@ describe('CanvasPage with background CV parsing', () => {
     expect(await screen.findByText(/We filled in details from your CV/)).toBeInTheDocument();
     expect(screen.getByLabelText('Full Name')).toHaveValue('Jane Typed'); // user's edit wins
     expect(screen.getByLabelText('Phone')).toHaveValue('+44 1234'); // empty field filled
+    expect(screen.getByLabelText('Email')).toHaveValue('jobs@jane.dev'); // CV email replaces the pre-filled account email
     expect(screen.getByPlaceholderText('Brief overview of your experience...')).toHaveValue('Parsed summary.');
 
     // polling stops once parsing is complete

@@ -1,8 +1,15 @@
 import type { JsonResume } from '../types';
 import type { CvDraft, Entry } from '../types/cvDraft';
+import { composeDate, isYearOnly, parseDate } from './dates';
 
-/** Month inputs need YYYY-MM. A year-only date is left blank rather than inventing a month. */
-const toMonth = (date?: string) => (date && /^\d{4}-\d{2}$/.test(date) ? date : '');
+/** Keep "YYYY-MM" or "YYYY" as given (never invent a month); anything else becomes blank. */
+const toDate = (date?: string) => composeDate(parseDate(date));
+
+/** Tick "Years only" when every date the CV gives for this entry is year-only. */
+const yearOnlyFlag = (...dates: (string | undefined)[]) => {
+  const given = dates.map(toDate).filter(Boolean);
+  return given.length > 0 && given.every(isYearOnly) ? 'true' : '';
+};
 
 const join = (parts: (string | undefined)[], sep: string) => parts.map((p) => p?.trim()).filter(Boolean).join(sep);
 
@@ -26,8 +33,9 @@ export function resumeToDraft(resume: JsonResume): CvDraft {
       entry({
         title: w.position ?? '',
         company: w.name ?? '',
-        start: toMonth(w.startDate),
-        end: toMonth(w.endDate),
+        start: toDate(w.startDate),
+        end: toDate(w.endDate),
+        yearOnly: yearOnlyFlag(w.startDate, w.endDate),
         description: join([w.summary, ...(w.highlights ?? []).map((h) => `• ${h}`)], '\n'),
       }),
     ),
@@ -35,13 +43,14 @@ export function resumeToDraft(resume: JsonResume): CvDraft {
       entry({
         degree: join([e.studyType, e.area], ' '),
         school: e.institution ?? '',
-        start: toMonth(e.startDate),
-        end: toMonth(e.endDate),
+        start: toDate(e.startDate),
+        end: toDate(e.endDate),
+        yearOnly: yearOnlyFlag(e.startDate, e.endDate),
       }),
     ),
     skills: dedupe((resume.skills ?? []).flatMap((s) => [s.name ?? '', ...(s.keywords ?? [])])),
     certifications: (resume.certificates ?? []).map((c) =>
-      entry({ name: c.name ?? '', issuer: c.issuer ?? '', date: toMonth(c.date) }),
+      entry({ name: c.name ?? '', issuer: c.issuer ?? '', date: toDate(c.date), yearOnly: yearOnlyFlag(c.date) }),
     ),
   };
 }
@@ -56,11 +65,15 @@ function dedupe(items: string[]): string[] {
 /**
  * Fills the user's draft from parsed data without overwriting anything they typed:
  * a text field is filled only if it is empty, a list only if it has no entries.
+ * The email field starts pre-filled with the account email; that default is not the user's
+ * own input, so an email found on the CV replaces it (people often use a different address
+ * for job applications). An email the user typed themselves is kept.
  */
-export function mergeParsedIntoDraft(current: CvDraft, parsed: CvDraft): CvDraft {
+export function mergeParsedIntoDraft(current: CvDraft, parsed: CvDraft, accountEmail = ''): CvDraft {
   const personal = { ...current.personal };
   for (const key of Object.keys(personal) as (keyof typeof personal)[]) {
-    if (!personal[key].trim() && parsed.personal[key]) personal[key] = parsed.personal[key];
+    const untouchedDefault = key === 'email' && !!accountEmail && personal.email.trim().toLowerCase() === accountEmail.toLowerCase();
+    if ((!personal[key].trim() || untouchedDefault) && parsed.personal[key]) personal[key] = parsed.personal[key];
   }
   return {
     personal,

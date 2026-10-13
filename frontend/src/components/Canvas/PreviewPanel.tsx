@@ -1,9 +1,10 @@
 import type { CvDraft } from '../../types/cvDraft';
+import { formatDate } from '../../utils/dates';
 
 export function PreviewPanel({ draft }: { draft: CvDraft }) {
   const p = draft.personal;
   const contact = [p.email, p.phone, p.location, p.linkedin, p.portfolio].filter(Boolean);
-  const range = (e: Record<string, string>) => [e.start, e.end].filter(Boolean).join(' - ');
+  const range = (e: Record<string, string>) => [formatDate(e.start), formatDate(e.end)].filter(Boolean).join(' – ');
   return (
     <aside aria-label="CV preview" className="card h-fit lg:sticky lg:top-24">
       <h3 className="mb-4 text-base font-semibold">📄 PDF Preview</h3>
@@ -36,7 +37,7 @@ export function PreviewPanel({ draft }: { draft: CvDraft }) {
         {draft.certifications.length > 0 && (
           <PSection title="Certifications">
             {draft.certifications.map((c) => (
-              <p key={c.id}>{[c.name, c.issuer, c.date].filter(Boolean).join(' • ') || 'Certification'}</p>
+              <p key={c.id}>{[c.name, c.issuer, formatDate(c.date)].filter(Boolean).join(' • ') || 'Certification'}</p>
             ))}
           </PSection>
         )}

@@ -38,11 +38,27 @@ describe('resumeToDraft', () => {
       portfolio: 'https://jane.dev',
     });
     expect(d.summary).toBe('Analyst.');
-    expect(d.experience[0]).toMatchObject({ title: 'Analyst', company: 'Acme', start: '2019-03', end: '', description: 'Dashboards.\n• Cut costs 10%' });
-    // year-only dates are left blank instead of inventing a month
-    expect(d.education[0]).toMatchObject({ degree: 'BSc Maths', school: 'Leeds', start: '', end: '2018-06' });
+    expect(d.experience[0]).toMatchObject({
+      title: 'Analyst', company: 'Acme', start: '2019-03', end: '', yearOnly: '', description: 'Dashboards.\n• Cut costs 10%',
+    });
+    // mixed precision: the year-only date is kept as a year, months stay visible
+    expect(d.education[0]).toMatchObject({ degree: 'BSc Maths', school: 'Leeds', start: '2015', end: '2018-06', yearOnly: '' });
     expect(d.skills).toEqual(['Python', 'pandas', 'SQL']);
     expect(d.certifications[0]).toMatchObject({ name: 'AWS SA', issuer: 'AWS', date: '2022-01' });
+  });
+
+  it('ticks "Years only" when the CV gives only years, without inventing months', () => {
+    const d = resumeToDraft({
+      work: [{ name: 'Acme', startDate: '2015', endDate: '2018' }],
+      certificates: [{ name: 'PMP', date: '2020' }],
+    });
+    expect(d.experience[0]).toMatchObject({ start: '2015', end: '2018', yearOnly: 'true' });
+    expect(d.certifications[0]).toMatchObject({ date: '2020', yearOnly: 'true' });
+  });
+
+  it('drops dates it cannot understand rather than guessing', () => {
+    const d = resumeToDraft({ work: [{ name: 'Acme', startDate: 'Spring', endDate: '2018-13' }] });
+    expect(d.experience[0]).toMatchObject({ start: '', end: '2018', yearOnly: 'true' });
   });
 
   it('copes with an empty or partial result', () => {
@@ -61,5 +77,23 @@ describe('mergeParsedIntoDraft', () => {
     expect(merged.skills).toEqual(['Typed skill']);
     expect(merged.experience).toHaveLength(1);
     expect(merged.summary).toBe('Analyst.');
+  });
+
+  it('replaces the pre-filled account email with the email from the CV', () => {
+    const current = empty();
+    current.personal.email = 'Login@Example.com';
+    expect(mergeParsedIntoDraft(current, resumeToDraft(resume), 'login@example.com').personal.email).toBe('jane@cv.com');
+  });
+
+  it('keeps an email the user typed themselves', () => {
+    const current = empty();
+    current.personal.email = 'typed@me.com';
+    expect(mergeParsedIntoDraft(current, resumeToDraft(resume), 'login@example.com').personal.email).toBe('typed@me.com');
+  });
+
+  it('keeps the account email when the CV has none', () => {
+    const current = empty();
+    current.personal.email = 'login@example.com';
+    expect(mergeParsedIntoDraft(current, resumeToDraft({}), 'login@example.com').personal.email).toBe('login@example.com');
   });
 });

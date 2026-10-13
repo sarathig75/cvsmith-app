@@ -41,7 +41,7 @@ export function CanvasPage() {
     const key = JSON.stringify(cv.json_resume);
     if (appliedResume.current === key) return;
     appliedResume.current = key;
-    setDraft((d) => mergeParsedIntoDraft(d, resumeToDraft(cv.json_resume)));
+    setDraft((d) => mergeParsedIntoDraft(d, resumeToDraft(cv.json_resume), user?.email));
   };
 
   return (
@@ -100,8 +100,8 @@ export function CanvasPage() {
             fields={[
               { key: 'title', label: 'Job Title', placeholder: 'Senior Software Engineer' },
               { key: 'company', label: 'Company', placeholder: 'Acme Corp' },
-              { key: 'start', label: 'Start Date', type: 'month' },
-              { key: 'end', label: 'End Date', type: 'month' },
+              { key: 'start', label: 'Start Date', type: 'date' },
+              { key: 'end', label: 'End Date', type: 'date' },
               { key: 'description', label: 'Description', type: 'textarea', placeholder: 'What did you achieve?' },
             ]}
           />
@@ -114,8 +114,8 @@ export function CanvasPage() {
             fields={[
               { key: 'degree', label: 'Degree', placeholder: 'BSc Computer Science' },
               { key: 'school', label: 'School', placeholder: 'University name' },
-              { key: 'start', label: 'Start Date', type: 'month' },
-              { key: 'end', label: 'End Date', type: 'month' },
+              { key: 'start', label: 'Start Date', type: 'date' },
+              { key: 'end', label: 'End Date', type: 'date' },
             ]}
           />
           <SkillsSection skills={draft.skills} onChange={(skills) => patch({ skills })} />
@@ -128,7 +128,7 @@ export function CanvasPage() {
             fields={[
               { key: 'name', label: 'Certification Name', placeholder: 'AWS Certified Solutions Architect' },
               { key: 'issuer', label: 'Issuer', placeholder: 'Amazon Web Services' },
-              { key: 'date', label: 'Issue Date', type: 'month' },
+              { key: 'date', label: 'Issue Date', type: 'date' },
             ]}
           />
           <PrivacyToggle value={privacy} onChange={setPrivacy} />

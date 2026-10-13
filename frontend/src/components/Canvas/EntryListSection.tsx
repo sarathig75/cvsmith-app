@@ -1,12 +1,14 @@
 import { useId } from 'react';
 import { Button } from '../Common/Button';
+import { DateField } from '../Common/DateField';
 import type { Entry } from '../../types/cvDraft';
+import { parseDate } from '../../utils/dates';
 
 export type FieldSpec = {
   key: string;
   label: string;
   placeholder?: string;
-  type?: 'text' | 'month' | 'textarea';
+  type?: 'text' | 'date' | 'textarea';
 };
 
 type Props = {
@@ -24,6 +26,14 @@ export function EntryListSection({ title, itemLabel, addLabel, fields, entries, 
     onChange(entries.map((e) => (e.id === id ? { ...e, [key]: value } : e)));
   const add = () => onChange([...entries, { id: crypto.randomUUID(), ...Object.fromEntries(fields.map((f) => [f.key, ''])) }]);
   const remove = (id: string) => onChange(entries.filter((e) => e.id !== id));
+  const dateKeys = fields.filter((f) => f.type === 'date').map((f) => f.key);
+  // One "years only" switch per entry covers all its dates, so start and end stay consistent.
+  // Turning it on drops the months; turning it off keeps the years and shows empty month pickers.
+  const setYearOnly = (entry: Entry, on: boolean) => {
+    const next: Entry = { ...entry, yearOnly: on ? 'true' : '' };
+    if (on) for (const k of dateKeys) next[k] = parseDate(entry[k]).year;
+    onChange(entries.map((e) => (e.id === entry.id ? next : e)));
+  };
 
   return (
     <section aria-labelledby={`${base}-t`} className="mb-6">
@@ -45,6 +55,18 @@ export function EntryListSection({ title, itemLabel, addLabel, fields, entries, 
               {fields.map((f) => {
                 const id = `${base}-${entry.id}-${f.key}`;
                 const wide = f.type === 'textarea';
+                if (f.type === 'date') {
+                  return (
+                    <div key={f.key}>
+                      <DateField
+                        label={f.label}
+                        value={entry[f.key] ?? ''}
+                        yearOnly={entry.yearOnly === 'true'}
+                        onChange={(v) => update(entry.id, f.key, v)}
+                      />
+                    </div>
+                  );
+                }
                 return (
                   <div key={f.key} className={wide ? 'md:col-span-2' : ''}>
                     <label htmlFor={id} className="mb-1 block text-sm font-medium">
@@ -62,7 +84,7 @@ export function EntryListSection({ title, itemLabel, addLabel, fields, entries, 
                     ) : (
                       <input
                         id={id}
-                        type={f.type ?? 'text'}
+                        type="text"
                         className="field-input"
                         placeholder={f.placeholder}
                         value={entry[f.key] ?? ''}
@@ -73,6 +95,17 @@ export function EntryListSection({ title, itemLabel, addLabel, fields, entries, 
                 );
               })}
             </div>
+            {dateKeys.length > 0 && (
+              <label className="mt-3 flex min-h-[44px] w-fit cursor-pointer items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={entry.yearOnly === 'true'}
+                  onChange={(e) => setYearOnly(entry, e.target.checked)}
+                />
+                Years only (hide months)
+              </label>
+            )}
           </li>
         ))}
       </ul>
