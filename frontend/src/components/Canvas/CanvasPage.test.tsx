@@ -166,7 +166,7 @@ describe('CanvasPage saving', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     await user.type(await screen.findByLabelText('Full Name'), 'Jane');
     expect(saves(calls)).toEqual([]);
-    expect(screen.getByTestId('save-status')).toHaveTextContent('Your changes save automatically.');
+    expect(await screen.findByText('Saving…')).toBeInTheDocument(); // shown as soon as there are unsaved changes
     await act(() => vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS));
     expect(saves(calls)).toHaveLength(1);
     expect(saves(calls)[0]).toMatchObject({ content: { personal: { name: 'Jane' } }, edited: true });

@@ -1,6 +1,6 @@
 # CVSmith handoff
 
-Updated: 2026-10-13 · Last commit on main before this note: 4e1a751 docs: update handoff
+Updated: 2026-10-13 · Last commit on main before this note: f287c58 fix(parsing): keep achievements listed under a job out of awards/projects
 
 ## Product decisions (stable)
 - Google sign-in only for social login (no Apple in Release 1).
@@ -25,12 +25,13 @@ Updated: 2026-10-13 · Last commit on main before this note: 4e1a751 docs: updat
   (`frontend/src/utils/otherKinds.ts`), not new sections. Preview follows the same order.
 - PowerPoint uploads are not accepted (PDF and DOCX only).
 - Drop-off metrics: our own `events` table (option A), steps listed in the plan; no CV content.
+- Saving: parser writes `json_resume`, auto-save writes `content` (+ `applied_parts`); a new upload
+  replaces the CV and edits only after the user confirms (option a). Auto-save ~2 s after typing.
 - Release 2: current-employer shield for recruiter search (see plan doc).
 
 ## Current state
-- Backend: pytest 72/72 passing, flake8 clean; migration 0002 tested up and down on SQLite.
-- Frontend: type-check clean, vitest 47/47 passing, `vite build` OK.
-  (All checks run at 118c72b; later commits change only docs.)
+- Backend: pytest 84/84 passing, flake8 clean; migrations 0002 and 0003 tested up/down on SQLite and Postgres 16.
+- Frontend: type-check clean, vitest 54/54 passing, `vite build` OK.
 - Parser verified against the real Claude API on 5 real CVs (Word, two-column PDF, fresher,
   one-pager): all parse. Three parallel requests per CV, each part saved as it finishes
   (`parsing_parts`). First data after 1.9–5.0 s (was 3.0–22.1 s), all done after 5–19 s.
@@ -57,16 +58,20 @@ Updated: 2026-10-13 · Last commit on main before this note: 4e1a751 docs: updat
 - Progressive parsing: contract, migration 0002, parser, worker and canvas (118c72b), merged.
 - Funnel tracking planned for Week 5–6 in the plan doc (eaed67f).
 - End-to-end test of progressive parsing in the running app (text PDF and scan-like PDF).
+- Fixed duplicate awards: achievements listed under a job stay with the job (f287c58).
+- Week 5–6 built (e10ac4c, 6705662 + "Saving…" fix): PATCH /api/cv, restore on load, auto-save,
+  confirm before replacing, funnel events + `docs/FUNNEL.md`. Verified end to end in the running
+  app: parse → auto-save → edit → reload restores it → deleted job stays deleted → login with a
+  new file asks first, "Keep" keeps edits; funnel query returns the right counts.
 
 ## Next steps
 1. The user uploads "scanned CV sample.pdf" in the running app on their own machine to check a
    real scan (the only part of the end-to-end test not done).
 2. Parsing quality (open): bullets covering a whole employer land under its latest title.
-   Fixed: an achievement listed under a job no longer also appears in Awards (it stays with the
-   job). Text that belongs to no single role, incl. project lists describing work at an
-   employer, stays in the summary (user decision 2026-10-13, option a).
-3. Week 5–6: save canvas edits to the backend (PATCH /api/cv), session restore, and funnel
-   tracking (own events table, plan doc "Funnel tracking"; never record CV content).
+   Text that belongs to no single role, incl. project lists describing work at an employer,
+   stays in the summary (user decision 2026-10-13, option a).
+3. Known limits of saving: two open tabs = last write wins; privacy toggle is not saved yet
+   (PATCH /api/cv/privacy is Week 9); logged-in users have no "upload a new CV" button yet.
 4. Week 7–8 Suggestions: build its prompt from `.claude/skills/cv-house-style/SKILL.md`.
 
 ## Open questions for the user

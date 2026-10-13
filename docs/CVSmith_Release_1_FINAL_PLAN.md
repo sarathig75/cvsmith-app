@@ -277,14 +277,16 @@ GET    /api/billing/status           → Check billing status
 ---
 
 ### Week 5–6: Live Canvas & Preview
-- [ ] Dashboard layout (canvas + preview)
-- [ ] LiveCanvas component (editable sections)
-- [ ] Auto-save logic (PATCH /api/cv every 2 seconds)
-- [ ] PDF preview rendering (right panel)
-- [ ] Merge conflict resolution (parsing + edits)
-- [ ] Session persistence (restore canvas state)
-- [ ] Frontend: Dashboard, LiveCanvas, CVPreview components
-- [ ] Funnel tracking (see below): events table + migration, record each step, funnel SQL report
+- [x] Dashboard layout (canvas + preview)
+- [x] LiveCanvas component (editable sections; five groups, agreed 2026-10-13)
+- [x] Auto-save logic (PATCH /api/cv ~2 s after the last change; "Saving… / All changes saved")
+- [x] PDF preview rendering (right panel) — live HTML preview in CV order; the real PDF is Week 9
+- [x] Merge conflict resolution (parsing + edits): parser writes `json_resume`, saves write `content`;
+      parsed parts merge into empty fields only, once (`applied_parts`)
+- [x] Session persistence (restore canvas state on load)
+- [x] Frontend: Dashboard, LiveCanvas, CVPreview components
+- [x] Funnel tracking: events table + migration 0003, five steps recorded, report in `docs/FUNNEL.md`
+- [x] A new upload replaces the CV and edits only after the user confirms (agreed 2026-10-13)
 
 **Definition of Done:** User can edit CV in real-time, see live preview, edits auto-save; each
 funnel step is recorded and a funnel report shows how many users reach each step

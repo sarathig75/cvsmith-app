@@ -61,6 +61,7 @@ export function useAutosave(
 
   useEffect(() => {
     if (!enabled || lastSaved.current === null || serialize() === lastSaved.current) return;
+    setState((st) => (st === 'error' ? st : 'saving')); // unsaved changes show as "Saving…" right away
     clearTimeout(timer.current);
     timer.current = setTimeout(save, AUTOSAVE_DELAY_MS);
     // eslint-disable-next-line react-hooks/exhaustive-deps
