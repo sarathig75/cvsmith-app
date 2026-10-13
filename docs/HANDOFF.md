@@ -1,6 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-13 · Last commit on main before this note: f287c58 fix(parsing): keep achievements listed under a job out of awards/projects
+Updated: 2026-10-13 · Last commit on main before this note: 407c4c7 fix(canvas): show "Saving..." as soon as
+there are unsaved changes (Week 5–6 complete and merged)
 
 ## Product decisions (stable)
 - Google sign-in only for social login (no Apple in Release 1).
@@ -43,6 +44,8 @@ Updated: 2026-10-13 · Last commit on main before this note: f287c58 fix(parsing
 - The user's own scanned CV ("scanned CV sample.pdf" in Drive) could not be pushed through the
   app from a cloud session: the Drive connector returns files inline, not as files on disk.
   The scan path was tested with a synthetic image-only PDF instead.
+- Week 5–6 is complete and merged: saving, restore on load, confirm-before-replace, funnel
+  tracking. Deploying needs `alembic upgrade head` (migrations 0002 and 0003).
 - Open branches / PRs: none besides the session branch, which is merged into main.
 
 ## Done this session
@@ -65,14 +68,17 @@ Updated: 2026-10-13 · Last commit on main before this note: f287c58 fix(parsing
   new file asks first, "Keep" keeps edits; funnel query returns the right counts.
 
 ## Next steps
-1. The user uploads "scanned CV sample.pdf" in the running app on their own machine to check a
-   real scan (the only part of the end-to-end test not done).
-2. Parsing quality (open): bullets covering a whole employer land under its latest title.
+1. Week 7–8 Suggestions (next build). Prompt from `.claude/skills/cv-house-style/SKILL.md`;
+   quota Free 1/month, Pro 50/month (plan doc). Before coding, confirm with the user: which
+   fields get a 💡 first, what counts as "one suggestion" (per field or per bullet), and the
+   upgrade prompt wording. Add funnel events suggestion_requested / upgrade_prompt_shown.
+2. The user uploads "scanned CV sample.pdf" in the running app on their own machine to check a
+   real scan (the only part of the end-to-end tests not done).
+3. Parsing quality (open): bullets covering a whole employer land under its latest title.
    Text that belongs to no single role, incl. project lists describing work at an employer,
    stays in the summary (user decision 2026-10-13, option a).
-3. Known limits of saving: two open tabs = last write wins; privacy toggle is not saved yet
+4. Known limits of saving: two open tabs = last write wins; privacy toggle is not saved yet
    (PATCH /api/cv/privacy is Week 9); logged-in users have no "upload a new CV" button yet.
-4. Week 7–8 Suggestions: build its prompt from `.claude/skills/cv-house-style/SKILL.md`.
 
 ## Open questions for the user
 - none
