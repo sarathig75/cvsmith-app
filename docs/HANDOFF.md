@@ -61,10 +61,10 @@ Updated: 2026-10-13 · Last commit on main before this note: 4e1a751 docs: updat
 ## Next steps
 1. The user uploads "scanned CV sample.pdf" in the running app on their own machine to check a
    real scan (the only part of the end-to-end test not done).
-2. Parsing quality (open): bullets covering a whole employer land under its latest title; an
-   achievement listed under a job (e.g. "Employee of the month") can also appear in Awards, as
-   the two parts extract it independently. Text that belongs to no single role stays in the
-   summary (user decision 2026-10-13, option a).
+2. Parsing quality (open): bullets covering a whole employer land under its latest title.
+   Fixed: an achievement listed under a job no longer also appears in Awards (it stays with the
+   job). Text that belongs to no single role, incl. project lists describing work at an
+   employer, stays in the summary (user decision 2026-10-13, option a).
 3. Week 5–6: save canvas edits to the backend (PATCH /api/cv), session restore, and funnel
    tracking (own events table, plan doc "Funnel tracking"; never record CV content).
 4. Week 7–8 Suggestions: build its prompt from `.claude/skills/cv-house-style/SKILL.md`.

@@ -174,6 +174,9 @@ the summary, in the candidate's wording."""
 EXTRA_TASK = """This request fills skills, certificates, languages, awards, volunteer, projects \
 and interests only. Contact details, the summary, work and education are extracted by \
 separate requests: do not repeat them here.
+- Anything the CV lists under a specific job (its bullets and achievements) belongs to that \
+job and is extracted with it: never repeat it here, not even as an award or a project. Only \
+take items the CV lists outside any job, e.g. in their own "Awards" or "Activities" section.
 - Skills are tags: one skills entry per skill, in the CV's wording, with keywords empty. A \
 heading that groups skills (e.g. "Core Competencies") is not a skill.
 - Put spoken languages in languages, not skills.

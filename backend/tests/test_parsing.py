@@ -429,3 +429,10 @@ def test_parser_drops_empty_values_but_keeps_lists():
     result, _ = collect(ClaudeCvParser(client=client, model="m").parse_text("x"))
     assert result["basics"] == {"name": "Jane", "profiles": []}
     assert result["work"] == [{"name": "Acme", "current": True, "highlights": []}]
+
+
+def test_extras_part_does_not_repeat_job_achievements():
+    # A real scan put "Employee of the month" both under the job and in awards.
+    from app.services.cv_parser import EXTRA_TASK
+
+    assert "never repeat it here" in EXTRA_TASK and "outside any job" in EXTRA_TASK
