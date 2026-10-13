@@ -28,12 +28,11 @@ abbreviations automatically, leave unknown ones
 - Release 2: current-employer shield for recruiter search (see plan doc).
 
 ## Current state
-- Backend: pytest 68/68 passing, flake8 clean.
-- Frontend: type-check clean, vitest 46/46 passing, `vite build` OK.
-  (Checks last run at b2f19c0; later commits change only docs and the skill.)
+- Backend: pytest 72/72 passing, flake8 clean; migration 0002 tested up and down on SQLite.
+- Frontend: type-check clean, vitest 47/47 passing, `vite build` OK (run at 118c72b).
 - Parser verified against the real Claude API on 5 real CVs (Word, two-column PDF, fresher,
-  one-pager): all parse. Two parallel requests per CV (one schema with every section exceeds the
-  API's grammar size limit). ~$0.03–0.07 and 4–24 s per CV.
+  one-pager): all parse. Three parallel requests per CV, each part saved as it finishes
+  (`parsing_parts`). First data after 1.9–5.0 s, all done after 5–19 s; ~$0.04–0.08 per CV.
 - Scanned-PDF path (Claude reads the PDF directly) is still untested with a real scan.
 - Open branches / PRs: none besides the session branch, which is merged into main.
 
@@ -47,6 +46,7 @@ abbreviations automatically, leave unknown ones
   skills as tags (92ae610, b2f19c0); plan doc records the layout and re-order suggestions (8f4b182).
 - `cv-house-style` skill drafted and revised with the user (f6a6183, 7cbe7f2, fd6ced6); the user
   uploaded it to their claude.ai account.
+- Progressive parsing: contract, migration 0002, parser, worker and canvas (118c72b).
 
 ## Next steps
 1. Progressive parsing is built (see Done). Next: watch it in the running app with a real upload.
