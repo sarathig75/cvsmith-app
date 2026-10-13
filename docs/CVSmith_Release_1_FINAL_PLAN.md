@@ -287,6 +287,12 @@ GET    /api/billing/status           → Check billing status
 
 **Definition of Done:** User can edit CV in real-time, see live preview, edits auto-save
 
+**Canvas layout (agreed 2026-10-13).** Five fixed groups: Personal details (incl. headline),
+Professional details (summary, work, projects), Education (incl. grade/score), Skills &
+Certifications (skills as LinkedIn-style tags), Others (languages, awards, volunteering &
+leadership, interests, user-named custom sections). New kinds of content go into Others as a
+new item type, not a new canvas section. The PDF preview uses the same order.
+
 ---
 
 ### Week 7–8: Field-Level AI Suggestions
@@ -318,6 +324,8 @@ matches their CV, and every rewrite is shown to the user to accept or reject.
   never guess an expansion the CV does not support).
 - Keep sentences concise; split long sentences into multiple bullet points.
 - Never add facts that are not in the CV (same rule as parsing).
+- Suggestions may also propose re-ordering sections or entries (e.g. projects before work
+  for a fresher). The preview follows the canvas order, so an accepted re-order shows there too.
 
 ---
 
