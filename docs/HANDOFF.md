@@ -1,7 +1,7 @@
 # CVSmith handoff
 
 Updated: 2026-10-13 · Last commit on main: 4059506 docs: add handoff note and handoff skill
-Unmerged work: branch `claude/trusting-darwin-wwr74d` (4 commits ahead of main, see below).
+Unmerged work: branch `claude/trusting-darwin-wwr74d` (6 commits ahead of main, see below).
 Note: read this file from that branch until it is merged; main still has the older note.
 
 ## Product decisions (stable)
@@ -20,10 +20,14 @@ Note: read this file from that branch until it is merged; main still has the old
   addresses for applications); an email the user typed is kept.
 - Dates: Month + Year dropdowns, with one "Years only (hide months)" checkbox per entry.
   Stored as "YYYY-MM" or "YYYY". Year-only CVs show years with the box pre-ticked.
+- Work entries have "I currently work here" (end date shown as "Present"). Parser sets
+  `work[].current` only when the CV explicitly says the role is ongoing.
+- Release 2: current-employer shield for recruiter search (see Release 2 roadmap in
+  docs/CVSmith_Release_1_FINAL_PLAN.md; design points still open).
 
 ## Current state
-- Backend: pytest 61/61 passing, flake8 clean.
-- Frontend: type-check clean, vitest 39/39 passing, `vite build` OK.
+- Backend: pytest 62/62 passing, flake8 clean.
+- Frontend: type-check clean, vitest 42/42 passing, `vite build` OK.
 - End-to-end run (API + real Redis + real Celery worker, Claude faked) succeeded: upload
   responds in ~0.02s, parsed data stored. With Redis down, upload still succeeds and the
   CV shows a clear "please upload again" error.
@@ -33,6 +37,8 @@ Note: read this file from that branch until it is merged; main still has the old
   - 973ea8f feat: background CV parsing with Claude and live canvas pre-fill
   - b67c5e4 docs: update handoff with parsing work and open decisions
   - aaef571 feat(canvas): month/year date pickers with "Years only", prefer CV email
+  - a2aaded docs: update handoff (date pickers, CV email, open questions)
+  - c0412be feat(canvas): "I currently work here"; plan current-employer shield
 
 ## Done this session
 - Restored session-1 scaffold from the git bundle; pushed `main` (d15b2d5).
@@ -41,6 +47,7 @@ Note: read this file from that branch until it is merged; main still has the old
 - Google account-linking fix, option A (49b5f35, on branch).
 - Week 3–4 CV parsing, backend + frontend (973ea8f, on branch).
 - Date pickers with "Years only" and CV-email preference (aaef571, on branch).
+- "I currently work here" + explicit `current` flag in parsing; employer shield planned (c0412be, on branch).
 
 ## Next steps
 1. User: create an Anthropic API key and add it to the environment (see Setup notes).
@@ -54,8 +61,6 @@ Note: read this file from that branch until it is merged; main still has the old
 - Merge the branch into `main` now, or after the real-CV check in step 2?
 - Sonnet vs Opus: no measured comparison yet. Proposal: when the key exists, parse the same
   5 CVs with both models and compare side by side (well under $1). Approve?
-- Idea raised with the user, no answer yet: a "Currently work here" checkbox so a current
-  role shows "– Present" instead of an empty end date.
 
 ## Setup notes
 - Backend: `cd backend && python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt`.
