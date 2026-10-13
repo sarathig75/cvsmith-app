@@ -82,8 +82,24 @@ describe('SignupModal', () => {
     await fill(user, 'a@b.co', 'abcdefg1');
     await waitFor(() => expect(useUploadStore.getState().status).toBe('done'));
     expect(useAuthStore.getState().token).toBe('tok');
-    expect(calls.map((c) => c.url)).toEqual(['/api/auth/signup', '/api/cv/upload']);
-    expect(calls[1].auth).toBe('Bearer tok');
+    // the account has no saved CV yet, so the file is uploaded without asking
+    expect(calls.map((c) => c.url)).toEqual(['/api/auth/signup', '/api/cv', '/api/cv/upload']);
+    expect(calls[2].auth).toBe('Bearer tok');
     expect(useUploadStore.getState().pendingFile).toBeNull();
+  });
+
+  it('holds the file for confirmation when the account already has a saved CV', async () => {
+    const calls = mockHttp(({ url }) =>
+      url === '/api/auth/signup'
+        ? { status: 201, data: { access_token: 'tok', token_type: 'bearer', user: sampleUser } }
+        : { status: 200, data: { id: 'c1', content: { summary: 'saved' } } },
+    );
+    const file = new File(['x'], 'cv.pdf', { type: 'application/pdf' });
+    useUploadStore.getState().setPendingFile(file);
+    const { user } = setup();
+    await fill(user, 'a@b.co', 'abcdefg1');
+    await waitFor(() => expect(useUploadStore.getState().status).toBe('confirm'));
+    expect(calls.map((c) => c.url)).toEqual(['/api/auth/signup', '/api/cv']);
+    expect(useUploadStore.getState().pendingFile).toBe(file);
   });
 });

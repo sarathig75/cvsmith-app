@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
+import { useUploadStore } from '../../store/uploadStore';
+import { discardPendingFile, uploadPendingFile } from '../../utils/postAuth';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import type { CV, ParsePart } from '../../types';
-import { emptyDraft } from '../../types/cvDraft';
+import { draftFromSaved, emptyDraft } from '../../types/cvDraft';
 import type { CvDraft } from '../../types/cvDraft';
 import { mergeParsedIntoDraft, PART_SECTIONS, resumeToDraft } from '../../utils/resumeToDraft';
 import { Button } from '../Common/Button';
@@ -14,20 +16,48 @@ import { PersonalInfoSection } from './PersonalInfoSection';
 import { PreviewPanel } from './PreviewPanel';
 import { PrivacyToggle } from './PrivacyToggle';
 import { SkillsSection } from './SkillsSection';
+import { Spinner } from '../Common/Spinner';
+import { useAutosave } from './useAutosave';
+import type { SaveState } from './useAutosave';
 
 export function CanvasPage() {
   const user = useAuthStore((s) => s.user);
   const [privacy, setPrivacy] = useState<CV['privacy']>('public');
   const [draft, setDraft] = useState<CvDraft>(() => emptyDraft(user?.email ?? ''));
-  const patch = (p: Partial<CvDraft>) => setDraft((d) => ({ ...d, ...p }));
+  // Every user edit goes through patch(); parsed data is merged with setDraft directly. The
+  // flag tells the next save whether it contains a user edit (funnel step "first_edit").
+  const userEdited = useRef(false);
+  const patch = (p: Partial<CvDraft>) => {
+    userEdited.current = true;
+    setDraft((d) => ({ ...d, ...p }));
+  };
 
-  // Parsing runs in the background in three parts while the user may already be typing. Each
-  // part fills only its own sections, only the fields the user has left empty, and only once.
-  const appliedParts = useRef(new Set<ParsePart>());
+  // The saved canvas is restored before editing starts, so nothing typed can be lost and an
+  // empty canvas never overwrites a saved one. If loading fails, editing works but is not saved.
+  const [load, setLoad] = useState<'loading' | 'ok' | 'failed'>('loading');
+  // Parsed parts already merged into the canvas (saved with it, so a reload never re-adds
+  // something the user deleted). Parsing runs in three parts in the background: each part
+  // fills only its own sections, only the fields the user has left empty, and only once.
+  const [appliedParts, setAppliedParts] = useState<ParsePart[]>([]);
+  const applied = useRef(new Set<ParsePart>());
   const privacyLoaded = useRef(false);
   const [cv, setCv] = useState<CV | null>(null);
+  const { state: saveState, markSaved } = useAutosave(load === 'ok', draft, appliedParts, userEdited);
+  // CvStatus keeps the callback it was given when it started polling, so state read here can be
+  // stale: whether the saved canvas was restored is kept in a ref.
+  const restored = useRef(false);
   const onCvLoaded = (loaded: CV | null) => {
     setCv(loaded);
+    if (!restored.current) {
+      restored.current = true;
+      const savedDraft = loaded?.content ? draftFromSaved(loaded.content) : emptyDraft(user?.email ?? '');
+      const savedParts = loaded?.content ? loaded.applied_parts : [];
+      setDraft(savedDraft);
+      applied.current = new Set(savedParts);
+      setAppliedParts(savedParts);
+      markSaved(savedDraft, savedParts);
+      setLoad('ok');
+    }
     if (!loaded) return;
     // CvStatus reports on every status check; take privacy from the server only once so a
     // toggle made while parsing runs is not reset.
@@ -36,15 +66,32 @@ export function CanvasPage() {
       setPrivacy(loaded.privacy);
     }
     const parts = loaded.parsing_parts ?? {};
-    // A new upload starts with every part pending: its parts may be applied again.
-    if (Object.values(parts).every((s) => s === 'pending')) appliedParts.current.clear();
     const ready = (Object.keys(PART_SECTIONS) as ParsePart[]).filter(
-      (p) => parts[p] === 'complete' && !appliedParts.current.has(p),
+      (p) => parts[p] === 'complete' && !applied.current.has(p),
     );
     if (!ready.length) return;
-    ready.forEach((p) => appliedParts.current.add(p));
+    ready.forEach((p) => applied.current.add(p));
+    setAppliedParts([...applied.current]);
     const sections = ready.flatMap((p) => PART_SECTIONS[p]);
     setDraft((d) => mergeParsedIntoDraft(d, resumeToDraft(loaded.json_resume), user?.email, sections));
+  };
+  const onCvError = () => {
+    if (!restored.current) setLoad('failed');
+  };
+
+
+  // A file chosen before logging in replaces the saved CV and edits only if the user agrees.
+  const uploadStatus = useUploadStore((s) => s.status);
+  const pendingFile = useUploadStore((s) => s.pendingFile);
+  const replaceCv = async () => {
+    setDraft(emptyDraft(user?.email ?? ''));
+    applied.current = new Set();
+    setAppliedParts([]);
+    // Re-load (and save) only once the new CV is in place; if the upload fails, the saved CV
+    // is restored again.
+    restored.current = false;
+    setLoad('loading');
+    await uploadPendingFile();
   };
 
   // A note under a group's heading while its parts are still being read, or if one failed.
@@ -83,10 +130,29 @@ export function CanvasPage() {
 
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="card lg:col-span-3">
-          <CvStatus onLoaded={onCvLoaded} />
-          <p className="mb-6 rounded-sm bg-warning-bg p-3 text-sm text-warning-text" role="note">
-            Edits are kept on this page only for now. Saving your CV is coming soon.
-          </p>
+          <CvStatus onLoaded={onCvLoaded} onError={onCvError} />
+          {uploadStatus === 'confirm' && pendingFile && (
+            <div role="alertdialog" aria-labelledby="replace-title" className="mb-6 rounded-sm border border-warning-text/30 bg-warning-bg p-4 text-sm">
+              <p id="replace-title" className="mb-3 text-warning-text">
+                You chose a new CV file ({pendingFile.name}). Uploading it will replace your current CV and your edits.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button size="sm" onClick={replaceCv}>
+                  Replace my CV
+                </Button>
+                <Button size="sm" variant="secondary" onClick={discardPendingFile}>
+                  Keep my current CV
+                </Button>
+              </div>
+            </div>
+          )}
+          <SaveStatus load={load} state={saveState} />
+          {load === 'loading' ? (
+            <p className="flex items-center gap-2 py-8 text-slate-600">
+              <Spinner className="h-5 w-5" label="" /> Loading your CV…
+            </p>
+          ) : (
+          <>
           {/* Five fixed groups (agreed 2026-10-13). New kinds of CV content go into "Others",
               so the layout does not change every time a section is added. */}
           <CanvasGroup title="Personal details" note={groupNote('basics')}>
@@ -176,6 +242,8 @@ export function CanvasPage() {
             <OthersSection entries={draft.others} onChange={(others) => patch({ others })} />
           </CanvasGroup>
 
+          </>
+          )}
           <PrivacyToggle value={privacy} onChange={setPrivacy} />
         </div>
         <div className="lg:col-span-2">
@@ -183,5 +251,28 @@ export function CanvasPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function SaveStatus({ load, state }: { load: 'loading' | 'ok' | 'failed'; state: SaveState }) {
+  if (load === 'loading') return null;
+  const [text, tone] =
+    load === 'failed'
+      ? ["We couldn't load your saved CV, so changes on this page are not being saved. Refresh to try again.", 'warn']
+      : state === 'saving'
+        ? ['Saving…', 'muted']
+        : state === 'saved'
+          ? ['All changes saved', 'muted']
+          : state === 'error'
+            ? ["Couldn't save your latest changes. Retrying…", 'warn']
+            : ['Your changes save automatically.', 'muted'];
+  return (
+    <p
+      role="status"
+      data-testid="save-status"
+      className={`mb-6 text-sm ${tone === 'warn' ? 'rounded-sm bg-warning-bg p-3 text-warning-text' : 'text-slate-600'}`}
+    >
+      {text}
+    </p>
   );
 }

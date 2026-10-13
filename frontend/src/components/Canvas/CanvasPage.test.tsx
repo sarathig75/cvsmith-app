@@ -4,6 +4,9 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { CanvasPage } from './CanvasPage';
 import { POLL_GIVE_UP_MS, POLL_INTERVAL_MS } from './CvStatus';
+import { AUTOSAVE_DELAY_MS, RETRY_DELAY_MS } from './useAutosave';
+import { apiError } from '../../test/mockHttp';
+import { emptyDraft } from '../../types/cvDraft';
 import { useAuthStore } from '../../store/authStore';
 import { useUploadStore } from '../../store/uploadStore';
 import { mockHttp, sampleUser } from '../../test/mockHttp';
@@ -17,6 +20,9 @@ const baseCv: CV = {
   parsing_error: null,
   parsing_parts: { basics: 'pending', experience: 'pending', extras: 'pending' },
   json_resume: {},
+  content: null,
+  applied_parts: [],
+  content_updated_at: null,
   created_at: '2026-01-01T00:00:00Z',
 };
 const allComplete = { basics: 'complete', experience: 'complete', extras: 'complete' } as const;
@@ -60,10 +66,11 @@ describe('CanvasPage with background CV parsing', () => {
     expect(screen.getByLabelText('Email')).toHaveValue('jobs@jane.dev'); // CV email replaces the pre-filled account email
     expect(screen.getByPlaceholderText('Brief overview of your experience...')).toHaveValue('Parsed summary.');
 
-    // polling stops once parsing is complete
-    const count = calls.length;
+    // polling stops once parsing is complete (only the auto-save still talks to the server)
+    const gets = () => calls.filter((c) => c.method === 'get').length;
+    const count = gets();
     await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3));
-    expect(calls.length).toBe(count);
+    expect(gets()).toBe(count);
   });
 
   it('fills each group as soon as its part is ready and marks the groups still waiting', async () => {
@@ -124,8 +131,112 @@ describe('CanvasPage with background CV parsing', () => {
     await screen.findByText(/You can start editing now/);
     await act(() => vi.advanceTimersByTimeAsync(POLL_GIVE_UP_MS + POLL_INTERVAL_MS));
     expect(await screen.findByText(/taking longer than usual/)).toBeInTheDocument();
-    const count = calls.length;
+    const count = calls.filter((c) => c.method === 'get').length;
     await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3));
-    expect(calls.length).toBe(count);
+    expect(calls.filter((c) => c.method === 'get').length).toBe(count);
   });
 });
+
+describe('CanvasPage saving', () => {
+  const saves = (calls: { method: string; data: unknown }[]) =>
+    calls.filter((c) => c.method === 'patch').map((c) => c.data as { content: { personal: { name: string } }; applied_parts: string[]; edited: boolean });
+
+  it('restores the saved canvas and does not re-apply parts it already merged', async () => {
+    const content = { ...emptyDraft(), personal: { ...emptyDraft().personal, name: 'Saved Name' } };
+    const cv: CV = {
+      ...baseCv,
+      parsing_status: 'complete',
+      parsing_parts: allComplete,
+      json_resume: { basics: { name: 'Parsed Name', phone: '+44 1' } },
+      content,
+      applied_parts: ['basics'],
+    };
+    const calls = mockHttp(() => ({ status: 200, data: cv }));
+    renderCanvas();
+    expect(await screen.findByDisplayValue('Saved Name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Phone')).toHaveValue(''); // basics was already applied: the user's version stands
+    await act(() => vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS * 2));
+    // the other parts were merged (no data for them here); that is saved, but it is not a user edit
+    expect(saves(calls).map((b) => [b.applied_parts, b.edited])).toEqual([[['basics', 'experience', 'extras'], false]]);
+  });
+
+  it('saves about two seconds after the user stops typing and says so', async () => {
+    const calls = mockHttp(() => ({ status: 200, data: { ...baseCv, parsing_status: 'not_uploaded' } }));
+    renderCanvas();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.type(await screen.findByLabelText('Full Name'), 'Jane');
+    expect(saves(calls)).toEqual([]);
+    expect(screen.getByTestId('save-status')).toHaveTextContent('Your changes save automatically.');
+    await act(() => vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS));
+    expect(saves(calls)).toHaveLength(1);
+    expect(saves(calls)[0]).toMatchObject({ content: { personal: { name: 'Jane' } }, edited: true });
+    expect(await screen.findByText('All changes saved')).toBeInTheDocument();
+    // nothing changed: no further saves
+    await act(() => vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS * 3));
+    expect(saves(calls)).toHaveLength(1);
+  });
+
+  it('retries a failed save and keeps the edit flag', async () => {
+    let fail = true;
+    const calls = mockHttp((req) =>
+      req.method === 'patch' && fail ? apiError(500, 'SERVER_ERROR') : { status: 200, data: null },
+    );
+    renderCanvas();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.type(await screen.findByLabelText('Phone'), '1');
+    await act(() => vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS));
+    expect(await screen.findByText(/Couldn't save your latest changes/)).toBeInTheDocument();
+    fail = false;
+    await act(() => vi.advanceTimersByTimeAsync(RETRY_DELAY_MS));
+    expect(await screen.findByText('All changes saved')).toBeInTheDocument();
+    expect(saves(calls).map((b) => b.edited)).toEqual([true, true]);
+  });
+
+  it('never saves when the saved CV could not be loaded', async () => {
+    const calls = mockHttp(() => apiError(500, 'SERVER_ERROR'));
+    renderCanvas();
+    expect(await screen.findByText(/changes on this page are not being saved/)).toBeInTheDocument();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.type(screen.getByLabelText('Full Name'), 'X');
+    await act(() => vi.advanceTimersByTimeAsync(AUTOSAVE_DELAY_MS * 2));
+    expect(saves(calls)).toEqual([]);
+  });
+
+  it('asks before a file chosen at login replaces the saved CV', async () => {
+    const content = { ...emptyDraft(), personal: { ...emptyDraft().personal, name: 'Saved Name' } };
+    const calls = mockHttp((req) =>
+      req.url.endsWith('/upload') ? { status: 201, data: baseCv } : { status: 200, data: { ...baseCv, parsing_status: 'complete', parsing_parts: allComplete, content } },
+    );
+    const file = new File(['%PDF'], 'new-cv.pdf', { type: 'application/pdf' });
+    useUploadStore.setState({ pendingFile: file, status: 'confirm', error: null });
+    renderCanvas();
+    expect(await screen.findByText(/You chose a new CV file \(new-cv.pdf\)/)).toBeInTheDocument();
+    expect(calls.some((c) => c.url.endsWith('/upload'))).toBe(false);
+
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.click(screen.getByRole('button', { name: 'Keep my current CV' }));
+    expect(screen.queryByText(/You chose a new CV file/)).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Full Name')).toHaveValue('Saved Name');
+    expect(calls.some((c) => c.url.endsWith('/upload'))).toBe(false);
+  });
+
+  it('replaces the CV when the user confirms', async () => {
+    const content = { ...emptyDraft(), personal: { ...emptyDraft().personal, name: 'Saved Name' } };
+    let uploaded = false;
+    const calls = mockHttp((req) => {
+      if (req.url.endsWith('/upload')) {
+        uploaded = true;
+        return { status: 201, data: baseCv };
+      }
+      return { status: 200, data: uploaded ? baseCv : { ...baseCv, parsing_status: 'complete', parsing_parts: allComplete, content } };
+    });
+    useUploadStore.setState({ pendingFile: new File(['%PDF'], 'new-cv.pdf'), status: 'confirm', error: null });
+    renderCanvas();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.click(await screen.findByRole('button', { name: 'Replace my CV' }));
+    expect(await screen.findByText(/Reading your CV/)).toBeInTheDocument();
+    expect(calls.filter((c) => c.url.endsWith('/upload'))).toHaveLength(1);
+    expect(screen.getByLabelText('Full Name')).toHaveValue(''); // the old edits are gone
+  });
+});
+

@@ -16,13 +16,22 @@ export type CV = {
   id: string;
   title: string;
   privacy: 'private' | 'public';
-  parsing_status: 'pending' | 'in_progress' | 'complete' | 'failed';
+  /** "not_uploaded": the CV was created by saving the canvas, without a file. */
+  parsing_status: 'not_uploaded' | 'pending' | 'in_progress' | 'complete' | 'failed';
   parsing_error: string | null;
   /** Parsing runs in three parts; each part's data appears in json_resume as soon as it is "complete". */
   parsing_parts: Record<ParsePart, PartStatus>;
+  /** Parser output only. */
   json_resume: JsonResume;
+  /** The user's canvas as last saved (PATCH /api/cv); null until the first save. */
+  content: Record<string, unknown> | null;
+  /** Parsed parts already merged into `content`. */
+  applied_parts: ParsePart[];
+  content_updated_at: string | null;
   created_at: string;
 };
+
+export type CVSave = { content: Record<string, unknown>; applied_parts: ParsePart[]; edited?: boolean };
 
 export type ParsePart = 'basics' | 'experience' | 'extras';
 export type PartStatus = 'pending' | 'complete' | 'failed';

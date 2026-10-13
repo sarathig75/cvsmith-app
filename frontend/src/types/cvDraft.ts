@@ -35,3 +35,20 @@ export const emptyDraft = (email = ''): CvDraft => ({
   certifications: [],
   others: [],
 });
+
+/** A saved canvas (CV.content), with any keys missing from older saves filled from the empty draft. */
+export function draftFromSaved(content: Record<string, unknown>): CvDraft {
+  const base = emptyDraft();
+  const saved = content as Partial<CvDraft>;
+  const list = <T,>(v: T[] | undefined): T[] => (Array.isArray(v) ? v : []);
+  return {
+    personal: { ...base.personal, ...(saved.personal ?? {}) },
+    summary: typeof saved.summary === 'string' ? saved.summary : '',
+    experience: list(saved.experience),
+    projects: list(saved.projects),
+    education: list(saved.education),
+    skills: list(saved.skills),
+    certifications: list(saved.certifications),
+    others: list(saved.others),
+  };
+}

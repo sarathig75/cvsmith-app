@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { api } from './api';
-import type { CV } from '../types';
+import type { CV, CVSave } from '../types';
 
 export const uploadCv = async (file: File) => {
   const form = new FormData();
@@ -17,3 +17,6 @@ export const getCv = async (): Promise<CV | null> => {
     throw err;
   }
 };
+
+/** Saves the canvas; creates the CV for a user who never uploaded a file. */
+export const saveCv = async (body: CVSave) => (await api.patch<CV>('/api/cv', body)).data;

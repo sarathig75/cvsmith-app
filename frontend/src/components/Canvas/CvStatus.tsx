@@ -15,7 +15,7 @@ const isParsing = (cv: CV | null) => cv?.parsing_status === 'pending' || cv?.par
  * Shows the uploaded CV and its parsing status from GET /api/cv. While parsing runs in the
  * background it re-checks quietly; the user can keep editing the canvas the whole time.
  */
-export function CvStatus({ onLoaded }: { onLoaded?: (cv: CV | null) => void }) {
+export function CvStatus({ onLoaded, onError }: { onLoaded?: (cv: CV | null) => void; onError?: () => void }) {
   const uploadStatus = useUploadStore((s) => s.status);
   const uploadError = useUploadStore((s) => s.error);
   const [state, setState] = useState<{ loading: boolean; cv: CV | null; error: string | null; gaveUp: boolean }>({
@@ -44,6 +44,7 @@ export function CvStatus({ onLoaded }: { onLoaded?: (cv: CV | null) => void }) {
         .catch((err) => {
           if (cancelled) return;
           setState((s) => ({ ...s, loading: false, error: parseApiError(err).message }));
+          onError?.();
         });
     };
     check();
@@ -65,7 +66,7 @@ export function CvStatus({ onLoaded }: { onLoaded?: (cv: CV | null) => void }) {
         </span>
       ) : state.error && !cv ? (
         <p className="text-error-text">Could not load CV status: {state.error}</p>
-      ) : !cv ? (
+      ) : !cv || cv.parsing_status === 'not_uploaded' ? (
         <p className="text-slate-600">No CV uploaded yet.</p>
       ) : isParsing(cv) && state.gaveUp ? (
         <p className="text-slate-800">
