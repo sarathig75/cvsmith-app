@@ -15,9 +15,11 @@ const baseCv: CV = {
   privacy: 'public',
   parsing_status: 'pending',
   parsing_error: null,
+  parsing_parts: { basics: 'pending', experience: 'pending', extras: 'pending' },
   json_resume: {},
   created_at: '2026-01-01T00:00:00Z',
 };
+const allComplete = { basics: 'complete', experience: 'complete', extras: 'complete' } as const;
 const parsed = { basics: { name: 'Jane From CV', email: 'jobs@jane.dev', phone: '+44 1234', summary: 'Parsed summary.' } };
 
 function renderCanvas() {
@@ -49,7 +51,7 @@ describe('CanvasPage with background CV parsing', () => {
     // The canvas is usable straight away: the user types their own name.
     await user.type(screen.getByLabelText('Full Name'), 'Jane Typed');
 
-    cv = { ...baseCv, parsing_status: 'complete', json_resume: parsed };
+    cv = { ...baseCv, parsing_status: 'complete', parsing_parts: allComplete, json_resume: parsed };
     await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
 
     expect(await screen.findByText(/We filled in details from your CV/)).toBeInTheDocument();
@@ -62,6 +64,41 @@ describe('CanvasPage with background CV parsing', () => {
     const count = calls.length;
     await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3));
     expect(calls.length).toBe(count);
+  });
+
+  it('fills each group as soon as its part is ready and marks the groups still waiting', async () => {
+    let cv: CV = { ...baseCv, parsing_status: 'in_progress' };
+    mockHttp(() => ({ status: 200, data: cv }));
+    renderCanvas();
+    expect(await screen.findAllByText('Filling in from your CV…')).toHaveLength(5);
+
+    // contact details arrive first: Personal details fills, the summary (experience part) does not yet
+    cv = {
+      ...cv,
+      parsing_parts: { basics: 'complete', experience: 'pending', extras: 'pending' },
+      json_resume: { basics: { name: 'Jane From CV' } },
+    };
+    await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
+    expect(await screen.findByDisplayValue('Jane From CV')).toBeInTheDocument();
+    expect(screen.getAllByText('Filling in from your CV…')).toHaveLength(4);
+
+    // the user clears the parsed name; later parts must not bring it back
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.clear(screen.getByLabelText('Full Name'));
+
+    // experience is done, extras failed: the parse is complete with one failed part
+    cv = {
+      ...cv,
+      parsing_status: 'complete',
+      parsing_parts: { basics: 'complete', experience: 'complete', extras: 'failed' },
+      json_resume: { basics: { name: 'Jane From CV', summary: 'Parsed summary.' } },
+    };
+    await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
+    expect(await screen.findByDisplayValue('Parsed summary.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Full Name')).toHaveValue('');
+    expect(screen.queryByText('Filling in from your CV…')).not.toBeInTheDocument();
+    // Professional details (projects), Skills & Certifications and Others come from the failed part
+    expect(screen.getAllByText("We couldn't fill this in from your CV. Please add it yourself.")).toHaveLength(3);
   });
 
   it('does not reset a privacy change while parsing status is being checked', async () => {

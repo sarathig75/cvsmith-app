@@ -18,9 +18,14 @@ export type CV = {
   privacy: 'private' | 'public';
   parsing_status: 'pending' | 'in_progress' | 'complete' | 'failed';
   parsing_error: string | null;
+  /** Parsing runs in three parts; each part's data appears in json_resume as soon as it is "complete". */
+  parsing_parts: Record<ParsePart, PartStatus>;
   json_resume: JsonResume;
   created_at: string;
 };
+
+export type ParsePart = 'basics' | 'experience' | 'extras';
+export type PartStatus = 'pending' | 'complete' | 'failed';
 
 /** The JSON Resume subset the backend fills when parsing completes ({} before that). Every field is optional. */
 export type JsonResume = {

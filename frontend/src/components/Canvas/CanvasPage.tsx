@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import type { CV } from '../../types';
+import type { CV, ParsePart } from '../../types';
 import { emptyDraft } from '../../types/cvDraft';
 import type { CvDraft } from '../../types/cvDraft';
-import { mergeParsedIntoDraft, resumeToDraft } from '../../utils/resumeToDraft';
+import { mergeParsedIntoDraft, PART_SECTIONS, resumeToDraft } from '../../utils/resumeToDraft';
 import { Button } from '../Common/Button';
 import { CanvasGroup } from './CanvasGroup';
 import { CvStatus } from './CvStatus';
@@ -21,23 +21,42 @@ export function CanvasPage() {
   const [draft, setDraft] = useState<CvDraft>(() => emptyDraft(user?.email ?? ''));
   const patch = (p: Partial<CvDraft>) => setDraft((d) => ({ ...d, ...p }));
 
-  // Parsing finishes in the background while the user may already be typing: fill only
-  // the fields they have left empty, and apply each parsed result once.
-  const appliedResume = useRef<string | null>(null);
+  // Parsing runs in the background in three parts while the user may already be typing. Each
+  // part fills only its own sections, only the fields the user has left empty, and only once.
+  const appliedParts = useRef(new Set<ParsePart>());
   const privacyLoaded = useRef(false);
-  const onCvLoaded = (cv: CV | null) => {
-    if (!cv) return;
+  const [cv, setCv] = useState<CV | null>(null);
+  const onCvLoaded = (loaded: CV | null) => {
+    setCv(loaded);
+    if (!loaded) return;
     // CvStatus reports on every status check; take privacy from the server only once so a
     // toggle made while parsing runs is not reset.
     if (!privacyLoaded.current) {
       privacyLoaded.current = true;
-      setPrivacy(cv.privacy);
+      setPrivacy(loaded.privacy);
     }
-    if (cv.parsing_status !== 'complete') return;
-    const key = JSON.stringify(cv.json_resume);
-    if (appliedResume.current === key) return;
-    appliedResume.current = key;
-    setDraft((d) => mergeParsedIntoDraft(d, resumeToDraft(cv.json_resume), user?.email));
+    const parts = loaded.parsing_parts ?? {};
+    // A new upload starts with every part pending: its parts may be applied again.
+    if (Object.values(parts).every((s) => s === 'pending')) appliedParts.current.clear();
+    const ready = (Object.keys(PART_SECTIONS) as ParsePart[]).filter(
+      (p) => parts[p] === 'complete' && !appliedParts.current.has(p),
+    );
+    if (!ready.length) return;
+    ready.forEach((p) => appliedParts.current.add(p));
+    const sections = ready.flatMap((p) => PART_SECTIONS[p]);
+    setDraft((d) => mergeParsedIntoDraft(d, resumeToDraft(loaded.json_resume), user?.email, sections));
+  };
+
+  // A note under a group's heading while its parts are still being read, or if one failed.
+  const groupNote = (...groupParts: ParsePart[]) => {
+    if (!cv) return undefined;
+    const states = groupParts.map((p) => cv.parsing_parts?.[p]);
+    const parsing = cv.parsing_status === 'pending' || cv.parsing_status === 'in_progress';
+    if (parsing && states.includes('pending')) return { text: 'Filling in from your CV…', busy: true };
+    if (cv.parsing_status === 'complete' && states.includes('failed')) {
+      return { text: "We couldn't fill this in from your CV. Please add it yourself.", busy: false };
+    }
+    return undefined;
   };
 
   return (
@@ -70,11 +89,11 @@ export function CanvasPage() {
           </p>
           {/* Five fixed groups (agreed 2026-10-13). New kinds of CV content go into "Others",
               so the layout does not change every time a section is added. */}
-          <CanvasGroup title="Personal details">
+          <CanvasGroup title="Personal details" note={groupNote('basics')}>
             <PersonalInfoSection value={draft.personal} onChange={(personal) => patch({ personal })} />
           </CanvasGroup>
 
-          <CanvasGroup title="Professional details">
+          <CanvasGroup title="Professional details" note={groupNote('experience', 'extras')}>
             <div className="mb-6">
               <label htmlFor="summary" className="mb-3 block text-base font-semibold">
                 Professional Summary
@@ -119,7 +138,7 @@ export function CanvasPage() {
             />
           </CanvasGroup>
 
-          <CanvasGroup title="Education">
+          <CanvasGroup title="Education" note={groupNote('experience')}>
             <EntryListSection
               title="Education"
               showTitle={false}
@@ -137,7 +156,7 @@ export function CanvasPage() {
             />
           </CanvasGroup>
 
-          <CanvasGroup title="Skills & Certifications">
+          <CanvasGroup title="Skills & Certifications" note={groupNote('extras')}>
             <SkillsSection skills={draft.skills} onChange={(skills) => patch({ skills })} />
             <EntryListSection
               title="Certifications"
@@ -153,7 +172,7 @@ export function CanvasPage() {
             />
           </CanvasGroup>
 
-          <CanvasGroup title="Others">
+          <CanvasGroup title="Others" note={groupNote('extras')}>
             <OthersSection entries={draft.others} onChange={(others) => patch({ others })} />
           </CanvasGroup>
 

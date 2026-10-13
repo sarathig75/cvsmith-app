@@ -26,7 +26,7 @@ def test_get_cv_404_then_200_after_upload(client, auth):
     body = got.json()
     assert body == up.json()
     assert set(body) == {
-        "id", "title", "privacy", "parsing_status", "parsing_error", "json_resume", "created_at"
+        "id", "title", "privacy", "parsing_status", "parsing_error", "parsing_parts", "json_resume", "created_at"
     }
     assert body["parsing_error"] is None and body["json_resume"] == {}
     assert body["parsing_status"] == "pending"

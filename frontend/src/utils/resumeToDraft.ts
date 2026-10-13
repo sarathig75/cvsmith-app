@@ -1,4 +1,4 @@
-import type { JsonResume } from '../types';
+import type { JsonResume, ParsePart } from '../types';
 import type { CvDraft, Entry, OtherKind } from '../types/cvDraft';
 import { composeDate, isYearOnly, parseDate } from './dates';
 
@@ -106,14 +106,35 @@ function dedupe(items: string[]): string[] {
     .filter((s) => s && !seen.has(s.toLowerCase()) && seen.add(s.toLowerCase()));
 }
 
+/** Canvas sections filled by each parsing part (see parsing_parts in docs/API_CONTRACT.md). */
+export const PART_SECTIONS: Record<ParsePart, (keyof CvDraft)[]> = {
+  basics: ['personal'],
+  experience: ['summary', 'experience', 'education'],
+  extras: ['projects', 'skills', 'certifications', 'others'],
+};
+
 /**
  * Fills the user's draft from parsed data without overwriting anything they typed:
  * a text field is filled only if it is empty, a list only if it has no entries.
  * The email field starts pre-filled with the account email; that default is not the user's
  * own input, so an email found on the CV replaces it (people often use a different address
  * for job applications). An email the user typed themselves is kept.
+ * With `sections`, only those sections are filled (parsing results arrive part by part).
  */
-export function mergeParsedIntoDraft(current: CvDraft, parsed: CvDraft, accountEmail = ''): CvDraft {
+export function mergeParsedIntoDraft(
+  current: CvDraft,
+  parsed: CvDraft,
+  accountEmail = '',
+  sections?: (keyof CvDraft)[],
+): CvDraft {
+  const merged = mergeAll(current, parsed, accountEmail);
+  if (!sections) return merged;
+  const result = { ...current };
+  for (const key of sections) (result as Record<keyof CvDraft, unknown>)[key] = merged[key];
+  return result;
+}
+
+function mergeAll(current: CvDraft, parsed: CvDraft, accountEmail: string): CvDraft {
   const personal = { ...current.personal };
   for (const key of Object.keys(personal) as (keyof typeof personal)[]) {
     const untouchedDefault = key === 'email' && !!accountEmail && personal.email.trim().toLowerCase() === accountEmail.toLowerCase();

@@ -49,25 +49,15 @@ abbreviations automatically, leave unknown ones
   uploaded it to their claude.ai account.
 
 ## Next steps
-1. Build progressive parsing (approved by the user 2026-10-13). Contract first, then code:
-   - Three parallel requests: basics (fast) / work + education / skills, certificates,
-     projects and Others. Save each part to `json_resume` as soon as it finishes.
-   - Contract: a CV can be partly parsed (e.g. per-part status, so the canvas knows which
-     groups are still filling and which failed). Keep "complete" meaning all parts done.
-   - Canvas: fill each group when its part arrives (merge already fills only empty fields);
-     show "Filling in…" on waiting groups; a failed part says "please fill in manually"
-     while the other parts are kept.
-   - Measure: time to first filled group and total time, before vs after, on the 5 test CVs.
-   - Cost: ~+$0.01 per CV (the CV is sent three times).
-2. Parsing quality: a CV with many unattached sections gets a very long summary (one test CV:
-   4,700 chars); bullets covering a whole employer land under its latest title. Decide where
-   such text belongs, then adjust the prompt and re-run the 5 CVs on Sonnet (~$0.15).
+1. Progressive parsing is built (see Done). Next: watch it in the running app with a real upload.
+2. Parsing quality: bullets covering a whole employer land under its latest title (open).
+   Text that belongs to no single role stays in the summary (user decision 2026-10-13, option a).
 3. Test a real scanned PDF and a full upload through the running app (docker-compose).
 4. Week 5–6: save canvas edits to the backend (PATCH /api/cv) and session restore.
 5. Week 7–8 Suggestions: build its prompt from `.claude/skills/cv-house-style/SKILL.md`.
 
 ## Open questions for the user
-- Where should text that belongs to no single role go (summary vs a new place)?
+- none
 
 ## Setup notes
 - Backend: `cd backend && python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt`.

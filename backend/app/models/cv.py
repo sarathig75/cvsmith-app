@@ -10,6 +10,12 @@ from app.models.user import utcnow
 
 PRIVACY_VALUES = ("private", "public")
 PARSING_STATUSES = ("pending", "in_progress", "complete", "failed")
+PART_STATUSES = ("pending", "complete", "failed")
+PARSING_PARTS = ("basics", "experience", "extras")  # same order as cv_parser.PARTS
+
+
+def pending_parts() -> Dict[str, str]:
+    return {part: "pending" for part in PARSING_PARTS}
 
 
 class CV(Base):
@@ -28,6 +34,8 @@ class CV(Base):
         String(20), nullable=False, default="pending"
     )
     parsing_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    # Per-part status ("pending" | "complete" | "failed"); see docs/API_CONTRACT.md.
+    parsing_parts: Mapped[Dict[str, str]] = mapped_column(JSON, nullable=False, default=pending_parts)
     raw_upload_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utcnow

@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.models.cv import CV
+from app.models.cv import CV, pending_parts
 from app.models.user import User
 from app.services.storage_service import StorageService
 from app.utils import errors
@@ -77,6 +77,7 @@ def save_upload(
         cv.json_resume = {}
         cv.parsing_status = "pending"
         cv.parsing_error = None
+        cv.parsing_parts = pending_parts()
     try:
         db.commit()
     except Exception:

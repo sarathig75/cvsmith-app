@@ -7,7 +7,9 @@ import pytest
 
 from app.models.cv import CV
 from app.services import parsing_service
-from app.services.cv_parser import ClaudeCvParser, CoreSections, ExtraSections, ParsedResume, ParseError
+from app.services.cv_parser import (
+    PARTS, BasicsPart, ClaudeCvParser, ExperiencePart, ExtraSections, ParsedResume, ParseError, merge_fragment,
+)
 from app.services.storage_service import LocalStorage
 from app.services.text_extraction import ExtractionError, extract_text
 from tests.conftest import DOCX_MIME, PDF_MIME, make_pdf
@@ -62,22 +64,45 @@ def make_text_docx(paragraphs, table_rows=()) -> bytes:
     return buf.getvalue()
 
 
+def split_parts(resume):
+    """Split a full JSON Resume into the fragments the three parsing parts produce."""
+    basics = {k: v for k, v in resume.get("basics", {}).items() if k != "summary"}
+    experience = {k: resume[k] for k in ("work", "education") if k in resume}
+    if "summary" in resume.get("basics", {}):
+        experience["basics"] = {"summary": resume["basics"]["summary"]}
+    extras = {k: v for k, v in resume.items() if k not in ("basics", "work", "education")}
+    return {"basics": {"basics": basics} if basics else {}, "experience": experience, "extras": extras}
+
+
+def collect(results):
+    """Merge a parser's part results the way the pipeline does; returns (resume, failed parts)."""
+    resume, errors = {}, {}
+    for part, result in results:
+        if isinstance(result, ParseError):
+            errors[part] = result
+        else:
+            resume = merge_fragment(resume, result)
+    return resume, errors
+
+
 class FakeParser:
-    def __init__(self, result=None, error=None):
-        self.result, self.error = result or PARSED, error
+    def __init__(self, result=None, error=None, fail_parts=()):
+        self.result, self.error, self.fail_parts = result or PARSED, error, set(fail_parts)
         self.calls = []
+
+    def _parts(self):
+        if self.error:
+            raise self.error
+        for part, fragment in split_parts(self.result).items():
+            yield part, (ParseError(f"{part} failed.") if part in self.fail_parts else fragment)
 
     def parse_text(self, text):
         self.calls.append(("text", text))
-        if self.error:
-            raise self.error
-        return self.result
+        return self._parts()
 
     def parse_pdf(self, data):
         self.calls.append(("pdf", data))
-        if self.error:
-            raise self.error
-        return self.result
+        return self._parts()
 
 
 # --- text extraction -------------------------------------------------------------
@@ -126,6 +151,7 @@ def test_text_pdf_is_parsed_and_stored(stored_cv):
     body, parser = stored_cv(make_text_pdf(CV_TEXT))
     assert body["parsing_status"] == "complete" and body["parsing_error"] is None
     assert body["json_resume"] == PARSED
+    assert body["parsing_parts"] == {"basics": "complete", "experience": "complete", "extras": "complete"}
     assert parser.calls[0][0] == "text" and "Acme Ltd" in parser.calls[0][1]
 
 
@@ -157,6 +183,39 @@ def test_parser_error_message_is_shown(stored_cv):
     body, _ = stored_cv(make_text_pdf(CV_TEXT), parser=FakeParser(error=ParseError("Service down.")))
     assert body["parsing_status"] == "failed" and body["parsing_error"] == "Service down."
     assert body["json_resume"] == {}
+    assert set(body["parsing_parts"].values()) == {"failed"}
+
+
+def test_a_failed_part_keeps_the_others(stored_cv):
+    body, _ = stored_cv(make_text_pdf(CV_TEXT), parser=FakeParser(fail_parts={"experience"}))
+    assert body["parsing_status"] == "complete" and body["parsing_error"] is None
+    assert body["parsing_parts"] == {"basics": "complete", "experience": "failed", "extras": "complete"}
+    assert body["json_resume"] == {"basics": {"name": "Jane Doe"}}
+
+
+def test_all_parts_failed_is_a_failed_parse(stored_cv):
+    body, _ = stored_cv(make_text_pdf(CV_TEXT), parser=FakeParser(fail_parts=set(PARTS)))
+    assert body["parsing_status"] == "failed" and body["parsing_error"] == "basics failed."
+
+
+def test_each_part_is_visible_as_soon_as_it_is_saved(client, auth):
+    storage = LocalStorage(str(client.upload_dir))
+    client.post("/api/cv/upload", headers=auth[0], files={"file": ("a.pdf", make_text_pdf(CV_TEXT), PDF_MIME)})
+    cv_id, key = client.queued_parse_jobs[0]
+    seen = []
+
+    class Watching(FakeParser):
+        def _parts(self):
+            for part, fragment in super()._parts():
+                yield part, fragment
+                seen.append(client.get("/api/cv", headers=auth[0]).json())
+
+    with client.session_factory() as db:
+        parsing_service.run_parsing(db, storage, Watching(), cv_id, key)
+    first = seen[0]
+    assert first["parsing_status"] == "in_progress"
+    assert first["parsing_parts"] == {"basics": "complete", "experience": "pending", "extras": "pending"}
+    assert first["json_resume"] == {"basics": {"name": "Jane Doe"}}
 
 
 def test_unexpected_error_shows_generic_message(stored_cv):
@@ -208,12 +267,14 @@ def test_queue_failure_marks_cv_failed_but_upload_succeeds(client, auth):
     r = client.post("/api/cv/upload", headers=auth[0], files={"file": ("cv.pdf", make_pdf(), PDF_MIME)})
     assert r.status_code == 201
     assert r.json()["parsing_status"] == "failed" and "try uploading it again" in r.json()["parsing_error"]
+    assert set(r.json()["parsing_parts"].values()) == {"failed"}
 
 
 def test_new_upload_resets_previous_result(stored_cv, client, auth):
     stored_cv(make_text_pdf(CV_TEXT))
     r = client.post("/api/cv/upload", headers=auth[0], files={"file": ("cv.pdf", make_pdf(), PDF_MIME)})
     assert r.json()["parsing_status"] == "pending" and r.json()["json_resume"] == {}
+    assert set(r.json()["parsing_parts"].values()) == {"pending"}
 
 
 # --- Claude parser (API client faked; no network) ------------------------------------
@@ -226,8 +287,12 @@ class FakeMessages:
 
     def parse(self, **kwargs):
         self.calls.append(kwargs)
-        full = self.response.parsed_output
-        part = None if full is None else kwargs["output_format"].model_validate(full.model_dump())
+        full, schema = self.response.parsed_output, kwargs["output_format"]
+        part = None
+        if full is not None:
+            data = full.model_dump()
+            data["summary"] = data["basics"].get("summary", "")  # used by ExperiencePart only
+            part = schema.model_validate(data)
         return SimpleNamespace(**{**vars(self.response), "parsed_output": part})
 
     @property
@@ -243,10 +308,11 @@ def fake_client(response):
 def test_claude_parser_request_and_result():
     output = ParsedResume.model_validate({"basics": {"name": "Jane Doe", "email": ""}, "skills": [{"name": "SQL"}]})
     client, messages = fake_client(SimpleNamespace(stop_reason="end_turn", parsed_output=output, _request_id="r1"))
-    result = ClaudeCvParser(client=client, model="claude-sonnet-5-5").parse_text("Jane Doe CV")
+    result, errors = collect(ClaudeCvParser(client=client, model="claude-sonnet-5-5").parse_text("Jane Doe CV"))
+    assert errors == {}
     assert result["basics"] == {"name": "Jane Doe", "profiles": []}
     assert result["skills"] == [{"name": "SQL", "keywords": []}]
-    assert {kw["output_format"] for kw in messages.calls} == {CoreSections, ExtraSections}
+    assert {kw["output_format"] for kw in messages.calls} == {BasicsPart, ExperiencePart, ExtraSections}
     for kw in messages.calls:
         assert kw["model"] == "claude-sonnet-5-5"
         assert kw["fallbacks"] == "default" and kw["betas"] == ["server-side-fallback-2026-07-01"]
@@ -257,16 +323,16 @@ def test_claude_parser_request_and_result():
 def test_claude_parser_sends_scanned_pdf_as_document():
     output = ParsedResume.model_validate({"basics": {}})
     client, messages = fake_client(SimpleNamespace(stop_reason="end_turn", parsed_output=output, _request_id="r"))
-    ClaudeCvParser(client=client, model="m").parse_pdf(b"%PDF-1.4")
+    collect(ClaudeCvParser(client=client, model="m").parse_pdf(b"%PDF-1.4"))
     block = messages.kwargs["messages"][0]["content"][0]
     assert block["type"] == "document" and block["source"]["media_type"] == "application/pdf"
 
 
 @pytest.mark.parametrize("stop_reason,parsed", [("refusal", None), ("max_tokens", None), ("end_turn", None)])
-def test_claude_parser_unusable_responses_raise(stop_reason, parsed):
+def test_claude_parser_unusable_responses_fail_each_part(stop_reason, parsed):
     client, _ = fake_client(SimpleNamespace(stop_reason=stop_reason, parsed_output=parsed, _request_id="r"))
-    with pytest.raises(ParseError):
-        ClaudeCvParser(client=client, model="m").parse_text("x")
+    resume, errors = collect(ClaudeCvParser(client=client, model="m").parse_text("x"))
+    assert resume == {} and set(errors) == set(PARTS)
 
 
 def test_cv_row_defaults(client, auth):
@@ -277,11 +343,11 @@ def test_cv_row_defaults(client, auth):
 
 
 def test_current_role_is_explicit_in_schema_and_prompt():
-    from app.services.cv_parser import CORE_TASK
+    from app.services.cv_parser import EXPERIENCE_TASK
 
     work = ParsedResume.model_validate({"basics": {}, "work": [{"name": "Acme"}]}).work[0]
     assert work.current is False  # a missing end date alone does not mean "current"
-    assert "current to true" in CORE_TASK
+    assert "current to true" in EXPERIENCE_TASK
 
 
 def test_parser_client_uses_cvsmith_key_and_pinned_base_url(monkeypatch):
@@ -303,7 +369,7 @@ def test_schema_has_no_optional_unions():
     # made it "too large" and every real parse failed with a 400.
     from anthropic.lib._parse._transform import transform_schema
 
-    for schema in (CoreSections, ExtraSections):
+    for schema in (BasicsPart, ExperiencePart, ExtraSections):
         assert "anyOf" not in json.dumps(transform_schema(schema))
 
 
@@ -312,7 +378,7 @@ def test_each_request_schema_stays_well_under_the_grammar_limit():
     # small. ~5.5k chars was accepted, so keep each request's schema below that.
     from anthropic.lib._parse._transform import transform_schema
 
-    for schema in (CoreSections, ExtraSections):
+    for schema in (BasicsPart, ExperiencePart, ExtraSections):
         assert len(json.dumps(transform_schema(schema))) < 5000, schema.__name__
 
 
@@ -327,7 +393,7 @@ def test_parser_combines_both_requests_including_fresher_sections():
         "interests": [{"name": "Chess"}],
     })
     client, _ = fake_client(SimpleNamespace(stop_reason="end_turn", parsed_output=output, _request_id="r"))
-    result = ClaudeCvParser(client=client, model="m").parse_text("x")
+    result, _ = collect(ClaudeCvParser(client=client, model="m").parse_text("x"))
     assert result["basics"]["name"] == "Jane" and result["work"][0]["name"] == "Acme"
     assert result["languages"] == [{"language": "Tamil", "fluency": "Native"}]
     assert result["awards"] == [{"title": "Employee of the month", "date": "2018-08"}]
@@ -336,23 +402,30 @@ def test_parser_combines_both_requests_including_fresher_sections():
     assert result["interests"] == [{"name": "Chess", "keywords": []}]
 
 
-def test_parse_fails_when_either_request_fails():
+def test_one_failed_request_does_not_lose_the_other_parts():
     class OneFails(FakeMessages):
         def parse(self, **kwargs):
             if kwargs["output_format"] is ExtraSections:
                 return SimpleNamespace(stop_reason="refusal", parsed_output=None, _request_id="r")
             return super().parse(**kwargs)
 
-    output = ParsedResume.model_validate({"basics": {}})
+    output = ParsedResume.model_validate({"basics": {"name": "Jane"}, "skills": [{"name": "SQL"}]})
     messages = OneFails(SimpleNamespace(stop_reason="end_turn", parsed_output=output, _request_id="r"))
     client = SimpleNamespace(beta=SimpleNamespace(messages=messages))
-    with pytest.raises(ParseError):
-        ClaudeCvParser(client=client, model="m").parse_text("x")
+    resume, errors = collect(ClaudeCvParser(client=client, model="m").parse_text("x"))
+    assert set(errors) == {"extras"} and resume["basics"]["name"] == "Jane" and "skills" not in resume
+
+
+def test_summary_from_the_experience_part_joins_the_contact_details():
+    output = ParsedResume.model_validate({"basics": {"name": "Jane", "summary": "Analyst."}})
+    client, _ = fake_client(SimpleNamespace(stop_reason="end_turn", parsed_output=output, _request_id="r"))
+    result, _ = collect(ClaudeCvParser(client=client, model="m").parse_text("x"))
+    assert result["basics"] == {"name": "Jane", "summary": "Analyst.", "profiles": []}
 
 
 def test_parser_drops_empty_values_but_keeps_lists():
     output = ParsedResume.model_validate({"basics": {"name": "Jane"}, "work": [{"name": "Acme", "current": True}]})
     client, _ = fake_client(SimpleNamespace(stop_reason="end_turn", parsed_output=output, _request_id="r"))
-    result = ClaudeCvParser(client=client, model="m").parse_text("x")
+    result, _ = collect(ClaudeCvParser(client=client, model="m").parse_text("x"))
     assert result["basics"] == {"name": "Jane", "profiles": []}
     assert result["work"] == [{"name": "Acme", "current": True, "highlights": []}]

@@ -15,6 +15,7 @@ class CVOut(BaseModel):
     privacy: Literal["private", "public"]
     parsing_status: Literal["pending", "in_progress", "complete", "failed"]
     parsing_error: Optional[str] = None
+    parsing_parts: Dict[str, Literal["pending", "complete", "failed"]]
     json_resume: Dict[str, Any] = {}
     created_at: datetime
 

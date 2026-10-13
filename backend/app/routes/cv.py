@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.database import get_db
+from app.models.cv import PARSING_PARTS
 from app.models.user import User
 from app.routes.deps import get_current_user
 from app.schemas.cv import CVOut
@@ -40,6 +41,7 @@ async def upload_cv(
         logger.exception("Could not queue parsing for CV %s", cv.id)
         cv.parsing_status = "failed"
         cv.parsing_error = "We could not start processing your CV. Please try uploading it again."
+        cv.parsing_parts = {part: "failed" for part in PARSING_PARTS}
         db.commit()
     return cv
 
