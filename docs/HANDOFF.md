@@ -45,7 +45,7 @@ there are unsaved changes (Week 5–6 complete and merged)
   app from a cloud session: the Drive connector returns files inline, not as files on disk.
   The scan path was tested with a synthetic image-only PDF instead.
 - Week 5–6 is complete and merged: saving, restore on load, confirm-before-replace, funnel
-  tracking. Deploying needs `alembic upgrade head` (migrations 0002 and 0003).
+  tracking. Migrations run automatically on `docker compose up` (backend start command).
 - Open branches / PRs: none besides the session branch, which is merged into main.
 
 ## Done this session (details in `git log`)
@@ -84,7 +84,9 @@ there are unsaved changes (Week 5–6 complete and merged)
 - Test CVs are real people's CVs in the user's Google Drive folder "CVSmith"; never commit them
   or their contents. Read them with the Drive connector (`read_file_content` gives text;
   downloads come back inline, not as files).
-- Full stack: `docker-compose.yml` (Postgres, Redis, backend, Celery worker, frontend). The cloud
+- Full stack: `docker-compose.yml` (Postgres, Redis, backend, Celery worker, frontend); needs
+  `ANTHROPIC_API_KEY` in a root `.env`; migrations run on backend start. The user tests on
+  Windows (Git + Docker Desktop); not yet confirmed working there. The cloud
   container has no Docker daemon, but Postgres 16 and Redis are installed: run them natively
   (initdb/pg_ctl as the `postgres` user, port 5433; `redis-server --daemonize yes`), then
   `alembic upgrade head`, uvicorn, `celery -A app.workers.celery_app worker` and `npx vite`.
