@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.models.cv import CV, pending_parts
+from app.services import event_service
 from app.services.cv_parser import CvParser, ParseError, PartResult, merge_fragment
 from app.services.storage_service import StorageService
 from app.services.text_extraction import ExtractionError, extract_text
@@ -92,6 +93,8 @@ def _finish(db: Session, cv_id: uuid.UUID, upload_key: str, error) -> None:
     cv.parsing_status = "complete" if succeeded else "failed"
     cv.parsing_error = None if succeeded else (error or GENERIC_FAILURE)
     db.commit()
+    failed = sorted(part for part, s in parts.items() if s == "failed")
+    event_service.record(db, cv.user_id, "parsing_finished", {"status": cv.parsing_status, "failed_parts": failed})
 
 
 def _parse_file(storage: StorageService, parser: CvParser, key: str) -> Iterator[PartResult]:

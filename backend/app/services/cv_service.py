@@ -1,14 +1,15 @@
 import io
 import zipfile
 from pathlib import PurePosixPath
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.models.cv import CV, pending_parts
-from app.models.user import User
+from app.models.user import User, utcnow
 from app.services.storage_service import StorageService
 from app.utils import errors
 from app.utils.security import sanitize_filename_stem
@@ -78,6 +79,10 @@ def save_upload(
         cv.parsing_status = "pending"
         cv.parsing_error = None
         cv.parsing_parts = pending_parts()
+        # The new file replaces the CV, including the user's edits (the frontend confirms first).
+        cv.content = None
+        cv.applied_parts = []
+        cv.content_updated_at = None
     try:
         db.commit()
     except Exception:
@@ -86,4 +91,22 @@ def save_upload(
         raise
     if old_key:
         storage.delete(old_key)
+    return cv
+
+
+def save_content(db: Session, user: User, content: dict, applied_parts: List[str]) -> CV:
+    """Save the user's canvas. Creates the CV for a user who never uploaded a file."""
+    cv = get_cv(db, user)
+    if cv is None:
+        cv = CV(user_id=user.id, title="My CV", parsing_status="not_uploaded")
+        db.add(cv)
+    cv.content = content
+    cv.applied_parts = applied_parts
+    cv.content_updated_at = utcnow()
+    try:
+        db.commit()
+    except IntegrityError:
+        # Two first saves raced to create the CV (one per user): save into the one that won.
+        db.rollback()
+        return save_content(db, user, content, applied_parts)
     return cv

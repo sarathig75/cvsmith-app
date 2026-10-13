@@ -16,7 +16,7 @@ from app.schemas.auth import (
     UserOut,
     VerifyIn,
 )
-from app.services import auth_service
+from app.services import auth_service, event_service
 from app.services.email_service import get_email_sender
 from app.utils import errors
 from app.utils.jwt_handler import (
@@ -40,6 +40,7 @@ def _token_response(user: User) -> TokenOut:
 @router.post("/signup", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
 def signup(body: SignupIn, db: Session = Depends(get_db)):
     user = auth_service.signup(db, body.email, body.password)
+    event_service.record(db, user.id, "signup", {"method": "email"})
     # Verification is optional and never blocks signup.
     try:
         token = create_verification_token(user.id, user.email)
@@ -56,7 +57,12 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
 
 @router.post("/google", response_model=TokenOut)
 def google(body: GoogleLoginIn, db: Session = Depends(get_db)):
-    return _token_response(auth_service.google_login(db, body.id_token))
+    user, created = auth_service.google_login(db, body.id_token)
+    if created:
+        event_service.record(db, user.id, "signup", {"method": "google"})
+    # Google asserts the address is verified (recorded once per user).
+    event_service.record(db, user.id, "email_verified", {"method": "google"})
+    return _token_response(user)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -95,4 +101,6 @@ def verify(body: VerifyIn, db: Session = Depends(get_db)):
     # Token is bound to the email it was issued for.
     if user is None or user.email != claims.get("email"):
         raise errors.invalid_token()
-    return auth_service.mark_email_verified(db, user)
+    user = auth_service.mark_email_verified(db, user)
+    event_service.record(db, user.id, "email_verified", {"method": "email"})
+    return user

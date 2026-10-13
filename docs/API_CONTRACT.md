@@ -16,11 +16,18 @@ Codes: `VALIDATION_ERROR` (422), `EMAIL_EXISTS` (409), `INVALID_CREDENTIALS` (40
 User   = { id: string, email: string, email_verified: boolean, created_at: string }
 Token  = { access_token: string, token_type: "bearer", user: User }
 CV     = { id: string, title: string, privacy: "private"|"public",
-           parsing_status: "pending"|"in_progress"|"complete"|"failed",
+           parsing_status: "not_uploaded"|"pending"|"in_progress"|"complete"|"failed",
            parsing_error: string | null,   // user-facing message when parsing_status is "failed"
            parsing_parts: { basics: PartStatus, experience: PartStatus, extras: PartStatus },
-           json_resume: object,            // JSON Resume subset; grows as parts complete ({} at first)
+           json_resume: object,            // parser output only; JSON Resume subset; grows as parts complete ({} at first)
+           content: object | null,         // the user's canvas, saved by PATCH /api/cv; null until first save
+           applied_parts: ParsePart[],     // parsed parts already merged into content (client-managed)
+           content_updated_at: string | null,
            created_at: string }
+ParsePart  = "basics" | "experience" | "extras"
+CVSave     = { content: object,            // the canvas draft as the frontend keeps it (opaque to the server)
+               applied_parts: ParsePart[],
+               edited?: boolean }          // true if the change includes a user edit (not only parsed data)
 PartStatus = "pending" | "complete" | "failed"
 // Parts of json_resume each status covers:
 //   basics     -> basics (name, label, email, phone, url, location, profiles; not summary)
@@ -41,6 +48,7 @@ PartStatus = "pending" | "complete" | "failed"
 | POST | /api/auth/verify | no | `{token}` | 200 `User` |
 | POST | /api/cv/upload | yes | multipart `file` (PDF/DOCX, max 10MB) | 201 `CV` (parsing_status "pending"; parsing runs in the background, poll `GET /api/cv`) |
 | GET | /api/cv | yes | - | 200 `CV` or 404 `NOT_FOUND` |
+| PATCH | /api/cv | yes | `CVSave` | 200 `CV`. Creates the CV (parsing_status "not_uploaded") if the user has none. 422 `VALIDATION_ERROR` if `content` is not an object, is larger than 256 KB as JSON, or `applied_parts` has unknown values |
 
 ## Rules
 - Password: min 8 chars, at least 1 letter and 1 number. Email normalized to lowercase.
@@ -49,6 +57,12 @@ PartStatus = "pending" | "complete" | "failed"
 - Passwords hashed with bcrypt; users signed up via Google have null password_hash; login with password for such users returns `INVALID_CREDENTIALS`.
 - Google sign-in with an email that already has an account links to that account (Google must report the email as verified). If that account's email was never verified, its password is removed on linking, so only the Google owner can sign in; a verified account keeps its password.
 - CV parsing is asynchronous: pending -> in_progress -> complete | failed. The upload never waits for it. Parsing runs in three parts in parallel; each part's data is saved to `json_resume` and its `parsing_parts` entry set as soon as it finishes, while `parsing_status` is still `in_progress`, so clients can show parts early. `complete` = every part finished and at least one succeeded (failed parts are `failed` in `parsing_parts`; `parsing_error` stays null). `failed` = no part succeeded, or the file could not be read (all parts `failed`, `parsing_error` set). `json_resume` uses JSON Resume field names for: basics (incl. location, profiles), work, education, skills, certificates, languages (`language`, `fluency`), awards (`title`, `awarder`, `date`, `summary`), volunteer (`organization`, `position`, `startDate`, `endDate`, `summary`, `highlights`), projects (`name`, `description`, `startDate`, `endDate`, `url`, `highlights`), interests (`name`, `keywords`). Empty fields are omitted; list sections are always present once parsed. Extension: `work[].current` (boolean) is true only when the CV states the role is ongoing.
-- One CV per user in R1 (new upload replaces the existing record). New CVs default `privacy = "public"`.
+- One CV per user in R1 (new upload replaces the existing record). A new upload also clears `content` and
+  `applied_parts`: the new CV replaces the user's edits (the frontend asks the user to confirm first when
+  `content` is not null).
+- Saving: the frontend auto-saves about 2 s after the user stops editing. `json_resume` is written only by the
+  parser and `content` only by PATCH, so a save and a finishing parse never overwrite each other. On load the
+  frontend restores `content`, then merges parsed parts not in `applied_parts` (filling empty fields only).
+  Last write wins between two open tabs. New CVs default `privacy = "public"`.
 - CORS origins from env `CORS_ORIGINS`.
 - No Apple sign-in in Release 1.

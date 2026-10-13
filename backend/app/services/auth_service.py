@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Tuple
 
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -41,7 +41,8 @@ def login(db: Session, email: str, password: str) -> User:
     return user
 
 
-def google_login(db: Session, id_token: str) -> User:
+def google_login(db: Session, id_token: str) -> Tuple[User, bool]:
+    """Sign in with Google; returns the user and whether the account was just created."""
     try:
         claims = google_service.verify_google_id_token(id_token)
     except google_service.GoogleVerificationError:
@@ -51,6 +52,7 @@ def google_login(db: Session, id_token: str) -> User:
     if not google_id or not email or claims.get("email_verified") is not True:
         raise errors.google_auth_failed()
 
+    created = False
     user = db.scalar(select(User).where(User.google_id == google_id))
     if user is None:
         user = get_user_by_email(db, email)
@@ -72,12 +74,13 @@ def google_login(db: Session, id_token: str) -> User:
                 email_verified_at=datetime.now(timezone.utc),
             )
             db.add(user)
+            created = True
         try:
             db.commit()
         except IntegrityError:
             db.rollback()
             raise errors.google_auth_failed()
-    return user
+    return user, created
 
 
 def mark_email_verified(db: Session, user: User) -> User:

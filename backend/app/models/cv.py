@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import JSON, DateTime, ForeignKey, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -9,7 +9,8 @@ from app.database import Base
 from app.models.user import utcnow
 
 PRIVACY_VALUES = ("private", "public")
-PARSING_STATUSES = ("pending", "in_progress", "complete", "failed")
+# "not_uploaded": the CV was created by saving the canvas, without a file.
+PARSING_STATUSES = ("not_uploaded", "pending", "in_progress", "complete", "failed")
 PART_STATUSES = ("pending", "complete", "failed")
 PARSING_PARTS = ("basics", "experience", "extras")  # same order as cv_parser.PARTS
 
@@ -37,6 +38,10 @@ class CV(Base):
     # Per-part status ("pending" | "complete" | "failed"); see docs/API_CONTRACT.md.
     parsing_parts: Mapped[Dict[str, str]] = mapped_column(JSON, nullable=False, default=pending_parts)
     raw_upload_path: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    # The user's canvas as saved by PATCH /api/cv (json_resume is parser output only).
+    content: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    applied_parts: Mapped[List[str]] = mapped_column(JSON, nullable=False, default=list)
+    content_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utcnow
     )
