@@ -1,7 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-13 · main contains all work below (merged from `claude/trusting-darwin-wwr74d`;
-see `git log` for the latest commit).
+Updated: 2026-10-13 · Last commit on main: see `git log -1 origin/main` (this note is merged
+together with the canvas work: "docs: update handoff").
 
 ## Product decisions (stable)
 - Google sign-in only for social login (no Apple in Release 1).
@@ -9,60 +9,64 @@ see `git log` for the latest commit).
 - New CVs are public by default; one CV per user (a new upload replaces the old one).
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
 - Branching: `main` plus short-lived `feature/*` branches.
-- Google sign-in links to an existing same-email account; if that account's email was never
-  verified, its password is removed (closes the "pre-registered email" takeover hole).
-- CV parsing model: `claude-sonnet-5-5` (user's rule: use Sonnet unless Opus is qualitatively
-  better). Changeable via the `CLAUDE_MODEL` env var without code changes.
-- Parsing UX: upload never waits; canvas is editable immediately; parsed data fills only the
-  fields the user left empty (user edits always win).
-- Exception: the email from the CV replaces the pre-filled account email (people use different
-  addresses for applications); an email the user typed is kept.
-- Dates: Month + Year dropdowns, with one "Years only (hide months)" checkbox per entry.
-  Stored as "YYYY-MM" or "YYYY". Year-only CVs show years with the box pre-ticked.
-- Work entries have "I currently work here" (end date shown as "Present"). Parser sets
-  `work[].current` only when the CV explicitly says the role is ongoing.
-- Release 2: current-employer shield for recruiter search (see Release 2 roadmap in
-  docs/CVSmith_Release_1_FINAL_PLAN.md; design points still open).
+- Google sign-in links to an existing same-email account; an unverified account's password is removed.
+- CV parsing model: `claude-sonnet-5-5` (kept after a 5-CV Sonnet vs Opus comparison: no clear
+  quality winner, Sonnet ~2x cheaper and faster). Changeable via `CLAUDE_MODEL`.
+- Parsing is faithful: it keeps the candidate's wording. Writing rules (active verbs, no "I",
+  etc.) apply to Suggestions only; they are in the plan doc under Week 7–8.
+- Parsing UX: upload never waits; canvas editable immediately; parsed data fills only empty fields.
+  Exception: the CV's email replaces the pre-filled account email.
+- Dates: Month + Year dropdowns with "Years only"; stored "YYYY-MM" or "YYYY".
+- Work entries have "I currently work here"; parser sets `current` only when the CV says so.
+- Canvas = five fixed groups: Personal details, Professional details (summary, work, projects),
+  Education, Skills & Certifications (skills are LinkedIn-style tags), Others (languages, awards,
+  volunteering, interests, user-named custom sections). New content types go into Others
+  (`frontend/src/utils/otherKinds.ts`), not new sections. Preview follows the same order.
+- PowerPoint uploads are not accepted (PDF and DOCX only).
+- Release 2: current-employer shield for recruiter search (see plan doc).
 
 ## Current state
-- Backend: pytest 63/63 passing, flake8 clean.
-- Frontend: type-check clean, vitest 42/42 passing, `vite build` OK.
-- End-to-end run (API + real Redis + real Celery worker, Claude faked) succeeded: upload
-  responds in ~0.02s, parsed data stored. With Redis down, upload still succeeds and the
-  CV shows a clear "please upload again" error.
-- **Not yet tested against the real Claude API** (key not yet visible in a session; see Setup notes).
-- Open branches / PRs: none (session branch fully merged into main).
+- Backend: pytest 68/68 passing, flake8 clean.
+- Frontend: type-check clean, vitest 46/46 passing, `vite build` OK.
+- Parser verified against the real Claude API on 5 real CVs (Word, two-column PDF, fresher,
+  one-pager): all parse. Two parallel requests per CV (one schema with every section exceeds the
+  API's grammar size limit). ~$0.03–0.07 and 4–24 s per CV.
+- Scanned-PDF path (Claude reads the PDF directly) is still untested with a real scan.
+- Open branches / PRs: none besides the session branch, which is merged into main.
 
 ## Done this session
-- Restored session-1 scaffold from the git bundle; pushed `main` (d15b2d5).
-- Got all checks green; fixed verify-email link to `/verify` (3021a55, merged).
-- Added handoff note + `handoff` skill (4059506, merged).
-- Google account-linking fix, option A (49b5f35).
-- Week 3–4 CV parsing, backend + frontend (973ea8f).
-- Date pickers with "Years only" and CV-email preference (aaef571).
-- "I currently work here" + explicit `current` flag in parsing; employer shield planned (c0412be).
+- Verified the API key (`CVSMITH_CLAUDE_KEY`) works for Sonnet and Opus.
+- Fixed real parsing: every call had failed with 400 "compiled grammar is too large" (bcd1b1b).
+- Sonnet vs Opus comparison on 5 CVs; kept Sonnet.
+- Writing rules for suggestions + ATS-readable PDF template item in the plan (67edf90).
+- Parsing in two parallel requests; new sections languages, awards, volunteer, projects,
+  interests; rules against repeated roles, invented jobs and dropped content (f830b90).
+- Canvas regrouped into five groups, Others with typed items, headline, education score,
+  skills as tags (92ae610, b2f19c0); plan doc records the layout and re-order suggestions (8f4b182).
 
 ## Next steps
-1. Confirm the key is visible as `CVSMITH_CLAUDE_KEY` and works (one tiny test request).
-2. Run 3–5 real CVs (text PDF, Word, scanned PDF, two-column layout) through the parser and
-   check the results by eye. Needs the key; costs a few cents.
-3. Then Week 5–6: save canvas edits to the backend (PATCH /api/cv), live PDF preview.
+1. Decide on progressive parsing (open question below); if yes, update the contract first.
+2. Parsing quality: a CV with many unattached sections gets a very long summary (one test CV:
+   4,700 chars); bullets covering a whole employer land under its latest title. Decide where
+   such text belongs, then adjust the prompt and re-run the 5 CVs on Sonnet (~$0.15).
+3. Test a real scanned PDF and a full upload through the running app (docker-compose).
+4. Week 5–6: save canvas edits to the backend (PATCH /api/cv) and session restore.
+5. Draft a "CV house style" skill from the writing rules, for cv-writer / cv-jd-tailor and Suggestions.
 
 ## Open questions for the user
-- Key exists; verify it in a new session (see Setup notes for the variable name).
-- Sonnet vs Opus: no measured comparison yet. Proposal: when the key exists, parse the same
-  5 CVs with both models and compare side by side (well under $1). Approve?
+- Progressive parsing: split basics (fast) from work/education and the rest, save each part as it
+  finishes, and fill canvas groups as they arrive. Costs ~+$0.01 per CV and a contract change.
+- Where should text that belongs to no single role go (summary vs a new place)?
 
 ## Setup notes
 - Backend: `cd backend && python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt`.
-  Tests need no Postgres, Redis or API key (all faked).
+  Tests need no Postgres, Redis or API key (all faked) — so they cannot catch real-API errors;
+  check parser changes against the real API with a small script before merging.
 - Frontend: `cd frontend && npm install`.
 - Parsing worker: Redis + `celery -A app.workers.celery_app worker` (see backend/README.md).
-- API key: created by the user (Console key name `cvsmith-dev`, Default workspace, ~90-day
-  expiry). In the Claude Code cloud environment it must be stored as the environment variable
-  **`CVSMITH_CLAUDE_KEY`** (value without quotes): `ANTHROPIC_API_KEY` is not passed through
-  there (the platform appears to reserve `ANTHROPIC_*`; it also sets its own
-  `ANTHROPIC_BASE_URL`, which is why the app pins `CLAUDE_API_BASE_URL`). Locally or in Docker,
-  `ANTHROPIC_API_KEY` works. Only new sessions see environment changes. Never paste or commit it.
-- Full stack: `docker-compose.yml` (Postgres, Redis, backend, Celery worker, frontend);
-  pass `ANTHROPIC_API_KEY` in the shell or a root `.env`.
+- API key: env var **`CVSMITH_CLAUDE_KEY`** in the Claude Code cloud environment
+  (`ANTHROPIC_*` is reserved there); `ANTHROPIC_API_KEY` works locally/Docker. Never commit it.
+- Test CVs are real people's CVs in the user's Google Drive folder "CVSmith"; never commit them
+  or their contents. Read them with the Drive connector (`read_file_content` gives text;
+  downloads come back inline, not as files).
+- Full stack: `docker-compose.yml` (Postgres, Redis, backend, Celery worker, frontend).
