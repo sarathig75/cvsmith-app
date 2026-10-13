@@ -45,7 +45,16 @@ together with the canvas work: "docs: update handoff").
   skills as tags (92ae610, b2f19c0); plan doc records the layout and re-order suggestions (8f4b182).
 
 ## Next steps
-1. Decide on progressive parsing (open question below); if yes, update the contract first.
+1. Build progressive parsing (approved by the user 2026-10-13). Contract first, then code:
+   - Three parallel requests: basics (fast) / work + education / skills, certificates,
+     projects and Others. Save each part to `json_resume` as soon as it finishes.
+   - Contract: a CV can be partly parsed (e.g. per-part status, so the canvas knows which
+     groups are still filling and which failed). Keep "complete" meaning all parts done.
+   - Canvas: fill each group when its part arrives (merge already fills only empty fields);
+     show "Filling in…" on waiting groups; a failed part says "please fill in manually"
+     while the other parts are kept.
+   - Measure: time to first filled group and total time, before vs after, on the 5 test CVs.
+   - Cost: ~+$0.01 per CV (the CV is sent three times).
 2. Parsing quality: a CV with many unattached sections gets a very long summary (one test CV:
    4,700 chars); bullets covering a whole employer land under its latest title. Decide where
    such text belongs, then adjust the prompt and re-run the 5 CVs on Sonnet (~$0.15).
@@ -54,8 +63,6 @@ together with the canvas work: "docs: update handoff").
 5. Draft a "CV house style" skill from the writing rules, for cv-writer / cv-jd-tailor and Suggestions.
 
 ## Open questions for the user
-- Progressive parsing: split basics (fast) from work/education and the rest, save each part as it
-  finishes, and fill canvas groups as they arrive. Costs ~+$0.01 per CV and a contract change.
 - Where should text that belongs to no single role go (summary vs a new place)?
 
 ## Setup notes
