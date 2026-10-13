@@ -7,7 +7,7 @@ import pytest
 
 from app.models.cv import CV
 from app.services import parsing_service
-from app.services.cv_parser import ClaudeCvParser, ParsedResume, ParseError
+from app.services.cv_parser import ClaudeCvParser, CoreSections, ExtraSections, ParsedResume, ParseError
 from app.services.storage_service import LocalStorage
 from app.services.text_extraction import ExtractionError, extract_text
 from tests.conftest import DOCX_MIME, PDF_MIME, make_pdf
@@ -219,12 +219,20 @@ def test_new_upload_resets_previous_result(stored_cv, client, auth):
 # --- Claude parser (API client faked; no network) ------------------------------------
 
 class FakeMessages:
+    """Answers each request with the part of a full ParsedResume that its schema asks for."""
+
     def __init__(self, response):
-        self.response, self.kwargs = response, None
+        self.response, self.calls = response, []
 
     def parse(self, **kwargs):
-        self.kwargs = kwargs
-        return self.response
+        self.calls.append(kwargs)
+        full = self.response.parsed_output
+        part = None if full is None else kwargs["output_format"].model_validate(full.model_dump())
+        return SimpleNamespace(**{**vars(self.response), "parsed_output": part})
+
+    @property
+    def kwargs(self):
+        return self.calls[0]
 
 
 def fake_client(response):
@@ -238,11 +246,12 @@ def test_claude_parser_request_and_result():
     result = ClaudeCvParser(client=client, model="claude-sonnet-5-5").parse_text("Jane Doe CV")
     assert result["basics"] == {"name": "Jane Doe", "profiles": []}
     assert result["skills"] == [{"name": "SQL", "keywords": []}]
-    kw = messages.kwargs
-    assert kw["model"] == "claude-sonnet-5-5" and kw["output_format"] is ParsedResume
-    assert kw["fallbacks"] == "default" and kw["betas"] == ["server-side-fallback-2026-07-01"]
-    assert "Jane Doe CV" in kw["messages"][0]["content"][0]["text"]
-    assert "Never invent" in kw["system"]
+    assert {kw["output_format"] for kw in messages.calls} == {CoreSections, ExtraSections}
+    for kw in messages.calls:
+        assert kw["model"] == "claude-sonnet-5-5"
+        assert kw["fallbacks"] == "default" and kw["betas"] == ["server-side-fallback-2026-07-01"]
+        assert "Jane Doe CV" in kw["messages"][0]["content"][0]["text"]
+        assert "Never invent" in kw["system"]
 
 
 def test_claude_parser_sends_scanned_pdf_as_document():
@@ -268,11 +277,11 @@ def test_cv_row_defaults(client, auth):
 
 
 def test_current_role_is_explicit_in_schema_and_prompt():
-    from app.services.cv_parser import SYSTEM_PROMPT
+    from app.services.cv_parser import CORE_TASK
 
     work = ParsedResume.model_validate({"basics": {}, "work": [{"name": "Acme"}]}).work[0]
     assert work.current is False  # a missing end date alone does not mean "current"
-    assert "current to true" in SYSTEM_PROMPT
+    assert "current to true" in CORE_TASK
 
 
 def test_parser_client_uses_cvsmith_key_and_pinned_base_url(monkeypatch):
@@ -294,7 +303,51 @@ def test_schema_has_no_optional_unions():
     # made it "too large" and every real parse failed with a 400.
     from anthropic.lib._parse._transform import transform_schema
 
-    assert "anyOf" not in json.dumps(transform_schema(ParsedResume))
+    for schema in (CoreSections, ExtraSections):
+        assert "anyOf" not in json.dumps(transform_schema(schema))
+
+
+def test_each_request_schema_stays_well_under_the_grammar_limit():
+    # The full schema with every section was rejected as "too large"; each half must stay
+    # small. ~5.5k chars was accepted, so keep each request's schema below that.
+    from anthropic.lib._parse._transform import transform_schema
+
+    for schema in (CoreSections, ExtraSections):
+        assert len(json.dumps(transform_schema(schema))) < 5000, schema.__name__
+
+
+def test_parser_combines_both_requests_including_fresher_sections():
+    output = ParsedResume.model_validate({
+        "basics": {"name": "Jane"},
+        "work": [{"name": "Acme"}],
+        "languages": [{"language": "Tamil", "fluency": "Native"}],
+        "awards": [{"title": "Employee of the month", "date": "2018-08"}],
+        "volunteer": [{"organization": "College symposium", "position": "Sponsorship head"}],
+        "projects": [{"name": "Portfolio site"}],
+        "interests": [{"name": "Chess"}],
+    })
+    client, _ = fake_client(SimpleNamespace(stop_reason="end_turn", parsed_output=output, _request_id="r"))
+    result = ClaudeCvParser(client=client, model="m").parse_text("x")
+    assert result["basics"]["name"] == "Jane" and result["work"][0]["name"] == "Acme"
+    assert result["languages"] == [{"language": "Tamil", "fluency": "Native"}]
+    assert result["awards"] == [{"title": "Employee of the month", "date": "2018-08"}]
+    assert result["volunteer"][0]["position"] == "Sponsorship head"
+    assert result["projects"] == [{"name": "Portfolio site", "highlights": []}]
+    assert result["interests"] == [{"name": "Chess", "keywords": []}]
+
+
+def test_parse_fails_when_either_request_fails():
+    class OneFails(FakeMessages):
+        def parse(self, **kwargs):
+            if kwargs["output_format"] is ExtraSections:
+                return SimpleNamespace(stop_reason="refusal", parsed_output=None, _request_id="r")
+            return super().parse(**kwargs)
+
+    output = ParsedResume.model_validate({"basics": {}})
+    messages = OneFails(SimpleNamespace(stop_reason="end_turn", parsed_output=output, _request_id="r"))
+    client = SimpleNamespace(beta=SimpleNamespace(messages=messages))
+    with pytest.raises(ParseError):
+        ClaudeCvParser(client=client, model="m").parse_text("x")
 
 
 def test_parser_drops_empty_values_but_keeps_lists():
