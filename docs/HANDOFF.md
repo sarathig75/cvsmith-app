@@ -32,7 +32,7 @@ abbreviations automatically, leave unknown ones
 - Frontend: type-check clean, vitest 47/47 passing, `vite build` OK (run at 118c72b).
 - Parser verified against the real Claude API on 5 real CVs (Word, two-column PDF, fresher,
   one-pager): all parse. Three parallel requests per CV, each part saved as it finishes
-  (`parsing_parts`). First data after 1.9–5.0 s, all done after 5–19 s; ~$0.04–0.08 per CV.
+  (`parsing_parts`). First data after 1.9–5.0 s, all done after 5–19 s; ~$0.04–0.08 per CV (estimated, not measured).
 - Scanned-PDF path (Claude reads the PDF directly) is still untested with a real scan.
 - Open branches / PRs: none besides the session branch, which is merged into main.
 
