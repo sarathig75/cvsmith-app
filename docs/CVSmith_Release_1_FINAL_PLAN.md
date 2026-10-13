@@ -322,8 +322,8 @@ format, examples). Change the rules there; the list below is a summary.
 - Do not use decorative language unsupported by evidence.
 - Preserve accurate job titles and employment dates.
 - Use terminology appropriate to the candidate's profession.
-- Expand uncommon abbreviations on first use (show the expansion to the user to confirm;
-  never guess an expansion the CV does not support).
+- Expand uncommon abbreviations on first use when the meaning is known; otherwise leave them
+  as written (no questions to the user).
 - Keep sentences concise; split long sentences into multiple bullet points.
 - Never add facts that are not in the CV (same rule as parsing).
 - Suggestions may also propose re-ordering sections or entries (e.g. projects before work

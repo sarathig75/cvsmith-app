@@ -19,7 +19,7 @@ reject.
 6. Do not use decorative language unsupported by evidence ("world-class", "visionary").
 7. Preserve accurate job titles and employment dates exactly as given.
 8. Use terminology appropriate to the candidate's profession.
-9. Expand uncommon abbreviations on first use - only when the expansion is certain.
+9. Expand uncommon abbreviations on first use when the meaning is known; otherwise leave them as written.
 10. Keep sentences concise; split long sentences into separate bullet points.
 11. Never add facts that are not in the candidate's material.
 
@@ -32,8 +32,9 @@ order, no text inside images, graphics or tables.
   Employers, titles, dates, degrees, numbers, clients and tools come from the candidate only.
 - **No invented numbers.** If an outcome has no figure, leave it without one. Do not add a
   number, a placeholder, or a question asking the candidate for one.
-- **Uncertain abbreviations:** if an abbreviation could mean several things (e.g. "OWS",
-  "HDR"), keep it as written rather than guessing an expansion.
+- **Abbreviations:** if the meaning is known (a standard term like ERP, or spelled out
+  elsewhere in the CV), expand it automatically on first use. If it is not known or could mean
+  several things (e.g. "OWS", "HDR"), leave it exactly as written. Never ask the candidate.
 - **Keep meaning and scope.** "Supported the migration" must not become "Led the migration".
   If ownership is unclear, keep the weaker verb.
 - **Re-ordering is allowed** as a suggestion: sections (e.g. projects before work experience
