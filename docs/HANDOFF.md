@@ -1,7 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-13 · Last commit on main before this note: fd6ced6 feat(skills): expand known
-abbreviations automatically, leave unknown ones
+Updated: 2026-10-13 · Last commit on main before this note: eaed67f docs(plan): funnel tracking
+in Week 5-6 (own events table, no CV content)
 
 ## Product decisions (stable)
 - Google sign-in only for social login (no Apple in Release 1).
@@ -30,10 +30,12 @@ abbreviations automatically, leave unknown ones
 
 ## Current state
 - Backend: pytest 72/72 passing, flake8 clean; migration 0002 tested up and down on SQLite.
-- Frontend: type-check clean, vitest 47/47 passing, `vite build` OK (run at 118c72b).
+- Frontend: type-check clean, vitest 47/47 passing, `vite build` OK.
+  (All checks run at 118c72b; later commits change only docs.)
 - Parser verified against the real Claude API on 5 real CVs (Word, two-column PDF, fresher,
   one-pager): all parse. Three parallel requests per CV, each part saved as it finishes
-  (`parsing_parts`). First data after 1.9–5.0 s, all done after 5–19 s; ~$0.04–0.08 per CV (estimated, not measured).
+  (`parsing_parts`). First data after 1.9–5.0 s (was 3.0–22.1 s), all done after 5–19 s.
+  Cost ~$0.04–0.08 per CV (estimated, not measured).
 - Scanned-PDF path (Claude reads the PDF directly) is still untested with a real scan.
 - Open branches / PRs: none besides the session branch, which is merged into main.
 
@@ -48,16 +50,16 @@ abbreviations automatically, leave unknown ones
 - `cv-house-style` skill drafted and revised with the user (f6a6183, 7cbe7f2, fd6ced6); the user
   uploaded it to their claude.ai account.
 - Progressive parsing: contract, migration 0002, parser, worker and canvas (118c72b), merged.
-- Funnel tracking planned for Week 5–6 (plan doc).
+- Funnel tracking planned for Week 5–6 in the plan doc (eaed67f).
 
 ## Next steps
-1. Progressive parsing is built (see Done). Next: watch it in the running app with a real upload.
+1. Run the full app (docker-compose, `alembic upgrade head` for migration 0002) and upload a
+   real CV: watch the groups fill in part by part. Also try a real scanned PDF (still untested).
 2. Parsing quality: bullets covering a whole employer land under its latest title (open).
    Text that belongs to no single role stays in the summary (user decision 2026-10-13, option a).
-3. Test a real scanned PDF and a full upload through the running app (docker-compose).
-4. Week 5–6: save canvas edits to the backend (PATCH /api/cv), session restore, and funnel
+3. Week 5–6: save canvas edits to the backend (PATCH /api/cv), session restore, and funnel
    tracking (own events table, plan doc "Funnel tracking"; never record CV content).
-5. Week 7–8 Suggestions: build its prompt from `.claude/skills/cv-house-style/SKILL.md`.
+4. Week 7–8 Suggestions: build its prompt from `.claude/skills/cv-house-style/SKILL.md`.
 
 ## Open questions for the user
 - none
@@ -78,3 +80,5 @@ abbreviations automatically, leave unknown ones
   Claude cannot update. After any rule change: zip the folder
   (`cd .claude/skills && zip -r cv-house-style.zip cv-house-style`), send it to the user, and
   remind them to re-upload it in claude.ai.
+- The product-management plugin connectors (Amplitude, Linear, Notion, Slack, ...) failed to
+  connect in this environment (proxy 403). Not needed so far; they would need network access.
