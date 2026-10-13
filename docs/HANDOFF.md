@@ -48,24 +48,14 @@ there are unsaved changes (Week 5–6 complete and merged)
   tracking. Deploying needs `alembic upgrade head` (migrations 0002 and 0003).
 - Open branches / PRs: none besides the session branch, which is merged into main.
 
-## Done this session
-- Key verified; fixed real parsing (every call failed with 400 "compiled grammar is too large",
-  bcd1b1b); Sonnet vs Opus on 5 CVs, kept Sonnet.
-- Writing rules for suggestions + ATS-readable PDF template item in the plan (67edf90).
-- Parsing in two parallel requests; new sections languages, awards, volunteer, projects,
-  interests; rules against repeated roles, invented jobs and dropped content (f830b90).
-- Canvas regrouped into five groups, Others with typed items, headline, education score,
-  skills as tags (92ae610, b2f19c0); plan doc records the layout and re-order suggestions (8f4b182).
-- `cv-house-style` skill drafted and revised with the user (f6a6183, 7cbe7f2, fd6ced6); the user
-  uploaded it to their claude.ai account.
-- Progressive parsing: contract, migration 0002, parser, worker and canvas (118c72b), merged.
-- Funnel tracking planned for Week 5–6 in the plan doc (eaed67f).
-- End-to-end test of progressive parsing in the running app (text PDF and scan-like PDF).
-- Fixed duplicate awards: achievements listed under a job stay with the job (f287c58).
-- Week 5–6 built (e10ac4c, 6705662 + "Saving…" fix): PATCH /api/cv, restore on load, auto-save,
-  confirm before replacing, funnel events + `docs/FUNNEL.md`. Verified end to end in the running
-  app: parse → auto-save → edit → reload restores it → deleted job stays deleted → login with a
-  new file asks first, "Keep" keeps edits; funnel query returns the right counts.
+## Done this session (details in `git log`)
+- Real parsing fixed (bcd1b1b); Sonnet kept after a 5-CV comparison with Opus.
+- Parser: languages, awards, volunteer, projects, interests; progressive parsing in three parts
+  (118c72b); no duplicate awards (f287c58). Verified end to end, incl. a scan-like PDF.
+- Canvas: five groups, Others with typed items, skills as tags (92ae610, b2f19c0).
+- Week 5–6: saving, restore on load, confirm-before-replace, funnel events and `docs/FUNNEL.md`
+  (e10ac4c, 6705662, 407c4c7). Verified end to end in the running app.
+- `cv-house-style` skill written with the user and uploaded to their claude.ai account (fd6ced6).
 
 ## Next steps
 1. Week 7–8 Suggestions (next build). Prompt from `.claude/skills/cv-house-style/SKILL.md`;
