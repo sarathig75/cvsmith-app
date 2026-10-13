@@ -1,7 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-13 · Last commit on main: see `git log -1 origin/main` (this note is merged
-together with the canvas work: "docs: update handoff").
+Updated: 2026-10-13 · Last commit on main before this note: fd6ced6 feat(skills): expand known
+abbreviations automatically, leave unknown ones
 
 ## Product decisions (stable)
 - Google sign-in only for social login (no Apple in Release 1).
@@ -13,7 +13,9 @@ together with the canvas work: "docs: update handoff").
 - CV parsing model: `claude-sonnet-5-5` (kept after a 5-CV Sonnet vs Opus comparison: no clear
   quality winner, Sonnet ~2x cheaper and faster). Changeable via `CLAUDE_MODEL`.
 - Parsing is faithful: it keeps the candidate's wording. Writing rules (active verbs, no "I",
-  etc.) apply to Suggestions only; they are in the plan doc under Week 7–8.
+  etc.) apply to Suggestions only. Master copy: `.claude/skills/cv-house-style/SKILL.md`
+  (reviewed by the user). Suggestions show Current → Suggested only: no rule explanations, no
+  questions; never add or ask for numbers; expand an abbreviation only if its meaning is known.
 - Parsing UX: upload never waits; canvas editable immediately; parsed data fills only empty fields.
   Exception: the CV's email replaces the pre-filled account email.
 - Dates: Month + Year dropdowns with "Years only"; stored "YYYY-MM" or "YYYY".
@@ -28,6 +30,7 @@ together with the canvas work: "docs: update handoff").
 ## Current state
 - Backend: pytest 68/68 passing, flake8 clean.
 - Frontend: type-check clean, vitest 46/46 passing, `vite build` OK.
+  (Checks last run at b2f19c0; later commits change only docs and the skill.)
 - Parser verified against the real Claude API on 5 real CVs (Word, two-column PDF, fresher,
   one-pager): all parse. Two parallel requests per CV (one schema with every section exceeds the
   API's grammar size limit). ~$0.03–0.07 and 4–24 s per CV.
@@ -35,14 +38,15 @@ together with the canvas work: "docs: update handoff").
 - Open branches / PRs: none besides the session branch, which is merged into main.
 
 ## Done this session
-- Verified the API key (`CVSMITH_CLAUDE_KEY`) works for Sonnet and Opus.
-- Fixed real parsing: every call had failed with 400 "compiled grammar is too large" (bcd1b1b).
-- Sonnet vs Opus comparison on 5 CVs; kept Sonnet.
+- Key verified; fixed real parsing (every call failed with 400 "compiled grammar is too large",
+  bcd1b1b); Sonnet vs Opus on 5 CVs, kept Sonnet.
 - Writing rules for suggestions + ATS-readable PDF template item in the plan (67edf90).
 - Parsing in two parallel requests; new sections languages, awards, volunteer, projects,
   interests; rules against repeated roles, invented jobs and dropped content (f830b90).
 - Canvas regrouped into five groups, Others with typed items, headline, education score,
   skills as tags (92ae610, b2f19c0); plan doc records the layout and re-order suggestions (8f4b182).
+- `cv-house-style` skill drafted and revised with the user (f6a6183, 7cbe7f2, fd6ced6); the user
+  uploaded it to their claude.ai account.
 
 ## Next steps
 1. Build progressive parsing (approved by the user 2026-10-13). Contract first, then code:
@@ -60,8 +64,7 @@ together with the canvas work: "docs: update handoff").
    such text belongs, then adjust the prompt and re-run the 5 CVs on Sonnet (~$0.15).
 3. Test a real scanned PDF and a full upload through the running app (docker-compose).
 4. Week 5–6: save canvas edits to the backend (PATCH /api/cv) and session restore.
-5. Week 7–8 Suggestions: build its prompt from `.claude/skills/cv-house-style/SKILL.md` (drafted
-   2026-10-13; review with the user before relying on it).
+5. Week 7–8 Suggestions: build its prompt from `.claude/skills/cv-house-style/SKILL.md`.
 
 ## Open questions for the user
 - Where should text that belongs to no single role go (summary vs a new place)?
@@ -78,3 +81,7 @@ together with the canvas work: "docs: update handoff").
   or their contents. Read them with the Drive connector (`read_file_content` gives text;
   downloads come back inline, not as files).
 - Full stack: `docker-compose.yml` (Postgres, Redis, backend, Celery worker, frontend).
+- `cv-house-style` exists twice: the repo copy (master) and the user's claude.ai upload, which
+  Claude cannot update. After any rule change: zip the folder
+  (`cd .claude/skills && zip -r cv-house-style.zip cv-house-style`), send it to the user, and
+  remind them to re-upload it in claude.ai.
