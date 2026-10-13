@@ -1,7 +1,6 @@
 # CVSmith handoff
 
-Updated: 2026-10-13 · Last commit on main before this note: eaed67f docs(plan): funnel tracking
-in Week 5-6 (own events table, no CV content)
+Updated: 2026-10-13 · Last commit on main before this note: 4e1a751 docs: update handoff
 
 ## Product decisions (stable)
 - Google sign-in only for social login (no Apple in Release 1).
@@ -36,7 +35,13 @@ in Week 5-6 (own events table, no CV content)
   one-pager): all parse. Three parallel requests per CV, each part saved as it finishes
   (`parsing_parts`). First data after 1.9–5.0 s (was 3.0–22.1 s), all done after 5–19 s.
   Cost ~$0.04–0.08 per CV (estimated, not measured).
-- Scanned-PDF path (Claude reads the PDF directly) is still untested with a real scan.
+- End-to-end in the running app (Postgres 16 + Redis + API + Celery worker + Vite, real Claude
+  API, sign-up and upload through the browser) works: a text PDF of a real CV filled contact
+  details and skills by 5.0 s and work/education by 10.8 s; an image-only (scan-like) PDF went
+  to Claude as a document and parsed fully and correctly in 4.9 s. Migration 0002 ran on Postgres.
+- The user's own scanned CV ("scanned CV sample.pdf" in Drive) could not be pushed through the
+  app from a cloud session: the Drive connector returns files inline, not as files on disk.
+  The scan path was tested with a synthetic image-only PDF instead.
 - Open branches / PRs: none besides the session branch, which is merged into main.
 
 ## Done this session
@@ -51,12 +56,15 @@ in Week 5-6 (own events table, no CV content)
   uploaded it to their claude.ai account.
 - Progressive parsing: contract, migration 0002, parser, worker and canvas (118c72b), merged.
 - Funnel tracking planned for Week 5–6 in the plan doc (eaed67f).
+- End-to-end test of progressive parsing in the running app (text PDF and scan-like PDF).
 
 ## Next steps
-1. Run the full app (docker-compose, `alembic upgrade head` for migration 0002) and upload a
-   real CV: watch the groups fill in part by part. Also try a real scanned PDF (still untested).
-2. Parsing quality: bullets covering a whole employer land under its latest title (open).
-   Text that belongs to no single role stays in the summary (user decision 2026-10-13, option a).
+1. The user uploads "scanned CV sample.pdf" in the running app on their own machine to check a
+   real scan (the only part of the end-to-end test not done).
+2. Parsing quality (open): bullets covering a whole employer land under its latest title; an
+   achievement listed under a job (e.g. "Employee of the month") can also appear in Awards, as
+   the two parts extract it independently. Text that belongs to no single role stays in the
+   summary (user decision 2026-10-13, option a).
 3. Week 5–6: save canvas edits to the backend (PATCH /api/cv), session restore, and funnel
    tracking (own events table, plan doc "Funnel tracking"; never record CV content).
 4. Week 7–8 Suggestions: build its prompt from `.claude/skills/cv-house-style/SKILL.md`.
@@ -75,7 +83,10 @@ in Week 5-6 (own events table, no CV content)
 - Test CVs are real people's CVs in the user's Google Drive folder "CVSmith"; never commit them
   or their contents. Read them with the Drive connector (`read_file_content` gives text;
   downloads come back inline, not as files).
-- Full stack: `docker-compose.yml` (Postgres, Redis, backend, Celery worker, frontend).
+- Full stack: `docker-compose.yml` (Postgres, Redis, backend, Celery worker, frontend). The cloud
+  container has no Docker daemon, but Postgres 16 and Redis are installed: run them natively
+  (initdb/pg_ctl as the `postgres` user, port 5433; `redis-server --daemonize yes`), then
+  `alembic upgrade head`, uvicorn, `celery -A app.workers.celery_app worker` and `npx vite`.
 - `cv-house-style` exists twice: the repo copy (master) and the user's claude.ai upload, which
   Claude cannot update. After any rule change: zip the folder
   (`cd .claude/skills && zip -r cv-house-style.zip cv-house-style`), send it to the user, and
