@@ -49,6 +49,10 @@ export function OthersSection({ entries, onChange }: Props) {
         {entries.map((entry, i) => {
           const kind = isOtherKind(entry.kind) ? entry.kind : 'custom';
           const spec = OTHER_KINDS[kind];
+          // "Language 2", "Award 1": numbered within the item's own type; custom items use their section title.
+          const sameKind = entries.slice(0, i + 1).filter((e) => (isOtherKind(e.kind) ? e.kind : 'custom') === kind);
+          const name =
+            kind === 'custom' && entry.section?.trim() ? entry.section.trim() : `${spec.item} ${sameKind.length}`;
           const id = (k: string) => `${base}-${entry.id}-${k}`;
           const text = (key: string, label: string, placeholder = '') => (
             <div key={key}>
@@ -68,12 +72,12 @@ export function OthersSection({ entries, onChange }: Props) {
           return (
             <li key={entry.id} className="rounded-sm bg-slate-100 p-4">
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-sm font-semibold text-slate-800">Item {i + 1}</span>
+                <span className="text-sm font-semibold text-slate-800">{name}</span>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => onChange(entries.filter((e) => e.id !== entry.id))}
-                  aria-label={`Remove item ${i + 1}`}
+                  aria-label={`Remove ${name}`}
                 >
                   Remove
                 </Button>

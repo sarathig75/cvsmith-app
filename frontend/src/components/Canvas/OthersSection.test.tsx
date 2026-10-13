@@ -34,7 +34,13 @@ describe('Others group', () => {
     expect(preview().getByText('Languages')).toBeInTheDocument();
     expect(preview().getByText('Native')).toBeInTheDocument();
 
+    expect(screen.getByText('Language 1')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '+ Add Item' }));
+    expect(screen.getByText('Language 2')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Remove Language 2' }));
+
     await user.selectOptions(screen.getByLabelText('Type'), 'award');
+    expect(screen.getByText('Award 1')).toBeInTheDocument();
     expect(screen.getByLabelText('Award')).toHaveValue('Tamil');
     expect(screen.getByLabelText('Awarded by')).toBeInTheDocument();
     expect(screen.getByLabelText('Description')).toBeInTheDocument();
