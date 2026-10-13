@@ -433,6 +433,19 @@ GET    /api/billing/status           → Check billing status
   - MCP integration
   - Private search endpoint
   - Recruiter tokens (scoped, revocable)
+  - **Current-employer shield** (requested 2026-10-13): a recruiter must never find, in
+    search results or via the search endpoint, the CV of someone who currently works for
+    the recruiter's own organization. Design notes, to be decided when this is built:
+    - Depends on: recruiter accounts tied to a verified organization (e.g. verified
+      company email domain), and the candidate's current role(s) — the canvas's
+      "I currently work here" flag (Release 1) is the data source.
+    - Matching org ↔ employer: CV employer names are free text ("Acme", "Acme Ltd",
+      a subsidiary), so auto-matching alone is unreliable. Option: let candidates confirm
+      or add the companies to hide from, pre-filled from their current roles.
+    - Default on for every candidate with a current role (recommended), or opt-in?
+    - Limits to state honestly in the UI: the shield covers CVSmith search/discovery only.
+      A **public** CV's own link and AI-readable endpoint are reachable by anyone who has the
+      URL, and agency recruiters working for the employer are not detectable.
 - Section-level privacy controls
 - Advanced analytics
 

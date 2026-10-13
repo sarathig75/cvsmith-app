@@ -25,7 +25,15 @@ function Harness({ initial }: { initial: Entry[] }) {
   };
   return (
     <>
-      <EntryListSection title="Work" itemLabel="Experience" addLabel="Add" fields={fields} entries={entries} onChange={setEntries} />
+      <EntryListSection
+        title="Work"
+        currentToggle={{ label: 'I currently work here', endKey: 'end' }}
+        itemLabel="Experience"
+        addLabel="Add"
+        fields={fields}
+        entries={entries}
+        onChange={setEntries}
+      />
       <PreviewPanel draft={draft} />
     </>
   );
@@ -74,5 +82,32 @@ describe('date fields with "Years only"', () => {
     expect(screen.getByLabelText('Years only (hide months)')).toBeChecked();
     expect(screen.queryByLabelText('Start Date month')).not.toBeInTheDocument();
     expect(screen.getByLabelText('End Date year')).toHaveValue('2018');
+  });
+});
+
+describe('"I currently work here"', () => {
+  it('replaces the end date with "Present" and clears any end date', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={[job({ start: '2019-03', end: '2021-07' })]} />);
+    await user.click(screen.getByLabelText('I currently work here'));
+    expect(screen.queryByLabelText('End Date year')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Present').length).toBeGreaterThan(0);
+    expect(screen.getByText(/Mar 2019 – Present/)).toBeInTheDocument();
+
+    // Unticking brings back an empty end date rather than the old one.
+    await user.click(screen.getByLabelText('I currently work here'));
+    expect(screen.getByLabelText('End Date year')).toHaveValue('');
+    expect(screen.getByText(/Mar 2019/)).toBeInTheDocument();
+    expect(screen.queryByText(/Present/)).not.toBeInTheDocument();
+  });
+
+  it('works together with "Years only"', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={[job({ start: '2015', current: 'true', yearOnly: 'true' })]} />);
+    expect(screen.getByLabelText('I currently work here')).toBeChecked();
+    expect(screen.getByText(/2015 – Present/)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Start Date month')).not.toBeInTheDocument();
+    await user.click(screen.getByLabelText('Years only (hide months)'));
+    expect(screen.getByLabelText('Start Date month')).toBeInTheDocument();
   });
 });

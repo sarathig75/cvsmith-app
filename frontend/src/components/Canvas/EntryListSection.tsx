@@ -13,6 +13,8 @@ export type FieldSpec = {
 
 type Props = {
   title: string;
+  /** Adds an "ongoing" checkbox (e.g. "I currently work here") that clears and hides the given end-date field. */
+  currentToggle?: { label: string; endKey: string };
   itemLabel: string;
   addLabel: string;
   fields: FieldSpec[];
@@ -20,7 +22,7 @@ type Props = {
   onChange: (entries: Entry[]) => void;
 };
 
-export function EntryListSection({ title, itemLabel, addLabel, fields, entries, onChange }: Props) {
+export function EntryListSection({ title, currentToggle, itemLabel, addLabel, fields, entries, onChange }: Props) {
   const base = useId();
   const update = (id: string, key: string, value: string) =>
     onChange(entries.map((e) => (e.id === id ? { ...e, [key]: value } : e)));
@@ -32,6 +34,12 @@ export function EntryListSection({ title, itemLabel, addLabel, fields, entries, 
   const setYearOnly = (entry: Entry, on: boolean) => {
     const next: Entry = { ...entry, yearOnly: on ? 'true' : '' };
     if (on) for (const k of dateKeys) next[k] = parseDate(entry[k]).year;
+    onChange(entries.map((e) => (e.id === entry.id ? next : e)));
+  };
+  const setCurrent = (entry: Entry, on: boolean) => {
+    if (!currentToggle) return;
+    const next: Entry = { ...entry, current: on ? 'true' : '' };
+    if (on) next[currentToggle.endKey] = '';
     onChange(entries.map((e) => (e.id === entry.id ? next : e)));
   };
 
@@ -55,6 +63,14 @@ export function EntryListSection({ title, itemLabel, addLabel, fields, entries, 
               {fields.map((f) => {
                 const id = `${base}-${entry.id}-${f.key}`;
                 const wide = f.type === 'textarea';
+                if (f.type === 'date' && currentToggle?.endKey === f.key && entry.current === 'true') {
+                  return (
+                    <div key={f.key}>
+                      <p className="mb-1 block text-sm font-medium">{f.label}</p>
+                      <p className="flex min-h-[44px] items-center text-sm text-slate-700">Present</p>
+                    </div>
+                  );
+                }
                 if (f.type === 'date') {
                   return (
                     <div key={f.key}>
@@ -95,17 +111,30 @@ export function EntryListSection({ title, itemLabel, addLabel, fields, entries, 
                 );
               })}
             </div>
-            {dateKeys.length > 0 && (
-              <label className="mt-3 flex min-h-[44px] w-fit cursor-pointer items-center gap-2 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4"
-                  checked={entry.yearOnly === 'true'}
-                  onChange={(e) => setYearOnly(entry, e.target.checked)}
-                />
-                Years only (hide months)
-              </label>
-            )}
+            <div className="mt-3 flex flex-wrap gap-x-6">
+              {currentToggle && (
+                <label className="flex min-h-[44px] w-fit cursor-pointer items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={entry.current === 'true'}
+                    onChange={(e) => setCurrent(entry, e.target.checked)}
+                  />
+                  {currentToggle.label}
+                </label>
+              )}
+              {dateKeys.length > 0 && (
+                <label className="flex min-h-[44px] w-fit cursor-pointer items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={entry.yearOnly === 'true'}
+                    onChange={(e) => setYearOnly(entry, e.target.checked)}
+                  />
+                  Years only (hide months)
+                </label>
+              )}
+            </div>
           </li>
         ))}
       </ul>

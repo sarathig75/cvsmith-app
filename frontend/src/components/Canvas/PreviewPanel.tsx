@@ -4,7 +4,8 @@ import { formatDate } from '../../utils/dates';
 export function PreviewPanel({ draft }: { draft: CvDraft }) {
   const p = draft.personal;
   const contact = [p.email, p.phone, p.location, p.linkedin, p.portfolio].filter(Boolean);
-  const range = (e: Record<string, string>) => [formatDate(e.start), formatDate(e.end)].filter(Boolean).join(' – ');
+  const range = (e: Record<string, string>) =>
+    [formatDate(e.start), e.current === 'true' ? 'Present' : formatDate(e.end)].filter(Boolean).join(' – ');
   return (
     <aside aria-label="CV preview" className="card h-fit lg:sticky lg:top-24">
       <h3 className="mb-4 text-base font-semibold">📄 PDF Preview</h3>

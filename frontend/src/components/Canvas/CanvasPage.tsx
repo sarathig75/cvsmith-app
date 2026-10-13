@@ -93,6 +93,7 @@ export function CanvasPage() {
 
           <EntryListSection
             title="Work Experience"
+            currentToggle={{ label: 'I currently work here', endKey: 'end' }}
             itemLabel="Experience"
             addLabel="Add Experience"
             entries={draft.experience}

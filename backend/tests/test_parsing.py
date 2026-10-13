@@ -264,3 +264,11 @@ def test_cv_row_defaults(client, auth):
     with client.session_factory() as db:
         cv = db.query(CV).one()
         assert cv.json_resume == {} and cv.parsing_error is None
+
+
+def test_current_role_is_explicit_in_schema_and_prompt():
+    from app.services.cv_parser import SYSTEM_PROMPT
+
+    work = ParsedResume.model_validate({"basics": {}, "work": [{"name": "Acme"}]}).work[0]
+    assert work.current is False  # a missing end date alone does not mean "current"
+    assert "current to true" in SYSTEM_PROMPT

@@ -34,7 +34,16 @@ export type JsonResume = {
     location?: { city?: string; region?: string; countryCode?: string };
     profiles?: { network?: string; url?: string; username?: string }[];
   };
-  work?: { name?: string; position?: string; location?: string; startDate?: string; endDate?: string; summary?: string; highlights?: string[] }[];
+  work?: {
+    name?: string;
+    position?: string;
+    location?: string;
+    startDate?: string;
+    endDate?: string;
+    current?: boolean; // CVSmith extension: true only when the CV says the role is ongoing
+    summary?: string;
+    highlights?: string[];
+  }[];
   education?: { institution?: string; area?: string; studyType?: string; startDate?: string; endDate?: string; score?: string }[];
   skills?: { name?: string; keywords?: string[] }[];
   certificates?: { name?: string; issuer?: string; date?: string; url?: string }[];

@@ -56,6 +56,18 @@ describe('resumeToDraft', () => {
     expect(d.certifications[0]).toMatchObject({ date: '2020', yearOnly: 'true' });
   });
 
+  it('marks roles the CV says are ongoing as current', () => {
+    const d = resumeToDraft({
+      work: [
+        { name: 'Now Co', startDate: '2021', endDate: '2023', current: true },
+        { name: 'Old Co', startDate: '2018-02' },
+      ],
+    });
+    expect(d.experience[0]).toMatchObject({ start: '2021', end: '', current: 'true', yearOnly: 'true' });
+    // no end date given is not the same as "current"
+    expect(d.experience[1]).toMatchObject({ start: '2018-02', end: '', current: '' });
+  });
+
   it('drops dates it cannot understand rather than guessing', () => {
     const d = resumeToDraft({ work: [{ name: 'Acme', startDate: 'Spring', endDate: '2018-13' }] });
     expect(d.experience[0]).toMatchObject({ start: '', end: '2018', yearOnly: 'true' });
