@@ -30,15 +30,14 @@ order, no text inside images, graphics or tables.
 
 - **Facts are fixed, wording is not.** Rewrite how something is said, never what happened.
   Employers, titles, dates, degrees, numbers, clients and tools come from the candidate only.
-- **No invented numbers.** If an outcome has no figure, do not add one. Where a figure would
-  make a bullet much stronger, ask for it instead: "How many people did you lead?"
+- **No invented numbers.** If an outcome has no figure, leave it without one. Do not add a
+  number, a placeholder, or a question asking the candidate for one.
 - **Uncertain abbreviations:** if an abbreviation could mean several things (e.g. "OWS",
-  "HDR"), keep it as written and ask the candidate, rather than guessing an expansion.
+  "HDR"), keep it as written rather than guessing an expansion.
 - **Keep meaning and scope.** "Supported the migration" must not become "Led the migration".
   If ownership is unclear, keep the weaker verb.
 - **Re-ordering is allowed** as a suggestion: sections (e.g. projects before work experience
-  for a fresher) or bullets (strongest outcome first). Say why.
-- **One change, one reason.** Every suggestion states which rule it applies.
+  for a fresher) or bullets (strongest outcome first).
 
 ## Suggestion format
 
@@ -46,8 +45,9 @@ For each field or bullet, give:
 
 - **Current:** the text as it is now
 - **Suggested:** the improved text
-- **Why:** the rule(s) applied, in one line (e.g. "Active verb, outcome first, removed 'I'")
-- **Needs from you:** only when a fact is missing (a number, an expansion); otherwise omit
+
+Do not explain which rule was applied or ask the candidate questions; the suggestion speaks for
+itself.
 
 If the current text already follows the rules, say so and suggest nothing.
 
@@ -55,9 +55,13 @@ If the current text already follows the rules, say so and suggest nothing.
 
 Generic examples; never copy real candidates' details into this file.
 
-| Current | Suggested | Why |
-|---|---|---|
-| I was responsible for managing a team that moved around 120 customer reports to the new dashboard tool within the deadline. | Led the move of ~120 customer reports to the new dashboard tool, on schedule. | Active verb, no "I", concise. "Led" only because the CV says the candidate managed the team. |
-| Successfully worked on various projects using different technologies in the retail domain. | Worked on retail projects using [tools]. Needs from you: which projects and tools? | Removed vague phrases ("successfully", "various", "different"); nothing specific to keep, so ask. |
-| Highly accomplished, results-driven visionary leader. | (no rewrite) Needs from you: which results should the summary name? | Decorative language with no evidence. |
-| Built the QMT module for the client's ERP rollout, which included testing it and also writing the user guides and also training 40 users. | Built the QMT module for the client's ERP (enterprise resource planning) rollout. • Tested the module and wrote the user guides. • Trained 40 users. Needs from you: what does QMT stand for? | Split a long sentence; expanded ERP (certain); QMT kept as written (uncertain). |
+| Current | Suggested |
+|---|---|
+| I was responsible for managing a team that moved around 120 customer reports to the new dashboard tool within the deadline. | Led the move of ~120 customer reports to the new dashboard tool, on schedule. |
+| Successfully worked on various projects using different technologies in the retail domain. | Worked on retail technology projects. |
+| Highly accomplished, results-driven visionary leader. | (No suggestion: there is nothing factual to keep. Leave it to the candidate.) |
+| Built the QMT module for the client's ERP rollout, which included testing it and also writing the user guides and also training 40 users. | Built the QMT module for the client's ERP (enterprise resource planning) rollout. • Tested the module and wrote the user guides. • Trained 40 users. |
+| Improved the onboarding process for new joiners. | (Unchanged: no figure is given, so none is added.) |
+
+Notes on the examples: "Led" is used only because the CV says the candidate managed the team;
+ERP is expanded because the expansion is certain, QMT is not.
