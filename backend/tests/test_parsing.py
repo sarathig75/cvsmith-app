@@ -1,4 +1,5 @@
 import io
+import json
 from types import SimpleNamespace
 
 import docx
@@ -232,7 +233,7 @@ def fake_client(response):
 
 
 def test_claude_parser_request_and_result():
-    output = ParsedResume.model_validate({"basics": {"name": "Jane Doe", "email": None}, "skills": [{"name": "SQL"}]})
+    output = ParsedResume.model_validate({"basics": {"name": "Jane Doe", "email": ""}, "skills": [{"name": "SQL"}]})
     client, messages = fake_client(SimpleNamespace(stop_reason="end_turn", parsed_output=output, _request_id="r1"))
     result = ClaudeCvParser(client=client, model="claude-sonnet-5-5").parse_text("Jane Doe CV")
     assert result["basics"] == {"name": "Jane Doe", "profiles": []}
@@ -286,3 +287,19 @@ def test_parser_client_uses_cvsmith_key_and_pinned_base_url(monkeypatch):
         assert str(client.base_url).rstrip("/") == "https://api.anthropic.com"
     finally:
         get_settings.cache_clear()
+
+
+def test_schema_has_no_optional_unions():
+    # The API compiles the output schema into a grammar; ~30 Optional fields (each an anyOf)
+    # made it "too large" and every real parse failed with a 400.
+    from anthropic.lib._parse._transform import transform_schema
+
+    assert "anyOf" not in json.dumps(transform_schema(ParsedResume))
+
+
+def test_parser_drops_empty_values_but_keeps_lists():
+    output = ParsedResume.model_validate({"basics": {"name": "Jane"}, "work": [{"name": "Acme", "current": True}]})
+    client, _ = fake_client(SimpleNamespace(stop_reason="end_turn", parsed_output=output, _request_id="r"))
+    result = ClaudeCvParser(client=client, model="m").parse_text("x")
+    assert result["basics"] == {"name": "Jane", "profiles": []}
+    assert result["work"] == [{"name": "Acme", "current": True, "highlights": []}]
