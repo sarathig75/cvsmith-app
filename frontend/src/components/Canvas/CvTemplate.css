@@ -1,0 +1,106 @@
+/* CVSmith Release 1 CV template ("Classic"). The Week 9 PDF must reproduce this design.
+   ATS rules (plan doc): real text only, one column, one reading order, standard section
+   headings, no tables, images or text in graphics. Sizes are for an A4 page at 96 dpi
+   (794 x 1123 px); the preview scales the whole page to fit its panel. */
+.cvt-page {
+  width: 794px;
+  min-height: 1123px;
+  padding: 56px 60px;
+  background-color: #ffffff;
+  /* a faint line where each A4 page ends, so users can see how long their CV is */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 1121px,
+    #cbd5e1 1121px,
+    #cbd5e1 1123px
+  );
+  color: #1f2937;
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.cvt-name {
+  margin: 0;
+  color: #1e3a5f;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  line-height: 1.15;
+}
+.cvt-headline {
+  margin: 4px 0 0;
+  color: #374151;
+  font-size: 15px;
+}
+.cvt-contact {
+  margin: 8px 0 0;
+  color: #4b5563;
+  font-size: 12px;
+}
+.cvt-contact span + span::before {
+  content: '|';
+  margin: 0 8px;
+  color: #9ca3af;
+}
+.cvt-rule {
+  height: 2px;
+  margin: 14px 0 4px;
+  border: 0;
+  background: #1e3a5f;
+}
+.cvt-section {
+  margin-top: 16px;
+}
+.cvt-heading {
+  margin: 0 0 8px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid #d1d5db;
+  color: #1e3a5f;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+.cvt-entry {
+  margin-bottom: 10px;
+}
+.cvt-entry-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: baseline;
+}
+.cvt-entry-title {
+  font-weight: 700;
+  font-size: 13.5px;
+}
+.cvt-entry-dates {
+  flex-shrink: 0;
+  color: #4b5563;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.cvt-entry-sub {
+  color: #4b5563;
+  font-style: italic;
+}
+.cvt-text {
+  margin: 3px 0 0;
+  white-space: pre-line;
+}
+.cvt-bullets {
+  margin: 3px 0 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+.cvt-bullets li {
+  margin: 1px 0;
+}
+.cvt-inline {
+  margin: 0;
+}
+.cvt-placeholder {
+  color: #9ca3af;
+}
