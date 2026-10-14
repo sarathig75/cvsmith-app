@@ -1,7 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-14 · main at 800258d. Session branch `claude/clever-meitner-049zyv` holds the
-sticky title bar (26da23b) and Week 7–8 Suggestions; **not merged yet** (waiting for the user's OK).
+Updated: 2026-10-14 · Sticky title bar and Week 7–8 Suggestions are merged into main (fast-forward
+from the session branch `claude/clever-meitner-049zyv`; no other open branches).
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
@@ -38,8 +38,8 @@ sticky title bar (26da23b) and Week 7–8 Suggestions; **not merged yet** (waiti
   a server error (now "try again", and only that part fails when parsing).
 
 ## Next steps
-1. User: test Suggestions locally (`git pull` on the session branch or after merge, then
-   `docker compose restart`; migration 0004 runs on start). Then approve the merge to main.
+1. User: test Suggestions locally (`git checkout main`, `git pull`, `docker compose restart`;
+   migration 0004 runs on start) and report observations.
 2. Week 9: PDF download (must reproduce the Classic template), export, privacy toggle saved
    (PATCH /api/cv/privacy).
 3. Open observations from the Sonnet run (for the user to decide, not built):
@@ -52,7 +52,7 @@ sticky title bar (26da23b) and Week 7–8 Suggestions; **not merged yet** (waiti
    users yet; two simultaneous 💡 clicks could both pass the quota check (accepted for R1).
 
 ## Open questions for the user
-- Merge the session branch (sticky bar + Suggestions) to main?
+- none
 
 ## Setup notes
 - Backend: `cd backend && python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt`.
