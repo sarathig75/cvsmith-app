@@ -1,7 +1,6 @@
 # CVSmith handoff
 
-Updated: 2026-10-13 · Last commit on main before this note: 356df9a fix(docker): run database migrations when the
-backend container starts
+Updated: 2026-10-13 · Last commit on main before this note: a1dcfe2 feat(preview): Classic CV template
 
 ## Product decisions (stable)
 - Google sign-in only for social login (no Apple in Release 1).
@@ -25,14 +24,19 @@ backend container starts
   volunteering, interests, user-named custom sections). New content types go into Others
   (`frontend/src/utils/otherKinds.ts`), not new sections. Preview follows the same order.
 - PowerPoint uploads are not accepted (PDF and DOCX only).
+- CV template: one "Classic" template for Release 1 (approved 2026-10-14; more later). Design in
+  `frontend/src/components/Canvas/CvTemplate.{tsx,css}`; the Week 9 PDF must reproduce it.
+- Preview scrolls on its own and follows the group being edited; the top status ticks off parts.
+- Speed target: email/phone ~1 s (pattern "contact" part, no AI), name/headline/location ~2.6 s
+  (AI). Haiku and low effort were measured for contact details and rejected.
 - Drop-off metrics: our own `events` table (option A), steps listed in the plan; no CV content.
 - Saving: parser writes `json_resume`, auto-save writes `content` (+ `applied_parts`); a new upload
   replaces the CV and edits only after the user confirms (option a). Auto-save ~2 s after typing.
 - Release 2: current-employer shield for recruiter search (see plan doc).
 
 ## Current state
-- Backend: pytest 84/84 passing, flake8 clean; migrations 0002 and 0003 tested up/down on SQLite and Postgres 16.
-- Frontend: type-check clean, vitest 54/54 passing, `vite build` OK.
+- Backend: pytest 86/86 passing, flake8 clean; migrations 0002 and 0003 tested up/down on SQLite and Postgres 16.
+- Frontend: type-check clean, vitest 56/56 passing, `vite build` OK.
 - Parser verified against the real Claude API on 5 real CVs (Word, two-column PDF, fresher,
   one-pager): all parse. Three parallel requests per CV, each part saved as it finishes
   (`parsing_parts`). First data after 1.9–5.0 s (was 3.0–22.1 s), all done after 5–19 s.
@@ -55,22 +59,15 @@ backend container starts
 - Canvas: five groups, Others with typed items, skills as tags (92ae610, b2f19c0).
 - Week 5–6: saving, restore on load, confirm-before-replace, funnel events and `docs/FUNNEL.md`
   (e10ac4c, 6705662, 407c4c7). Verified end to end in the running app.
+- User feedback round 1 (2026-10-14): per-part progress line, scrollable preview that follows
+  the edited group, instant contact part + faster polling, Classic template (b5162cc, 3861bf9, a1dcfe2).
 - `cv-house-style` skill written with the user and uploaded to their claude.ai account (fd6ced6).
 
 ## Next steps
-0. **In progress: the user is setting up local testing on Windows.** Done so far: Git installed,
-   repo cloned to `$HOME\Documents\cvsmith-app` (PowerShell), `.env` with `ANTHROPIC_API_KEY`
-   presumably created (confirm it is `.env`, not `.env.txt`), Docker Desktop installed for
-   "All users" and the machine is restarting. To resume: open Docker Desktop and wait for
-   "Engine running" (if WSL errors: `wsl --update` in an admin PowerShell); in a new PowerShell
-   run `docker --version`, then `git pull` (gets 356df9a, migrations on start) and
-   `docker compose up --build`; open http://localhost:5173. Checklist to walk through with the
-   user: upload + groups filling in; their real "scanned CV sample.pdf"; edit → "Saving…" /
-   "All changes saved"; reload restores; deleted entry stays deleted; log out, pick a new file,
-   log in → replace prompt (try Keep and Replace); Others/custom section and "Python, SQL" tags;
-   sign up without a file and save. Not bugs: Google sign-in (no local credentials), emails only
-   logged, Download PDF disabled, privacy not saved, no re-upload button. Never tested with
-   Docker by Claude (no Docker daemon in the cloud container).
+0. Local testing on Windows works (Docker Desktop, `docker compose up`). The user tests and
+   reports observations; after changes: `git pull`, then `docker compose restart` (the Celery
+   worker does not reload code). Their `.env` was once not read (ANTHROPIC_API_KEY warning);
+   if it recurs: re-save `.env` as UTF-8 without BOM, one line, no spaces/quotes.
 1. Week 7–8 Suggestions (next build). Prompt from `.claude/skills/cv-house-style/SKILL.md`;
    quota Free 1/month, Pro 50/month (plan doc). Before coding, confirm with the user: which
    fields get a 💡 first, what counts as "one suggestion" (per field or per bullet), and the
