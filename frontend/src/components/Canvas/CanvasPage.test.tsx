@@ -270,3 +270,30 @@ describe('CanvasPage saving', () => {
   });
 });
 
+describe('CanvasPage preview follows the section being edited', () => {
+  it('follows every move to another section, including within one group, but not every field', async () => {
+    const content = {
+      ...emptyDraft(),
+      summary: 'Analyst.',
+      experience: [{ id: 'w1', title: 'Analyst', company: 'Acme', start: '', end: '', description: '' }],
+      projects: [{ id: 'p1', name: 'Dashboard', url: '', start: '', end: '', description: '' }],
+    };
+    mockHttp(() => ({ status: 200, data: { ...baseCv, parsing_status: 'not_uploaded', content } }));
+    const scrollTo = vi.fn();
+    Element.prototype.scrollTo = scrollTo as unknown as typeof Element.prototype.scrollTo;
+    renderCanvas();
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+
+    await user.click(await screen.findByPlaceholderText('Brief overview of your experience...'));
+    expect(scrollTo).toHaveBeenCalledTimes(1); // summary
+    await user.click(screen.getByDisplayValue('Acme'));
+    expect(scrollTo).toHaveBeenCalledTimes(2); // experience: same group, different section
+    await user.click(screen.getByDisplayValue('Analyst'));
+    expect(scrollTo).toHaveBeenCalledTimes(2); // another field in the same section: the preview stays where the user put it
+    await user.click(screen.getByDisplayValue('Dashboard'));
+    expect(scrollTo).toHaveBeenCalledTimes(3); // projects
+    await user.click(screen.getByDisplayValue('Acme'));
+    expect(scrollTo).toHaveBeenCalledTimes(4); // back to experience, even after scrolling elsewhere
+  });
+});
+

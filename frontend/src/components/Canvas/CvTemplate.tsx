@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { CvDraft, Entry } from '../../types/cvDraft';
 import { formatDate } from '../../utils/dates';
 import { isOtherKind, OTHER_KIND_ORDER, OTHER_KINDS } from '../../utils/otherKinds';
-import type { GroupKey } from './CanvasGroup';
+import type { PreviewTarget } from './CanvasGroup';
 import './CvTemplate.css';
 
 const range = (e: Entry) =>
@@ -45,9 +45,9 @@ function Body({ text }: { text?: string }) {
   return <>{blocks}</>;
 }
 
-function Section({ title, group, children }: { title: string; group: GroupKey; children: ReactNode }) {
+function Section({ title, target, children }: { title: string; target: PreviewTarget; children: ReactNode }) {
   return (
-    <section className="cvt-section" data-group={group}>
+    <section className="cvt-section" data-target={target}>
       <h2 className="cvt-heading">{title}</h2>
       {children}
     </section>
@@ -75,7 +75,7 @@ export function CvTemplate({ draft }: { draft: CvDraft }) {
   const contact = [p.email, p.phone, p.location, p.linkedin, p.portfolio].filter((c) => c?.trim());
   return (
     <article className="cvt-page" aria-label="CV">
-      <header data-group="personal">
+      <header data-target="personal">
         <h1 className={`cvt-name ${p.name ? '' : 'cvt-placeholder'}`}>{p.name || 'Your Name'}</h1>
         {p.headline && <p className="cvt-headline">{p.headline}</p>}
         {contact.length > 0 && (
@@ -89,45 +89,45 @@ export function CvTemplate({ draft }: { draft: CvDraft }) {
       </header>
 
       {draft.summary.trim() && (
-        <Section title="Summary" group="professional">
+        <Section title="Summary" target="summary">
           <Body text={draft.summary} />
         </Section>
       )}
       {draft.experience.length > 0 && (
-        <Section title="Experience" group="professional">
+        <Section title="Experience" target="experience">
           {draft.experience.map((e) => (
             <EntryRow key={e.id} title={e.title || 'Role'} sub={e.company} dates={range(e)} body={e.description} />
           ))}
         </Section>
       )}
       {draft.projects.length > 0 && (
-        <Section title="Projects" group="professional">
+        <Section title="Projects" target="projects">
           {draft.projects.map((e) => (
             <EntryRow key={e.id} title={e.name || 'Project'} sub={e.url} dates={range(e)} body={e.description} />
           ))}
         </Section>
       )}
       {draft.education.length > 0 && (
-        <Section title="Education" group="education">
+        <Section title="Education" target="education">
           {draft.education.map((e) => (
             <EntryRow key={e.id} title={e.degree || 'Degree'} sub={join([e.school, e.score], ' · ')} dates={range(e)} />
           ))}
         </Section>
       )}
       {draft.skills.length > 0 && (
-        <Section title="Skills" group="skills">
+        <Section title="Skills" target="skills">
           <p className="cvt-inline">{draft.skills.join(', ')}</p>
         </Section>
       )}
       {draft.certifications.length > 0 && (
-        <Section title="Certifications" group="skills">
+        <Section title="Certifications" target="certifications">
           {draft.certifications.map((c) => (
             <EntryRow key={c.id} title={c.name || 'Certification'} sub={c.issuer} dates={formatDate(c.date)} />
           ))}
         </Section>
       )}
       {otherGroups(draft.others).map((g) => (
-        <Section key={g.title} title={g.title} group="others">
+        <Section key={g.title} title={g.title} target="others">
           {g.kind === 'language' || g.kind === 'interest' ? (
             // short items read best on one line
             <p className="cvt-inline">

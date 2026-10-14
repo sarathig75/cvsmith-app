@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CvDraft } from '../../types/cvDraft';
-import type { GroupKey } from './CanvasGroup';
+import type { PreviewTarget } from './CanvasGroup';
 import { CvTemplate } from './CvTemplate';
 
 const PAGE_WIDTH = 794; // A4 at 96 dpi; the template is laid out at this width
 
-export function PreviewPanel({ draft, focusGroup = null }: { draft: CvDraft; focusGroup?: GroupKey | null }) {
+export function PreviewPanel({ draft, focusTarget = null }: { draft: CvDraft; focusTarget?: PreviewTarget | null }) {
   // The page is shown at true A4 proportions, scaled to the panel's width.
   const scroller = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(0.55);
@@ -23,11 +23,11 @@ export function PreviewPanel({ draft, focusGroup = null }: { draft: CvDraft; foc
   // follows to the matching section (scrolling only the preview, never the page).
   useEffect(() => {
     const box = scroller.current;
-    const target = focusGroup ? box?.querySelector<HTMLElement>(`[data-group="${focusGroup}"]`) : null;
+    const target = focusTarget ? box?.querySelector<HTMLElement>(`[data-target="${focusTarget}"]`) : null;
     if (!box || !target) return;
     const top = target.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop;
     box.scrollTo?.({ top: Math.max(top - 12, 0), behavior: 'smooth' });
-  }, [focusGroup]);
+  }, [focusTarget]);
 
   return (
     <aside aria-label="CV preview" className="card h-fit lg:sticky lg:top-24">

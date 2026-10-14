@@ -9,7 +9,7 @@ import type { CvDraft } from '../../types/cvDraft';
 import { mergeParsedIntoDraft, PART_SECTIONS, resumeToDraft } from '../../utils/resumeToDraft';
 import { Button } from '../Common/Button';
 import { CanvasGroup } from './CanvasGroup';
-import type { GroupKey } from './CanvasGroup';
+import type { PreviewTarget } from './CanvasGroup';
 import { CvStatus } from './CvStatus';
 import { EntryListSection } from './EntryListSection';
 import { OthersSection } from './OthersSection';
@@ -25,8 +25,14 @@ export function CanvasPage() {
   const user = useAuthStore((s) => s.user);
   const [privacy, setPrivacy] = useState<CV['privacy']>('public');
   const [draft, setDraft] = useState<CvDraft>(() => emptyDraft(user?.email ?? ''));
-  // The group being edited: the preview scrolls to the matching section.
-  const [focusGroup, setFocusGroup] = useState<GroupKey | null>(null);
+  // The CV section being edited: the preview scrolls to it whenever the user moves to another
+  // section (not on every field, so a preview the user scrolled by hand is not yanked back).
+  const [focusTarget, setFocusTarget] = useState<PreviewTarget | null>(null);
+  const onFormFocus = (e: React.FocusEvent) => {
+    const el = (e.target as HTMLElement).closest<HTMLElement>('[data-preview-target]');
+    const key = el?.dataset.previewTarget as PreviewTarget | undefined;
+    if (key) setFocusTarget(key);
+  };
   // Every user edit goes through patch(); parsed data is merged with setDraft directly. The
   // flag tells the next save whether it contains a user edit (funnel step "first_edit").
   const userEdited = useRef(false);
@@ -132,7 +138,7 @@ export function CanvasPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <div className="card lg:col-span-3">
+        <div className="card lg:col-span-3" onFocus={onFormFocus}>
           <CvStatus onLoaded={onCvLoaded} onError={onCvError} />
           {uploadStatus === 'confirm' && pendingFile && (
             <div role="alertdialog" aria-labelledby="replace-title" className="mb-6 rounded-sm border border-warning-text/30 bg-warning-bg p-4 text-sm">
@@ -158,12 +164,12 @@ export function CanvasPage() {
           <>
           {/* Five fixed groups (agreed 2026-10-13). New kinds of CV content go into "Others",
               so the layout does not change every time a section is added. */}
-          <CanvasGroup title="Personal details" groupKey="personal" onFocusGroup={setFocusGroup} note={groupNote('basics')}>
+          <CanvasGroup title="Personal details" target="personal" note={groupNote('basics')}>
             <PersonalInfoSection value={draft.personal} onChange={(personal) => patch({ personal })} />
           </CanvasGroup>
 
-          <CanvasGroup title="Professional details" groupKey="professional" onFocusGroup={setFocusGroup} note={groupNote('experience', 'extras')}>
-            <div className="mb-6">
+          <CanvasGroup title="Professional details" target="summary" note={groupNote('experience', 'extras')}>
+            <div className="mb-6" data-preview-target="summary">
               <label htmlFor="summary" className="mb-3 block text-base font-semibold">
                 Professional Summary
               </label>
@@ -176,38 +182,42 @@ export function CanvasPage() {
                 onChange={(e) => patch({ summary: e.target.value })}
               />
             </div>
-            <EntryListSection
-              title="Work Experience"
-              currentToggle={{ label: 'I currently work here', endKey: 'end' }}
-              itemLabel="Experience"
-              addLabel="Add Experience"
-              entries={draft.experience}
-              onChange={(experience) => patch({ experience })}
-              fields={[
-                { key: 'title', label: 'Job Title', placeholder: 'Senior Software Engineer' },
-                { key: 'company', label: 'Company', placeholder: 'Acme Corp' },
-                { key: 'start', label: 'Start Date', type: 'date' },
-                { key: 'end', label: 'End Date', type: 'date' },
-                { key: 'description', label: 'Description', type: 'textarea', placeholder: 'What did you achieve?' },
-              ]}
-            />
-            <EntryListSection
-              title="Projects"
-              itemLabel="Project"
-              addLabel="Add Project"
-              entries={draft.projects}
-              onChange={(projects) => patch({ projects })}
-              fields={[
-                { key: 'name', label: 'Project Name', placeholder: 'Final-year project, app, campaign...' },
-                { key: 'url', label: 'Link', placeholder: 'https://...' },
-                { key: 'start', label: 'Start Date', type: 'date' },
-                { key: 'end', label: 'End Date', type: 'date' },
-                { key: 'description', label: 'Description', type: 'textarea', placeholder: 'What did you build or deliver?' },
-              ]}
-            />
+            <div data-preview-target="experience">
+              <EntryListSection
+                title="Work Experience"
+                currentToggle={{ label: 'I currently work here', endKey: 'end' }}
+                itemLabel="Experience"
+                addLabel="Add Experience"
+                entries={draft.experience}
+                onChange={(experience) => patch({ experience })}
+                fields={[
+                  { key: 'title', label: 'Job Title', placeholder: 'Senior Software Engineer' },
+                  { key: 'company', label: 'Company', placeholder: 'Acme Corp' },
+                  { key: 'start', label: 'Start Date', type: 'date' },
+                  { key: 'end', label: 'End Date', type: 'date' },
+                  { key: 'description', label: 'Description', type: 'textarea', placeholder: 'What did you achieve?' },
+                ]}
+              />
+            </div>
+            <div data-preview-target="projects">
+              <EntryListSection
+                title="Projects"
+                itemLabel="Project"
+                addLabel="Add Project"
+                entries={draft.projects}
+                onChange={(projects) => patch({ projects })}
+                fields={[
+                  { key: 'name', label: 'Project Name', placeholder: 'Final-year project, app, campaign...' },
+                  { key: 'url', label: 'Link', placeholder: 'https://...' },
+                  { key: 'start', label: 'Start Date', type: 'date' },
+                  { key: 'end', label: 'End Date', type: 'date' },
+                  { key: 'description', label: 'Description', type: 'textarea', placeholder: 'What did you build or deliver?' },
+                ]}
+              />
+            </div>
           </CanvasGroup>
 
-          <CanvasGroup title="Education" groupKey="education" onFocusGroup={setFocusGroup} note={groupNote('experience')}>
+          <CanvasGroup title="Education" target="education" note={groupNote('experience')}>
             <EntryListSection
               title="Education"
               showTitle={false}
@@ -225,23 +235,27 @@ export function CanvasPage() {
             />
           </CanvasGroup>
 
-          <CanvasGroup title="Skills & Certifications" groupKey="skills" onFocusGroup={setFocusGroup} note={groupNote('extras')}>
-            <SkillsSection skills={draft.skills} onChange={(skills) => patch({ skills })} />
-            <EntryListSection
-              title="Certifications"
-              itemLabel="Certification"
-              addLabel="Add Certification"
-              entries={draft.certifications}
-              onChange={(certifications) => patch({ certifications })}
-              fields={[
-                { key: 'name', label: 'Certification Name', placeholder: 'AWS Certified Solutions Architect' },
-                { key: 'issuer', label: 'Issuer', placeholder: 'Amazon Web Services' },
-                { key: 'date', label: 'Issue Date', type: 'date' },
-              ]}
-            />
+          <CanvasGroup title="Skills & Certifications" target="skills" note={groupNote('extras')}>
+            <div data-preview-target="skills">
+              <SkillsSection skills={draft.skills} onChange={(skills) => patch({ skills })} />
+            </div>
+            <div data-preview-target="certifications">
+              <EntryListSection
+                title="Certifications"
+                itemLabel="Certification"
+                addLabel="Add Certification"
+                entries={draft.certifications}
+                onChange={(certifications) => patch({ certifications })}
+                fields={[
+                  { key: 'name', label: 'Certification Name', placeholder: 'AWS Certified Solutions Architect' },
+                  { key: 'issuer', label: 'Issuer', placeholder: 'Amazon Web Services' },
+                  { key: 'date', label: 'Issue Date', type: 'date' },
+                ]}
+              />
+            </div>
           </CanvasGroup>
 
-          <CanvasGroup title="Others" groupKey="others" onFocusGroup={setFocusGroup} note={groupNote('extras')}>
+          <CanvasGroup title="Others" target="others" note={groupNote('extras')}>
             <OthersSection entries={draft.others} onChange={(others) => patch({ others })} />
           </CanvasGroup>
 
@@ -250,7 +264,7 @@ export function CanvasPage() {
           <PrivacyToggle value={privacy} onChange={setPrivacy} />
         </div>
         <div className="lg:col-span-2">
-          <PreviewPanel draft={draft} focusGroup={focusGroup} />
+          <PreviewPanel draft={draft} focusTarget={focusTarget} />
         </div>
       </div>
     </div>

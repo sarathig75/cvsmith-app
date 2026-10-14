@@ -4,20 +4,20 @@ import { Spinner } from '../Common/Spinner';
 
 type Note = { text: string; busy: boolean };
 
-/** The five fixed canvas groups; the preview marks its sections with the same keys. */
-export type GroupKey = 'personal' | 'professional' | 'education' | 'skills' | 'others';
+/**
+ * CV sections the preview can scroll to. Canvas elements carry `data-preview-target`, the
+ * template's sections `data-target`; the innermost marked element around the focused field wins.
+ */
+export type PreviewTarget =
+  | 'personal' | 'summary' | 'experience' | 'projects' | 'education' | 'skills' | 'certifications' | 'others';
 
-type Props = { title: string; note?: Note; groupKey?: GroupKey; onFocusGroup?: (g: GroupKey) => void; children: ReactNode };
+type Props = { title: string; note?: Note; target?: PreviewTarget; children: ReactNode };
 
 /** One of the five fixed groups on the canvas. Sections inside it use smaller sub-headings. */
-export function CanvasGroup({ title, note, groupKey, onFocusGroup, children }: Props) {
+export function CanvasGroup({ title, note, target, children }: Props) {
   const id = useId();
   return (
-    <section
-      aria-labelledby={id}
-      className="mb-8"
-      onFocus={groupKey && onFocusGroup ? () => onFocusGroup(groupKey) : undefined}
-    >
+    <section aria-labelledby={id} className="mb-8" data-preview-target={target}>
       <h2 id={id} className="mb-4 border-b border-slate-200 pb-2 text-lg font-semibold">
         {title}
       </h2>

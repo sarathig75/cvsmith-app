@@ -13,18 +13,18 @@ const draft = {
 
 describe('PreviewPanel scrolling', () => {
   it('scrolls on its own and follows the group being edited, without moving the page', () => {
-    const { rerender } = render(<PreviewPanel draft={draft} focusGroup={null} />);
+    const { rerender } = render(<PreviewPanel draft={draft} focusTarget={null} />);
     const box = screen.getByTestId('preview-scroll');
     expect(box.className).toContain('overflow-y-auto');
     const scrollTo = vi.fn();
     box.scrollTo = scrollTo as unknown as typeof box.scrollTo;
     const pageScroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
 
-    rerender(<PreviewPanel draft={draft} focusGroup="skills" />);
+    rerender(<PreviewPanel draft={draft} focusTarget="skills" />);
     expect(scrollTo).toHaveBeenCalledTimes(1);
-    expect(box.querySelector('[data-group="skills"]')).toHaveTextContent('SQL');
+    expect(box.querySelector('[data-target="skills"]')).toHaveTextContent('SQL');
 
-    rerender(<PreviewPanel draft={draft} focusGroup="others" />); // nothing in Others yet: stay put
+    rerender(<PreviewPanel draft={draft} focusTarget="others" />); // nothing in Others yet: stay put
     expect(scrollTo).toHaveBeenCalledTimes(1);
     expect(pageScroll).not.toHaveBeenCalled();
   });
