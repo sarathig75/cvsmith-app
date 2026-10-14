@@ -1,7 +1,6 @@
 # CVSmith handoff
 
-Updated: 2026-10-14 · Sticky title bar and Week 7–8 Suggestions are merged into main (fast-forward
-from the session branch `claude/clever-meitner-049zyv`; no other open branches).
+Updated: 2026-10-14 · Last commit on main: 981c02e (this note sits on top of it)
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
@@ -30,29 +29,38 @@ from the session branch `claude/clever-meitner-049zyv`; no other open branches).
 - Backend: pytest 103/103, flake8 clean; migration 0004 (users.plan, suggestions) tested
   up/down on SQLite and Postgres 16.
 - Frontend: type-check clean, vitest 66/66, `vite build` OK.
-- Suggestions checked against the real Claude API on 8 fields from the test CVs (Sonnet and
-  Opus): facts, numbers and clients kept. Sonnet ~$0.013 per suggestion, 3–14 s.
+- Open branches / PRs: `claude/clever-meitner-049zyv` (fully merged into main); no PRs.
+- Real Claude API: suggestions on 8 fields from the test CVs kept facts, numbers and clients.
+  Sonnet ~$0.013 per suggestion, 3–14 s.
 - End to end in the running app (Postgres, API, Vite, real Claude API, browser): 💡 → modal →
   Use suggestion → auto-saved → second 💡 → upgrade prompt → /pricing; events recorded once.
-- Fixed during testing: React StrictMode sent two AI requests per click; cut-off AI output gave
-  a server error (now "try again", and only that part fails when parsing).
+
+## Done this session
+- 26da23b Title bar with Download PDF and Settings stays in view while scrolling.
+- 8db88f0 Suggestions backend: quota, house-style AI rewrite, decisions, migration 0004.
+- 33ccefa Suggestions UI: 💡 Improve, suggestion modal, upgrade prompt, quota hint.
+- 38e917e Fixes found in testing: one AI request per click (StrictMode sent two); cut-off AI
+  output now gives "try again" (and fails only that part when parsing).
+- 857d21c Plan doc (Week 7–8 ticked), FUNNEL.md (new events). Merged to main (981c02e).
+- Sonnet vs Opus side-by-side for suggestions: Sonnet kept (~2x cheaper, faster, same quality).
 
 ## Next steps
 1. User: test Suggestions locally (`git checkout main`, `git pull`, `docker compose restart`;
    migration 0004 runs on start) and report observations.
 2. Week 9: PDF download (must reproduce the Classic template), export, privacy toggle saved
    (PATCH /api/cv/privacy).
-3. Open observations from the Sonnet run (for the user to decide, not built):
-   - An objective-style summary ("Secure a responsible career opportunity…") came back as
-     "no change needed" from both models, since the rules forbid adding facts.
-   - A nearly fine field can come back with tiny edits and still count as a suggestion.
-4. The user uploads "scanned CV sample.pdf" in their running app to check a real scan.
-5. Parsing quality (open): bullets covering a whole employer land under its latest title.
-6. Known limits: two open tabs = last write wins; no "upload a new CV" button for logged-in
+3. The user uploads "scanned CV sample.pdf" in their running app to check a real scan.
+4. Parsing quality (open): bullets covering a whole employer land under its latest title.
+5. Known limits: two open tabs = last write wins; no "upload a new CV" button for logged-in
    users yet; two simultaneous 💡 clicks could both pass the quota check (accepted for R1).
 
 ## Open questions for the user
-- none
+- Objective-style summaries ("Secure a responsible career opportunity…") come back as "no
+  change needed", because the rules forbid adding facts. Options: leave as is, or let the
+  suggestion turn it into a short factual summary from the rest of the CV. Decide after testing.
+- Small edits to an already-good field still count as the month's suggestion. Options: leave
+  as is, or tell the model to return "no change" unless the improvement is material. Decide
+  after testing.
 
 ## Setup notes
 - Backend: `cd backend && python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt`.
@@ -73,4 +81,3 @@ from the session branch `claude/clever-meitner-049zyv`; no other open branches).
 - `cv-house-style` also lives in the user's claude.ai account. After a rule change: copy the
   body to `backend/app/prompts/cv_house_style.md`, zip the skill folder, send it to the user
   and remind them to re-upload it.
-- Product-management plugin connectors fail here (proxy 403); not needed so far.
