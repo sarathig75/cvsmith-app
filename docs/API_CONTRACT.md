@@ -9,7 +9,7 @@ Auth: `Authorization: Bearer <access_token>` on protected routes.
 ```
 Codes: `VALIDATION_ERROR` (422), `EMAIL_EXISTS` (409), `INVALID_CREDENTIALS` (401), `UNAUTHORIZED` (401),
 `INVALID_TOKEN` (400), `UNSUPPORTED_FILE_TYPE` (415), `FILE_TOO_LARGE` (413), `NOT_FOUND` (404),
-`GOOGLE_AUTH_FAILED` (401), `QUOTA_EXCEEDED` (402), `SUGGESTION_FAILED` (503), `SERVER_ERROR` (500).
+`GOOGLE_AUTH_FAILED` (401), `QUOTA_EXCEEDED` (402), `PRO_REQUIRED` (402), `SUGGESTION_FAILED` (503), `PDF_FAILED` (503), `SERVER_ERROR` (500).
 
 ## Types
 ```ts
@@ -64,6 +64,9 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
 | POST | /api/suggestions | yes | `SuggestionRequest` | 201 `Suggestion`. 402 `QUOTA_EXCEEDED` when no suggestions are left this month (checked before any AI call). 422 `VALIDATION_ERROR` for empty text or text over 5,000 characters. 503 `SUGGESTION_FAILED` if the AI call fails (not counted) |
 | PATCH | /api/suggestions/{id} | yes | `{status: "accepted" \| "declined"}` | 200 `Suggestion`; 404 `NOT_FOUND` if it is not the user's |
 | PATCH | /api/cv | yes | `CVSave` | 200 `CV`. Creates the CV (parsing_status "not_uploaded") if the user has none. 422 `VALIDATION_ERROR` if `content` is not an object, is larger than 256 KB as JSON, or `applied_parts` has unknown values |
+| PATCH | /api/cv/privacy | yes | `{privacy: "private" \| "public"}` | 200 `CV`. Creates the CV (like PATCH /api/cv) if the user has none. 422 `VALIDATION_ERROR` for other values |
+| GET | /api/cv/download | yes | - | 200 `application/pdf` of the saved `content` in the Classic template, `Content-Disposition: attachment` ("<Name> CV.pdf"). All plans. 404 `NOT_FOUND` if nothing is saved yet. 503 `PDF_FAILED` if the PDF cannot be made |
+| GET | /api/cv/export | yes | - | 200 `application/json`: the saved `content` as JSON Resume v1.0.0, with `meta.cvsmith = {privacy, customSections?}`; attachment "<Name> CV.json". Pro only: 402 `PRO_REQUIRED` for free users. 404 `NOT_FOUND` if nothing is saved yet |
 
 ## Rules
 - Password: min 8 chars, at least 1 letter and 1 number. Email normalized to lowercase.
@@ -83,5 +86,6 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
   Quota per calendar month (UTC): free 1, pro 50; only suggestions with `changed: true` count. Applying an
   accepted suggestion is done by the client (it replaces the field, then auto-saves); PATCH records the decision.
   Suggestion text is stored for the decision and deleted with the user.
-- CORS origins from env `CORS_ORIGINS`.
+- CORS origins from env `CORS_ORIGINS`; `Content-Disposition` is exposed so the browser can read download names.
+- Downloads use the last saved `content`: the client saves pending edits first.
 - No Apple sign-in in Release 1.

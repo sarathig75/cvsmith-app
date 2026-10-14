@@ -12,9 +12,11 @@ time, the user id and small metadata; never CV content, names, emails or file na
 | `parsing_finished` | a parse job ends (every parse) | `status`, `failed_parts` |
 | `first_edit` | the first save that contains a user edit (once per user) | none |
 | `suggestion_requested` | a 💡 suggestion was written (every one, incl. "no change needed") | `field`, `changed` |
-| `upgrade_prompt_shown` | a suggestion was refused because the monthly quota is used | `field` |
+| `upgrade_prompt_shown` | a Pro-only action was refused: suggestion quota used, or JSON export by a free user | `field` (suggestions) or `feature: "json_export"` |
+| `pdf_downloaded` | a PDF was downloaded (every download) | none |
+| `json_exported` | a JSON Resume export was downloaded (Pro) | none |
 
-Later steps (`upgraded`, `pdf_downloaded`) are added with their features.
+Later step (`upgraded`) is added with billing in Week 10.
 
 ## Report: distinct users per step, by signup week
 
@@ -41,7 +43,8 @@ SELECT
     count(*) FILTER (WHERE EXISTS (SELECT 1 FROM reached r WHERE r.user_id = c.user_id AND r.event_type = 'parsing_finished')) AS parsed,
     count(*) FILTER (WHERE EXISTS (SELECT 1 FROM reached r WHERE r.user_id = c.user_id AND r.event_type = 'first_edit')) AS edited,
     count(*) FILTER (WHERE EXISTS (SELECT 1 FROM reached r WHERE r.user_id = c.user_id AND r.event_type = 'suggestion_requested')) AS suggested,
-    count(*) FILTER (WHERE EXISTS (SELECT 1 FROM reached r WHERE r.user_id = c.user_id AND r.event_type = 'upgrade_prompt_shown')) AS hit_quota,
+    count(*) FILTER (WHERE EXISTS (SELECT 1 FROM reached r WHERE r.user_id = c.user_id AND r.event_type = 'upgrade_prompt_shown')) AS saw_upgrade,
+    count(*) FILTER (WHERE EXISTS (SELECT 1 FROM reached r WHERE r.user_id = c.user_id AND r.event_type = 'pdf_downloaded')) AS downloaded,
     round(100.0 * count(*) FILTER (WHERE EXISTS (SELECT 1 FROM reached r WHERE r.user_id = c.user_id AND r.event_type = 'cv_uploaded')) / count(*), 1) AS pct_uploaded,
     round(100.0 * count(*) FILTER (WHERE EXISTS (SELECT 1 FROM reached r WHERE r.user_id = c.user_id AND r.event_type = 'first_edit')) / count(*), 1) AS pct_edited
 FROM cohort c

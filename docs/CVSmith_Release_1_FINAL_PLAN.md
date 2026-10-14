@@ -338,6 +338,9 @@ new item type, not a new canvas section. The PDF preview uses the same order.
   test CVs: same facts kept, similar quality; Opus ~2x the cost (~$0.03 vs ~$0.013 per
   suggestion) and slower (4–18 s vs 3–14 s).
 - Accepting replaces the field in the canvas; it is auto-saved like typing (counts as an edit).
+- After testing (agreed 2026-10-14): small edits come back as "no change" (not counted); a
+  summary written as an objective is rewritten as a factual summary from the rest of the CV
+  (titles, employers, dates, degrees, skills, certifications; no contact details).
 
 **Definition of Done:** User can click 💡 on any field, see AI improvement, accept/reject, free suggestion converts to upgrade prompt
 
@@ -364,16 +367,21 @@ format, examples). Change the rules there; the list below is a summary.
 ---
 
 ### Week 9: Download, Export & Privacy
-- [ ] PDF rendering (ReportLab + template)
-- [ ] ATS-readable template: real text only, single reading order, no text in images, graphics or tables (writing rule agreed 2026-10-13)
-- [ ] GET /api/cv/download endpoint
-- [ ] JSON Resume export
-- [ ] Privacy toggle (PATCH /api/cv/privacy)
-- [ ] Default privacy to PUBLIC (not private)
-- [ ] Frontend: PrivacyToggle component (🌍 Public / 🔒 Private)
-- [ ] Frontend: Download button + file stream
-- [ ] Update JSON Resume with privacy flag + cvsmith metadata
-- [ ] Show privacy status badge on dashboard (🌍 Public or 🔒 Private)
+- [x] PDF rendering — headless Chromium prints the frontend's Classic template (`print.html`),
+      not ReportLab: one template for preview and PDF (agreed 2026-10-14)
+- [x] ATS-readable template: real text only, single reading order, no text in images, graphics or tables (writing rule agreed 2026-10-13)
+- [x] GET /api/cv/download endpoint (free for every plan)
+- [x] JSON Resume export (GET /api/cv/export, Pro only; free users see the upgrade prompt)
+- [x] Privacy toggle (PATCH /api/cv/privacy)
+- [x] Default privacy to PUBLIC (not private)
+- [x] Frontend: PrivacyToggle component (🌍 Public / 🔒 Private), saved on click
+- [x] Frontend: Download button + file stream (saves pending edits first); Export JSON button
+- [x] Update JSON Resume with privacy flag + cvsmith metadata (`meta.cvsmith`)
+- [x] Show privacy status badge on dashboard (🌍 Public or 🔒 Private)
+
+**Decisions (agreed 2026-10-14):** PDF download is free for everyone; JSON export is Pro
+only. "Public" is a saved flag only in Release 1 (nothing reads it until recruiter search in
+Release 2). Funnel events `pdf_downloaded`, `json_exported`.
 
 **Definition of Done:** User can download PDF, export JSON, toggle privacy (default Public), see privacy status
 
