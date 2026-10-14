@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { parseApiError } from '../../services/api';
 import { getCv } from '../../services/cvService';
 import { useUploadStore } from '../../store/uploadStore';
-import type { CV } from '../../types';
+import type { CV, ParsePart } from '../../types';
 import { Spinner } from '../Common/Spinner';
 
 export const POLL_INTERVAL_MS = 2000;
@@ -73,12 +73,10 @@ export function CvStatus({ onLoaded, onError }: { onLoaded?: (cv: CV | null) => 
           {cv.title} - Reading your CV is taking longer than usual. Keep editing; refresh the page later to see the result.
         </p>
       ) : isParsing(cv) ? (
-        <p className="flex items-center gap-2 text-slate-800">
-          <Spinner className="h-4 w-4" label="Reading your CV" />
-          <span>
-            {cv.title} - Reading your CV… You can start editing now; we'll fill in empty fields as soon as it's ready.
-          </span>
-        </p>
+        <div className="text-slate-800">
+          <p>{cv.title} - Reading your CV. You can start editing now; we only fill in fields you leave empty.</p>
+          <PartProgress cv={cv} />
+        </div>
       ) : cv.parsing_status === 'complete' ? (
         <p className="text-slate-800">{cv.title} - We filled in details from your CV. Please review and edit anything.</p>
       ) : (
@@ -89,5 +87,37 @@ export function CvStatus({ onLoaded, onError }: { onLoaded?: (cv: CV | null) => 
       )}
       {uploadError && !busy && <p role="alert" className="mt-2 text-error-text">Your CV could not be uploaded: {uploadError}</p>}
     </div>
+  );
+}
+
+const PART_LABELS: [ParsePart, string][] = [
+  ['basics', 'Contact details'],
+  ['experience', 'Work & education'],
+  ['extras', 'Skills & more'],
+];
+
+/** One line per parsing part, ticked off as each part arrives, so the wait is visibly moving. */
+function PartProgress({ cv }: { cv: CV }) {
+  return (
+    <ul className="mt-2 flex flex-wrap gap-x-5 gap-y-1" aria-label="Reading progress">
+      {PART_LABELS.map(([part, label]) => {
+        const status = cv.parsing_parts?.[part] ?? 'pending';
+        return (
+          <li key={part} className="flex items-center gap-1.5" data-testid={`part-${part}`} data-status={status}>
+            {status === 'pending' ? (
+              <Spinner className="h-3.5 w-3.5" label="" />
+            ) : (
+              <span aria-hidden="true" className={status === 'complete' ? 'text-success-text' : 'text-error-text'}>
+                {status === 'complete' ? '✓' : '✕'}
+              </span>
+            )}
+            <span className={status === 'pending' ? 'text-slate-600' : ''}>
+              {label}
+              <span className="sr-only">: {status === 'pending' ? 'reading' : status === 'complete' ? 'done' : 'could not be read'}</span>
+            </span>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

@@ -78,6 +78,7 @@ describe('CanvasPage with background CV parsing', () => {
     mockHttp(() => ({ status: 200, data: cv }));
     renderCanvas();
     expect(await screen.findAllByText('Filling in from your CV…')).toHaveLength(5);
+    expect(screen.getByTestId('part-basics')).toHaveAttribute('data-status', 'pending');
 
     // contact details arrive first: Personal details fills, the summary (experience part) does not yet
     cv = {
@@ -88,6 +89,10 @@ describe('CanvasPage with background CV parsing', () => {
     await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS));
     expect(await screen.findByDisplayValue('Jane From CV')).toBeInTheDocument();
     expect(screen.getAllByText('Filling in from your CV…')).toHaveLength(4);
+    // the progress line at the top ticks off each part as it arrives
+    expect(screen.getByTestId('part-basics')).toHaveAttribute('data-status', 'complete');
+    expect(screen.getByTestId('part-experience')).toHaveAttribute('data-status', 'pending');
+    expect(screen.getByTestId('part-basics')).toHaveTextContent('Contact details: done');
 
     // the user clears the parsed name; later parts must not bring it back
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
