@@ -117,7 +117,12 @@ export function CanvasPage() {
 
   return (
     <div className="mx-auto max-w-page px-4 py-6 md:px-6 lg:px-8">
-      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      {/* Title and actions stay in view below the site header while the canvas scrolls
+          (tablet and up; on phones the bar would take too much of the screen). */}
+      <div
+        data-testid="canvas-actions"
+        className="mb-6 flex flex-col gap-4 bg-slate-50 md:sticky md:top-16 md:z-[90] md:-mx-6 md:flex-row md:items-center md:justify-between md:border-b md:border-slate-200 md:px-6 md:py-3 lg:-mx-8 lg:px-8"
+      >
         <div>
           <h1 className="text-2xl font-semibold">Your CV</h1>
           <span className="mt-1 inline-block rounded-full bg-brand-light px-3 py-0.5 text-sm font-medium text-brand-dark">

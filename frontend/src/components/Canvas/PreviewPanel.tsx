@@ -24,7 +24,7 @@ export function PreviewPanel({ draft, focusTarget = null }: { draft: CvDraft; fo
   }, [focusTarget]);
 
   return (
-    <aside aria-label="CV preview" className="card h-fit lg:sticky lg:top-24">
+    <aside aria-label="CV preview" className="card h-fit lg:sticky lg:top-[10.5rem]">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-base font-semibold">📄 PDF Preview</h3>
         <ZoomControls z={z} label="preview" />
@@ -32,7 +32,7 @@ export function PreviewPanel({ draft, focusTarget = null }: { draft: CvDraft; fo
       <div
         ref={scroller}
         data-testid="preview-scroll"
-        className="max-h-[70vh] overflow-auto rounded-sm border border-slate-200 bg-slate-100 shadow-inner lg:max-h-[calc(100vh-14rem)]"
+        className="max-h-[70vh] overflow-auto rounded-sm border border-slate-200 bg-slate-100 shadow-inner lg:max-h-[calc(100vh-22rem)]"
       >
         <div style={{ zoom: z.zoom }} className="w-fit">
           <CvTemplate draft={draft} />
