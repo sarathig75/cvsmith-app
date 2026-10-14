@@ -57,3 +57,9 @@ class CVSave(BaseModel):
     @classmethod
     def _unique(cls, v: List[str]) -> List[str]:
         return sorted(set(v))
+
+
+class PrivacyIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    privacy: Literal["private", "public"]

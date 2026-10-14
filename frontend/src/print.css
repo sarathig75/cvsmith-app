@@ -1,0 +1,29 @@
+/* The Classic template (CvTemplate.css) on real A4 pages. The page margins are the template's
+   own padding, so every page has the same margins and the design matches the preview. */
+@page {
+  size: A4;
+  margin: 56px 60px;
+}
+html,
+body {
+  margin: 0;
+  background: #ffffff;
+}
+.cvt-page {
+  width: auto;
+  min-height: 0;
+  padding: 0;
+  background-image: none; /* the preview's page-end lines */
+}
+/* Keep an entry, and a heading with what follows it, on one page. */
+.cvt-entry,
+.cvt-page > header {
+  break-inside: avoid;
+}
+.cvt-heading {
+  break-after: avoid;
+}
+/* Placeholders ("Your Name") are hints on screen, not CV text. */
+.cvt-placeholder {
+  display: none;
+}

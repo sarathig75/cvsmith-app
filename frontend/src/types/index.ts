@@ -117,6 +117,8 @@ export type ApiErrorCode =
   | 'GOOGLE_AUTH_FAILED'
   | 'QUOTA_EXCEEDED'
   | 'SUGGESTION_FAILED'
+  | 'PRO_REQUIRED'
+  | 'PDF_FAILED'
   | 'SERVER_ERROR';
 
 export type ApiErrorBody = { error: { code: ApiErrorCode; message: string } };

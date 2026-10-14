@@ -54,6 +54,8 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
       CVSMITH_CLAUDE_KEY: ${CVSMITH_CLAUDE_KEY:-}
       CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5-5}
+      # PDF download: the backend's Chromium loads the CV template from the frontend container.
+      PDF_TEMPLATE_URL: http://frontend:5173
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY}
       GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID}

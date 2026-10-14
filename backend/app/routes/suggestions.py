@@ -31,7 +31,7 @@ def create_suggestion(
         # A sync route: FastAPI runs it in a worker thread, so the AI call never blocks the loop.
         row = suggestion_service.suggest(
             db, user, writer, body.field, body.entry_id, body.text,
-            body.context.model_dump(), cv.id if cv else None,
+            body.context.model_dump(), cv.id if cv else None, cv.content if cv else None,
         )
     except AppError as exc:
         if exc.code == "QUOTA_EXCEEDED":

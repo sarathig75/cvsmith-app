@@ -3,6 +3,8 @@ import { useUploadStore } from '../../store/uploadStore';
 import { discardPendingFile, uploadPendingFile } from '../../utils/postAuth';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
+import { parseApiError } from '../../services/api';
+import { downloadPdf, exportJson, setPrivacy as savePrivacy } from '../../services/cvService';
 import { getQuota } from '../../services/suggestionService';
 import type { CV, ParsePart, Quota, SuggestionRequest } from '../../types';
 import { draftFromSaved, emptyDraft } from '../../types/cvDraft';
@@ -21,6 +23,7 @@ import { SkillsSection } from './SkillsSection';
 import { SuggestButton } from './SuggestButton';
 import { SuggestionModal } from './SuggestionModal';
 import { Spinner } from '../Common/Spinner';
+import { UpgradeModal } from '../Common/UpgradeModal';
 import { useAutosave } from './useAutosave';
 import type { SaveState } from './useAutosave';
 
@@ -84,7 +87,7 @@ export function CanvasPage() {
   const applied = useRef(new Set<ParsePart>());
   const privacyLoaded = useRef(false);
   const [cv, setCv] = useState<CV | null>(null);
-  const { state: saveState, markSaved } = useAutosave(load === 'ok', draft, appliedParts, userEdited);
+  const { state: saveState, markSaved, flush } = useAutosave(load === 'ok', draft, appliedParts, userEdited);
   // CvStatus keeps the callback it was given when it started polling, so state read here can be
   // stale: whether the saved canvas was restored is kept in a ref.
   const restored = useRef(false);
@@ -122,6 +125,42 @@ export function CanvasPage() {
   };
 
 
+  // Download PDF (everyone) and Export JSON (Pro): both use the saved CV, so save first.
+  const [busy, setBusy] = useState<'pdf' | 'json' | null>(null);
+  const [actionError, setActionError] = useState('');
+  const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
+  const runDownload = async (kind: 'pdf' | 'json') => {
+    setBusy(kind);
+    setActionError('');
+    try {
+      if (!(await flush())) {
+        setActionError("We couldn't save your latest changes, so they can't be included yet. Please try again.");
+        return;
+      }
+      await (kind === 'pdf' ? downloadPdf() : exportJson());
+    } catch (err) {
+      const e = parseApiError(err);
+      if (e.code === 'PRO_REQUIRED') setUpgradeMessage(e.message);
+      else setActionError(e.message);
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  // The visibility setting is saved straight away; it goes back if saving fails.
+  const [privacyError, setPrivacyError] = useState('');
+  const changePrivacy = async (next: CV['privacy']) => {
+    const previous = privacy;
+    setPrivacy(next);
+    setPrivacyError('');
+    try {
+      await savePrivacy(next);
+    } catch {
+      setPrivacy(previous);
+      setPrivacyError("We couldn't save your visibility setting. Please try again.");
+    }
+  };
+
   // A file chosen before logging in replaces the saved CV and edits only if the user agrees.
   const uploadStatus = useUploadStore((s) => s.status);
   const pendingFile = useUploadStore((s) => s.pendingFile);
@@ -154,7 +193,7 @@ export function CanvasPage() {
           (tablet and up; on phones the bar would take too much of the screen). */}
       <div
         data-testid="canvas-actions"
-        className="mb-6 flex flex-col gap-4 bg-slate-50 md:sticky md:top-16 md:z-[90] md:-mx-6 md:flex-row md:items-center md:justify-between md:border-b md:border-slate-200 md:px-6 md:py-3 lg:-mx-8 lg:px-8"
+        className="mb-6 flex flex-col gap-4 bg-slate-50 md:sticky md:top-16 md:z-[90] md:-mx-6 md:flex-row md:flex-wrap md:items-center md:justify-between md:border-b md:border-slate-200 md:px-6 md:py-3 lg:-mx-8 lg:px-8"
       >
         <div>
           <h1 className="text-2xl font-semibold">Your CV</h1>
@@ -162,9 +201,18 @@ export function CanvasPage() {
             {privacy === 'public' ? '🌍 Public' : '🔒 Private'}
           </span>
         </div>
-        <div className="flex gap-3">
-          <Button disabled title="PDF download is coming in a later release">
+        <div className="flex flex-wrap gap-3">
+          <Button onClick={() => runDownload('pdf')} loading={busy === 'pdf'} disabled={load !== 'ok' || busy !== null}>
             Download PDF
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => runDownload('json')}
+            loading={busy === 'json'}
+            disabled={load !== 'ok' || busy !== null}
+            title="Your CV as JSON Resume (Pro)"
+          >
+            Export JSON
           </Button>
           <Link
             to="/settings"
@@ -173,6 +221,11 @@ export function CanvasPage() {
             Settings
           </Link>
         </div>
+        {actionError && (
+          <p role="alert" className="rounded-sm bg-warning-bg p-3 text-sm text-warning-text md:basis-full">
+            {actionError}
+          </p>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
@@ -311,7 +364,7 @@ export function CanvasPage() {
 
           </>
           )}
-          <PrivacyToggle value={privacy} onChange={setPrivacy} />
+          <PrivacyToggle value={privacy} onChange={changePrivacy} error={privacyError} />
         </div>
         <div className="lg:col-span-2">
           <PreviewPanel draft={draft} focusTarget={focusTarget} />
@@ -326,6 +379,7 @@ export function CanvasPage() {
           onClose={() => setSuggesting(null)}
         />
       )}
+      {upgradeMessage && <UpgradeModal message={upgradeMessage} onClose={() => setUpgradeMessage(null)} />}
     </div>
   );
 }

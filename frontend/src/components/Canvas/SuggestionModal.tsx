@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { parseApiError } from '../../services/api';
 import { decideSuggestion, requestSuggestion } from '../../services/suggestionService';
 import type { Suggestion, SuggestionRequest } from '../../types';
 import { Button } from '../Common/Button';
 import { Modal } from '../Common/Modal';
+import { UpgradeModal } from '../Common/UpgradeModal';
 import { Spinner } from '../Common/Spinner';
 
 export const UPGRADE_MESSAGE =
@@ -69,24 +69,7 @@ export function SuggestionModal({ request, label, onAccept, onUsed, onClose }: P
     onClose();
   };
 
-  if (state.kind === 'upgrade') {
-    return (
-      <Modal title="Upgrade to Pro" onClose={onClose}>
-        <p className="mb-6 text-slate-700">{state.message}</p>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            to="/pricing"
-            className="inline-flex min-h-[44px] items-center rounded-sm bg-brand px-6 py-3 font-medium text-white hover:bg-brand-dark"
-          >
-            See Pro plans
-          </Link>
-          <Button variant="secondary" onClick={onClose}>
-            Not now
-          </Button>
-        </div>
-      </Modal>
-    );
-  }
+  if (state.kind === 'upgrade') return <UpgradeModal message={state.message} onClose={onClose} />;
 
   return (
     <Modal title={`Improve: ${label}`} size="lg" onClose={onClose}>

@@ -58,5 +58,17 @@ def suggestion_failed() -> AppError:
     return AppError("SUGGESTION_FAILED", "We couldn't write a suggestion right now. Please try again in a moment.", 503)
 
 
+def pro_required() -> AppError:
+    return AppError(
+        "PRO_REQUIRED",
+        "JSON export is part of Pro. Upgrade to Pro for JSON export and 50 suggestions a month ($9.99/month).",
+        402,
+    )
+
+
+def pdf_failed() -> AppError:
+    return AppError("PDF_FAILED", "We couldn't create your PDF right now. Please try again in a moment.", 503)
+
+
 def google_auth_failed() -> AppError:
     return AppError("GOOGLE_AUTH_FAILED", "Google authentication failed.", 401)

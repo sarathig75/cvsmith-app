@@ -35,6 +35,8 @@ def create_app() -> FastAPI:
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
+        # The browser may read the download's file name only if it is exposed.
+        expose_headers=["Content-Disposition"],
     )
 
     @app.exception_handler(AppError)

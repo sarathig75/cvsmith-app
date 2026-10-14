@@ -20,12 +20,19 @@ export function useAutosave(
   draft: CvDraft,
   appliedParts: ParsePart[],
   userEdited: MutableRefObject<boolean>,
-): { state: SaveState; markSaved: (draft: CvDraft, appliedParts: ParsePart[]) => void } {
+): {
+  state: SaveState;
+  markSaved: (draft: CvDraft, appliedParts: ParsePart[]) => void;
+  flush: () => Promise<boolean>;
+} {
   const [state, setState] = useState<SaveState>('idle');
   const latest = useRef({ draft, appliedParts });
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
   latest.current = { draft, appliedParts };
   const lastSaved = useRef<string | null>(null);
   const inFlight = useRef(false);
+  const running = useRef<Promise<void> | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>();
 
   const serialize = () => JSON.stringify({ d: latest.current.draft, a: latest.current.appliedParts });
@@ -39,6 +46,8 @@ export function useAutosave(
       return;
     }
     inFlight.current = true;
+    let done = () => {};
+    running.current = new Promise((resolve) => (done = resolve));
     const edited = userEdited.current;
     userEdited.current = false;
     setState('saving');
@@ -55,6 +64,8 @@ export function useAutosave(
       timer.current = setTimeout(save, RETRY_DELAY_MS);
     } finally {
       inFlight.current = false;
+      running.current = null;
+      done();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -84,5 +95,17 @@ export function useAutosave(
     lastSaved.current = JSON.stringify({ d, a });
   }, []);
 
-  return { state, markSaved };
+  // Save now (e.g. before a download). Resolves true once everything on screen is saved.
+  const flush = useCallback(async () => {
+    if (!enabledRef.current) return false;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (running.current) await running.current;
+      if (serialize() === lastSaved.current) return true;
+      await save();
+    }
+    return serialize() === lastSaved.current;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [save]);
+
+  return { state, markSaved, flush };
 }

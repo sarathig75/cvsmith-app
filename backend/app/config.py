@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     CLAUDE_MODEL: str = "claude-sonnet-5-5"
     # Model that writes field suggestions (house style). Changeable without code changes.
     SUGGESTION_MODEL: str = "claude-sonnet-5-5"
+    # PDF download: where the backend's Chromium finds the frontend's print.html (defaults to
+    # FRONTEND_URL; in Docker the frontend container, e.g. http://frontend:5173).
+    PDF_TEMPLATE_URL: str = ""
+    # Chromium to use instead of Playwright's own download (optional).
+    PDF_CHROMIUM_PATH: str = ""
     # Claude API key. Use this name where ANTHROPIC_* variables are reserved by the host
     # (e.g. Claude Code cloud environments); if empty, the SDK falls back to ANTHROPIC_API_KEY.
     CVSMITH_CLAUDE_KEY: str = ""

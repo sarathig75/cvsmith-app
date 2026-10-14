@@ -94,12 +94,29 @@ def save_upload(
     return cv
 
 
-def save_content(db: Session, user: User, content: dict, applied_parts: List[str]) -> CV:
-    """Save the user's canvas. Creates the CV for a user who never uploaded a file."""
+def _get_or_create(db: Session, user: User) -> CV:
     cv = get_cv(db, user)
     if cv is None:
         cv = CV(user_id=user.id, title="My CV", parsing_status="not_uploaded")
         db.add(cv)
+    return cv
+
+
+def set_privacy(db: Session, user: User, privacy: str) -> CV:
+    """Save the visibility setting; creates the CV (like a first save) if there is none yet."""
+    cv = _get_or_create(db, user)
+    cv.privacy = privacy
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return set_privacy(db, user, privacy)
+    return cv
+
+
+def save_content(db: Session, user: User, content: dict, applied_parts: List[str]) -> CV:
+    """Save the user's canvas. Creates the CV for a user who never uploaded a file."""
+    cv = _get_or_create(db, user)
     cv.content = content
     cv.applied_parts = applied_parts
     cv.content_updated_at = utcnow()

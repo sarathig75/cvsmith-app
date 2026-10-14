@@ -39,7 +39,7 @@ export function PreviewPanel({ draft, focusTarget = null }: { draft: CvDraft; fo
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-slate-600">Live preview in the Classic template. PDF download comes later.</p>
+        <p className="text-xs text-slate-600">Live preview in the Classic template. Download PDF gives you the same design.</p>
         <button
           type="button"
           onClick={() => setFullView(true)}
