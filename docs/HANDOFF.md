@@ -1,6 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-13 · Last commit on main before this note: a1dcfe2 feat(preview): Classic CV template
+Updated: 2026-10-13 · Last commit on main before this note: e24b01c feat(preview): zoom controls (- Fit +) and a
+full-screen "View full CV"
 
 ## Product decisions (stable)
 - Google sign-in only for social login (no Apple in Release 1).
@@ -26,7 +27,9 @@ Updated: 2026-10-13 · Last commit on main before this note: a1dcfe2 feat(previe
 - PowerPoint uploads are not accepted (PDF and DOCX only).
 - CV template: one "Classic" template for Release 1 (approved 2026-10-14; more later). Design in
   `frontend/src/components/Canvas/CvTemplate.{tsx,css}`; the Week 9 PDF must reproduce it.
-- Preview scrolls on its own and follows the group being edited; the top status ticks off parts.
+- Preview (60/40 layout kept): scrolls on its own and follows each CV section being edited
+  (not every field); − Fit + zoom (40–150%, remembered per browser); "View full CV" full-screen
+  view with zoom and page count (rendered via a portal). The top status ticks off parts.
 - Speed target: email/phone ~1 s (pattern "contact" part, no AI), name/headline/location ~2.6 s
   (AI). Haiku and low effort were measured for contact details and rejected.
 - Drop-off metrics: our own `events` table (option A), steps listed in the plan; no CV content.
@@ -36,7 +39,7 @@ Updated: 2026-10-13 · Last commit on main before this note: a1dcfe2 feat(previe
 
 ## Current state
 - Backend: pytest 86/86 passing, flake8 clean; migrations 0002 and 0003 tested up/down on SQLite and Postgres 16.
-- Frontend: type-check clean, vitest 56/56 passing, `vite build` OK.
+- Frontend: type-check clean, vitest 59/59 passing, `vite build` OK.
 - Parser verified against the real Claude API on 5 real CVs (Word, two-column PDF, fresher,
   one-pager): all parse. Three parallel requests per CV, each part saved as it finishes
   (`parsing_parts`). First data after 1.9–5.0 s (was 3.0–22.1 s), all done after 5–19 s.
@@ -61,6 +64,8 @@ Updated: 2026-10-13 · Last commit on main before this note: a1dcfe2 feat(previe
   (e10ac4c, 6705662, 407c4c7). Verified end to end in the running app.
 - User feedback round 1 (2026-10-14): per-part progress line, scrollable preview that follows
   the edited group, instant contact part + faster polling, Classic template (b5162cc, 3861bf9, a1dcfe2).
+- User feedback round 2 (2026-10-14): preview follows every section change (78f47f9);
+  zoom controls and "View full CV" (e24b01c). Both checked in a real browser.
 - `cv-house-style` skill written with the user and uploaded to their claude.ai account (fd6ced6).
 
 ## Next steps
