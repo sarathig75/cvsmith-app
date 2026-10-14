@@ -11,9 +11,10 @@ time, the user id and small metadata; never CV content, names, emails or file na
 | `cv_uploaded` | a CV file is uploaded (every upload) | `file_type` |
 | `parsing_finished` | a parse job ends (every parse) | `status`, `failed_parts` |
 | `first_edit` | the first save that contains a user edit (once per user) | none |
+| `suggestion_requested` | a 💡 suggestion was written (every one, incl. "no change needed") | `field`, `changed` |
+| `upgrade_prompt_shown` | a suggestion was refused because the monthly quota is used | `field` |
 
-Later steps (`suggestion_requested`, `upgrade_prompt_shown`, `upgraded`, `pdf_downloaded`) are
-added with their features.
+Later steps (`upgraded`, `pdf_downloaded`) are added with their features.
 
 ## Report: distinct users per step, by signup week
 
@@ -39,6 +40,8 @@ SELECT
     count(*) FILTER (WHERE EXISTS (SELECT 1 FROM reached r WHERE r.user_id = c.user_id AND r.event_type = 'cv_uploaded')) AS uploaded,
     count(*) FILTER (WHERE EXISTS (SELECT 1 FROM reached r WHERE r.user_id = c.user_id AND r.event_type = 'parsing_finished')) AS parsed,
     count(*) FILTER (WHERE EXISTS (SELECT 1 FROM reached r WHERE r.user_id = c.user_id AND r.event_type = 'first_edit')) AS edited,
+    count(*) FILTER (WHERE EXISTS (SELECT 1 FROM reached r WHERE r.user_id = c.user_id AND r.event_type = 'suggestion_requested')) AS suggested,
+    count(*) FILTER (WHERE EXISTS (SELECT 1 FROM reached r WHERE r.user_id = c.user_id AND r.event_type = 'upgrade_prompt_shown')) AS hit_quota,
     round(100.0 * count(*) FILTER (WHERE EXISTS (SELECT 1 FROM reached r WHERE r.user_id = c.user_id AND r.event_type = 'cv_uploaded')) / count(*), 1) AS pct_uploaded,
     round(100.0 * count(*) FILTER (WHERE EXISTS (SELECT 1 FROM reached r WHERE r.user_id = c.user_id AND r.event_type = 'first_edit')) / count(*), 1) AS pct_edited
 FROM cohort c
@@ -51,3 +54,5 @@ Notes:
 - Users can skip steps (e.g. edit without uploading), so the columns need not decrease.
 - Parsing failures: `SELECT metadata->>'status', count(*) FROM events WHERE event_type =
   'parsing_finished' GROUP BY 1;`
+- Suggestions accepted vs declined (the decision is kept on each suggestion, not in events):
+  `SELECT field, status, count(*) FROM suggestions GROUP BY 1, 2 ORDER BY 1, 2;`

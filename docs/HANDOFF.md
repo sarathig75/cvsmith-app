@@ -1,113 +1,76 @@
 # CVSmith handoff
 
-Updated: 2026-10-13 · Last commit on main before this note: e24b01c feat(preview): zoom controls (- Fit +) and a
-full-screen "View full CV"
+Updated: 2026-10-14 · main at 800258d. Session branch `claude/clever-meitner-049zyv` holds the
+sticky title bar (26da23b) and Week 7–8 Suggestions; **not merged yet** (waiting for the user's OK).
 
 ## Product decisions (stable)
-- Google sign-in only for social login (no Apple in Release 1).
-- Pricing: Free = 1 suggestion/month, Pro = $9.99 for 50/month.
-- New CVs are public by default; one CV per user (a new upload replaces the old one).
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
-- Branching: `main` plus short-lived `feature/*` branches.
-- Google sign-in links to an existing same-email account; an unverified account's password is removed.
-- CV parsing model: `claude-sonnet-5-5` (kept after a 5-CV Sonnet vs Opus comparison: no clear
-  quality winner, Sonnet ~2x cheaper and faster). Changeable via `CLAUDE_MODEL`.
-- Parsing is faithful: it keeps the candidate's wording. Writing rules (active verbs, no "I",
-  etc.) apply to Suggestions only. Master copy: `.claude/skills/cv-house-style/SKILL.md`
-  (reviewed by the user). Suggestions show Current → Suggested only: no rule explanations, no
-  questions; never add or ask for numbers; expand an abbreviation only if its meaning is known.
-- Parsing UX: upload never waits; canvas editable immediately; parsed data fills only empty fields.
-  Exception: the CV's email replaces the pre-filled account email.
-- Dates: Month + Year dropdowns with "Years only"; stored "YYYY-MM" or "YYYY".
-- Work entries have "I currently work here"; parser sets `current` only when the CV says so.
-- Canvas = five fixed groups: Personal details, Professional details (summary, work, projects),
-  Education, Skills & Certifications (skills are LinkedIn-style tags), Others (languages, awards,
-  volunteering, interests, user-named custom sections). New content types go into Others
-  (`frontend/src/utils/otherKinds.ts`), not new sections. Preview follows the same order.
-- PowerPoint uploads are not accepted (PDF and DOCX only).
-- CV template: one "Classic" template for Release 1 (approved 2026-10-14; more later). Design in
-  `frontend/src/components/Canvas/CvTemplate.{tsx,css}`; the Week 9 PDF must reproduce it.
-- Preview (60/40 layout kept): scrolls on its own and follows each CV section being edited
-  (not every field); − Fit + zoom (40–150%, remembered per browser); "View full CV" full-screen
-  view with zoom and page count (rendered via a portal). The top status ticks off parts.
-- Speed target: email/phone ~1 s (pattern "contact" part, no AI), name/headline/location ~2.6 s
-  (AI). Haiku and low effort were measured for contact details and rejected.
-- Drop-off metrics: our own `events` table (option A), steps listed in the plan; no CV content.
-- Saving: parser writes `json_resume`, auto-save writes `content` (+ `applied_parts`); a new upload
-  replaces the CV and edits only after the user confirms (option a). Auto-save ~2 s after typing.
-- Release 2: current-employer shield for recruiter search (see plan doc).
+- Google is the only social login (no Apple in Release 1). Same-email accounts are linked.
+- Pricing: Free = 1 suggestion/month, Pro = $9.99 for 50/month (calendar month, UTC).
+- One CV per user, public by default; a new upload replaces the CV after the user confirms.
+- PDF and DOCX only (no PowerPoint).
+- Parsing is faithful to the candidate's wording; model `claude-sonnet-5-5` (`CLAUDE_MODEL`).
+  Progressive: contact part (pattern, ~1 s), then basics / experience / extras (AI, parallel).
+- Writing rules apply to Suggestions only. Master copy: `.claude/skills/cv-house-style/SKILL.md`;
+  the backend uses a copy in `backend/app/prompts/cv_house_style.md` (a test keeps them equal).
+- Suggestions (Week 7–8, details in the plan doc): 💡 Improve on the Summary, each Work
+  Experience description and each Project description; one click = one suggestion for the
+  whole field; "no change needed" and failures don't count; Sonnet (`SUGGESTION_MODEL`), Opus
+  compared and not chosen (~2x cost, slower, similar quality). Nobody is Pro yet (`users.plan`).
+- Canvas = five fixed groups (Personal, Professional, Education, Skills & Certifications,
+  Others). New content types go into Others (`frontend/src/utils/otherKinds.ts`).
+- Preview: 60/40 layout, Classic template (`CvTemplate.{tsx,css}`; the Week 9 PDF must match),
+  follows the section being edited, − Fit + zoom, "View full CV". Title bar with Download PDF
+  and Settings stays in view (tablet and up).
+- Saving: auto-save ~2 s after a change; drop-off metrics in our own `events` table
+  (`docs/FUNNEL.md`), never CV content.
+- Release 2: current-employer shield for recruiter search (plan doc).
 
 ## Current state
-- Backend: pytest 86/86 passing, flake8 clean; migrations 0002 and 0003 tested up/down on SQLite and Postgres 16.
-- Frontend: type-check clean, vitest 59/59 passing, `vite build` OK.
-- Parser verified against the real Claude API on 5 real CVs (Word, two-column PDF, fresher,
-  one-pager): all parse. Three parallel requests per CV, each part saved as it finishes
-  (`parsing_parts`). First data after 1.9–5.0 s (was 3.0–22.1 s), all done after 5–19 s.
-  Cost ~$0.04–0.08 per CV (estimated, not measured).
-- End-to-end in the running app (Postgres 16 + Redis + API + Celery worker + Vite, real Claude
-  API, sign-up and upload through the browser) works: a text PDF of a real CV filled contact
-  details and skills by 5.0 s and work/education by 10.8 s; an image-only (scan-like) PDF went
-  to Claude as a document and parsed fully and correctly in 4.9 s. Migration 0002 ran on Postgres.
-- The user's own scanned CV ("scanned CV sample.pdf" in Drive) could not be pushed through the
-  app from a cloud session: the Drive connector returns files inline, not as files on disk.
-  The scan path was tested with a synthetic image-only PDF instead.
-- Week 5–6 is complete and merged: saving, restore on load, confirm-before-replace, funnel
-  tracking. Migrations run automatically on `docker compose up` (backend start command).
-- Open branches / PRs: none besides the session branch, which is merged into main.
-
-## Done this session (details in `git log`)
-- Real parsing fixed (bcd1b1b); Sonnet kept after a 5-CV comparison with Opus.
-- Parser: languages, awards, volunteer, projects, interests; progressive parsing in three parts
-  (118c72b); no duplicate awards (f287c58). Verified end to end, incl. a scan-like PDF.
-- Canvas: five groups, Others with typed items, skills as tags (92ae610, b2f19c0).
-- Week 5–6: saving, restore on load, confirm-before-replace, funnel events and `docs/FUNNEL.md`
-  (e10ac4c, 6705662, 407c4c7). Verified end to end in the running app.
-- User feedback round 1 (2026-10-14): per-part progress line, scrollable preview that follows
-  the edited group, instant contact part + faster polling, Classic template (b5162cc, 3861bf9, a1dcfe2).
-- User feedback round 2 (2026-10-14): preview follows every section change (78f47f9);
-  zoom controls and "View full CV" (e24b01c). Both checked in a real browser.
-- `cv-house-style` skill written with the user and uploaded to their claude.ai account (fd6ced6).
+- Backend: pytest 103/103, flake8 clean; migration 0004 (users.plan, suggestions) tested
+  up/down on SQLite and Postgres 16.
+- Frontend: type-check clean, vitest 66/66, `vite build` OK.
+- Suggestions checked against the real Claude API on 8 fields from the test CVs (Sonnet and
+  Opus): facts, numbers and clients kept. Sonnet ~$0.013 per suggestion, 3–14 s.
+- End to end in the running app (Postgres, API, Vite, real Claude API, browser): 💡 → modal →
+  Use suggestion → auto-saved → second 💡 → upgrade prompt → /pricing; events recorded once.
+- Fixed during testing: React StrictMode sent two AI requests per click; cut-off AI output gave
+  a server error (now "try again", and only that part fails when parsing).
 
 ## Next steps
-0. Local testing on Windows works (Docker Desktop, `docker compose up`). The user tests and
-   reports observations; after changes: `git pull`, then `docker compose restart` (the Celery
-   worker does not reload code). Their `.env` was once not read (ANTHROPIC_API_KEY warning);
-   if it recurs: re-save `.env` as UTF-8 without BOM, one line, no spaces/quotes.
-1. Week 7–8 Suggestions (next build). Prompt from `.claude/skills/cv-house-style/SKILL.md`;
-   quota Free 1/month, Pro 50/month (plan doc). Before coding, confirm with the user: which
-   fields get a 💡 first, what counts as "one suggestion" (per field or per bullet), and the
-   upgrade prompt wording. Add funnel events suggestion_requested / upgrade_prompt_shown.
-2. The user uploads "scanned CV sample.pdf" in the running app on their own machine to check a
-   real scan (the only part of the end-to-end tests not done).
-3. Parsing quality (open): bullets covering a whole employer land under its latest title.
-   Text that belongs to no single role, incl. project lists describing work at an employer,
-   stays in the summary (user decision 2026-10-13, option a).
-4. Known limits of saving: two open tabs = last write wins; privacy toggle is not saved yet
-   (PATCH /api/cv/privacy is Week 9); logged-in users have no "upload a new CV" button yet.
+1. User: test Suggestions locally (`git pull` on the session branch or after merge, then
+   `docker compose restart`; migration 0004 runs on start). Then approve the merge to main.
+2. Week 9: PDF download (must reproduce the Classic template), export, privacy toggle saved
+   (PATCH /api/cv/privacy).
+3. Open observations from the Sonnet run (for the user to decide, not built):
+   - An objective-style summary ("Secure a responsible career opportunity…") came back as
+     "no change needed" from both models, since the rules forbid adding facts.
+   - A nearly fine field can come back with tiny edits and still count as a suggestion.
+4. The user uploads "scanned CV sample.pdf" in their running app to check a real scan.
+5. Parsing quality (open): bullets covering a whole employer land under its latest title.
+6. Known limits: two open tabs = last write wins; no "upload a new CV" button for logged-in
+   users yet; two simultaneous 💡 clicks could both pass the quota check (accepted for R1).
 
 ## Open questions for the user
-- none
+- Merge the session branch (sticky bar + Suggestions) to main?
 
 ## Setup notes
 - Backend: `cd backend && python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt`.
-  Tests need no Postgres, Redis or API key (all faked) — so they cannot catch real-API errors;
-  check parser changes against the real API with a small script before merging.
+  Tests fake Postgres, Redis and Claude, so they can't catch real-API errors: check AI changes
+  with a small script against the real API before merging.
 - Frontend: `cd frontend && npm install`.
-- Parsing worker: Redis + `celery -A app.workers.celery_app worker` (see backend/README.md).
-- API key: env var **`CVSMITH_CLAUDE_KEY`** in the Claude Code cloud environment
-  (`ANTHROPIC_*` is reserved there); `ANTHROPIC_API_KEY` works locally/Docker. Never commit it.
-- Test CVs are real people's CVs in the user's Google Drive folder "CVSmith"; never commit them
-  or their contents. Read them with the Drive connector (`read_file_content` gives text;
-  downloads come back inline, not as files).
-- Full stack: `docker-compose.yml` (Postgres, Redis, backend, Celery worker, frontend); needs
-  `ANTHROPIC_API_KEY` in a root `.env`; migrations run on backend start. The user tests on
-  Windows (Git + Docker Desktop); not yet confirmed working there. The cloud
-  container has no Docker daemon, but Postgres 16 and Redis are installed: run them natively
-  (initdb/pg_ctl as the `postgres` user, port 5433; `redis-server --daemonize yes`), then
-  `alembic upgrade head`, uvicorn, `celery -A app.workers.celery_app worker` and `npx vite`.
-- `cv-house-style` exists twice: the repo copy (master) and the user's claude.ai upload, which
-  Claude cannot update. After any rule change: zip the folder
-  (`cd .claude/skills && zip -r cv-house-style.zip cv-house-style`), send it to the user, and
-  remind them to re-upload it in claude.ai.
-- The product-management plugin connectors (Amplitude, Linear, Notion, Slack, ...) failed to
-  connect in this environment (proxy 403). Not needed so far; they would need network access.
+- Worker: Redis + `celery -A app.workers.celery_app worker` (see backend/README.md).
+- API key: **`CVSMITH_CLAUDE_KEY`** in the Claude Code cloud environment (`ANTHROPIC_*` is
+  reserved there); `ANTHROPIC_API_KEY` in a root `.env` for Docker. Never commit it.
+- Docker (`docker-compose.yml`) works on the user's Windows machine. If `.env` is not read
+  again: re-save it as UTF-8 without BOM, one line, no spaces or quotes. After code changes:
+  `docker compose restart` (the worker does not reload code).
+- Cloud container (no Docker): Postgres 16 in `/tmp/cvsmith-pg/data`, port 5433, started with
+  `pg_ctl` as the `postgres` user (remove stale `.s.PGSQL.5433*` files first);
+  `redis-server --daemonize yes`; then `alembic upgrade head`, uvicorn, the worker, `npx vite`.
+- Test CVs are real people's CVs in the user's Drive folder "CVSmith": never commit them or
+  their contents. Read them with the Drive connector (`read_file_content`).
+- `cv-house-style` also lives in the user's claude.ai account. After a rule change: copy the
+  body to `backend/app/prompts/cv_house_style.md`, zip the skill folder, send it to the user
+  and remind them to re-upload it.
+- Product-management plugin connectors fail here (proxy 403); not needed so far.

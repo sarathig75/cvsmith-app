@@ -315,16 +315,29 @@ new item type, not a new canvas section. The PDF preview uses the same order.
 ---
 
 ### Week 7–8: Field-Level AI Suggestions
-- [ ] POST /api/suggestions/{field} endpoint (field-specific suggestions)
-- [ ] Claude API integration (per-field improvement generation)
-- [ ] suggestions table + queries (track which fields have been suggested)
-- [ ] Suggestion quota tracking (free: 1 suggestion/month free, Pro: 50/month)
-- [ ] Track "free suggestion used" flag per user
-- [ ] Frontend: SuggestionModal component (show current → improved → accept/decline)
-- [ ] Frontend: 💡 Bulb icon on fields with suggestions available
-- [ ] Frontend: Upgrade prompt after free suggestion used
-- [ ] Accept/reject/apply suggestion flow
-- [ ] Track suggestion metrics for analytics
+- [x] POST /api/suggestions endpoint (body names the field; contract in `docs/API_CONTRACT.md`)
+- [x] Claude API integration (per-field improvement generation, house-style prompt)
+- [x] suggestions table + queries (every suggestion stored with its decision)
+- [x] Suggestion quota tracking (free: 1 suggestion/month free, Pro: 50/month)
+- [x] Track "free suggestion used" per user (counted from the suggestions table, no separate flag)
+- [x] Frontend: SuggestionModal component (show current → improved → accept/decline)
+- [x] Frontend: 💡 Improve button on the fields that support suggestions
+- [x] Frontend: Upgrade prompt after free suggestion used
+- [x] Accept/reject/apply suggestion flow
+- [x] Track suggestion metrics for analytics (funnel events + accepted/declined in the table)
+
+**Decisions (agreed 2026-10-14):**
+- 💡 on the Professional Summary, each Work Experience description and each Project
+  description. One click = one suggestion for the whole field.
+- Quota per calendar month (UTC), resets on the 1st. A "no change needed" result and a failed
+  AI call do not count. Checked before the AI call (402 `QUOTA_EXCEEDED`).
+- Upgrade prompt: "You've used your free suggestion for this month. Upgrade to Pro for 50
+  suggestions a month ($9.99/month)." with [See Pro plans] → `/pricing` and [Not now].
+- `users.plan` is "free" or "pro"; no payments and no admin command yet, so nobody is Pro.
+- Model: `claude-sonnet-5-5` (`SUGGESTION_MODEL`). Side-by-side with Opus on 8 fields from the
+  test CVs: same facts kept, similar quality; Opus ~2x the cost (~$0.03 vs ~$0.013 per
+  suggestion) and slower (4–18 s vs 3–14 s).
+- Accepting replaces the field in the canvas; it is auto-saved like typing (counts as an edit).
 
 **Definition of Done:** User can click 💡 on any field, see AI improvement, accept/reject, free suggestion converts to upgrade prompt
 
