@@ -213,14 +213,19 @@ class CvParser(Protocol):
     def parse_pdf(self, data: bytes) -> Iterator[PartResult]: ...
 
 
+def claude_client() -> anthropic.Anthropic:
+    """The app's Claude API client (also used for suggestions)."""
+    settings = get_settings()
+    return anthropic.Anthropic(
+        api_key=settings.CVSMITH_CLAUDE_KEY or None,  # None: SDK reads ANTHROPIC_API_KEY
+        base_url=settings.CLAUDE_API_BASE_URL,
+    )
+
+
 class ClaudeCvParser:
     def __init__(self, client: Optional[anthropic.Anthropic] = None, model: Optional[str] = None):
-        settings = get_settings()
-        self.client = client or anthropic.Anthropic(
-            api_key=settings.CVSMITH_CLAUDE_KEY or None,  # None: SDK reads ANTHROPIC_API_KEY
-            base_url=settings.CLAUDE_API_BASE_URL,
-        )
-        self.model = model or settings.CLAUDE_MODEL
+        self.client = client or claude_client()
+        self.model = model or get_settings().CLAUDE_MODEL
 
     def parse_text(self, text: str) -> Iterator[PartResult]:
         return self._parse([{"type": "text", "text": f"<cv>\n{text}\n</cv>"}])

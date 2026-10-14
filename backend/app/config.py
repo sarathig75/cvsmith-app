@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     # CV parsing (Celery worker + Claude API).
     REDIS_URL: str = "redis://localhost:6379/0"
     CLAUDE_MODEL: str = "claude-sonnet-5-5"
+    # Model that writes field suggestions (house style). Changeable without code changes.
+    SUGGESTION_MODEL: str = "claude-sonnet-5-5"
     # Claude API key. Use this name where ANTHROPIC_* variables are reserved by the host
     # (e.g. Claude Code cloud environments); if empty, the SDK falls back to ANTHROPIC_API_KEY.
     CVSMITH_CLAUDE_KEY: str = ""

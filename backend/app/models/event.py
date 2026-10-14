@@ -9,8 +9,11 @@ from app.database import Base
 from app.models.user import utcnow
 
 # Funnel steps (docs/CVSmith_Release_1_FINAL_PLAN.md, "Funnel tracking"). Later steps
-# (suggestion_requested, upgrade_prompt_shown, upgraded, pdf_downloaded) are added with their features.
-EVENT_TYPES = ("signup", "email_verified", "cv_uploaded", "parsing_finished", "first_edit")
+# (upgraded, pdf_downloaded) are added with their features.
+EVENT_TYPES = (
+    "signup", "email_verified", "cv_uploaded", "parsing_finished", "first_edit",
+    "suggestion_requested", "upgrade_prompt_shown",
+)
 # Steps recorded at most once per user.
 ONCE_PER_USER = ("email_verified", "first_edit")
 

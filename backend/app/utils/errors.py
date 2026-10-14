@@ -46,5 +46,17 @@ def not_found(message: str = "Resource not found.") -> AppError:
     return AppError("NOT_FOUND", message, 404)
 
 
+def quota_exceeded() -> AppError:
+    return AppError(
+        "QUOTA_EXCEEDED",
+        "You've used your free suggestion for this month. Upgrade to Pro for 50 suggestions a month ($9.99/month).",
+        402,
+    )
+
+
+def suggestion_failed() -> AppError:
+    return AppError("SUGGESTION_FAILED", "We couldn't write a suggestion right now. Please try again in a moment.", 503)
+
+
 def google_auth_failed() -> AppError:
     return AppError("GOOGLE_AUTH_FAILED", "Google authentication failed.", 401)

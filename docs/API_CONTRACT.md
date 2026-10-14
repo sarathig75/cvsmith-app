@@ -9,11 +9,11 @@ Auth: `Authorization: Bearer <access_token>` on protected routes.
 ```
 Codes: `VALIDATION_ERROR` (422), `EMAIL_EXISTS` (409), `INVALID_CREDENTIALS` (401), `UNAUTHORIZED` (401),
 `INVALID_TOKEN` (400), `UNSUPPORTED_FILE_TYPE` (415), `FILE_TOO_LARGE` (413), `NOT_FOUND` (404),
-`GOOGLE_AUTH_FAILED` (401), `SERVER_ERROR` (500).
+`GOOGLE_AUTH_FAILED` (401), `QUOTA_EXCEEDED` (402), `SUGGESTION_FAILED` (503), `SERVER_ERROR` (500).
 
 ## Types
 ```ts
-User   = { id: string, email: string, email_verified: boolean, created_at: string }
+User   = { id: string, email: string, email_verified: boolean, plan: "free" | "pro", created_at: string }
 Token  = { access_token: string, token_type: "bearer", user: User }
 CV     = { id: string, title: string, privacy: "private"|"public",
            parsing_status: "not_uploaded"|"pending"|"in_progress"|"complete"|"failed",
@@ -29,6 +29,15 @@ CVSave     = { content: object,            // the canvas draft as the frontend k
                applied_parts: ParsePart[],
                edited?: boolean }          // true if the change includes a user edit (not only parsed data)
 PartStatus = "pending" | "complete" | "failed"
+SuggestionField = "summary" | "experience" | "projects"
+Suggestion = { id: string, field: SuggestionField, entry_id: string | null,  // entry_id: the canvas entry (job/project)
+               original: string, suggested: string,
+               changed: boolean,                    // false: the text already follows the house style
+               status: "pending" | "accepted" | "declined" | "unchanged", created_at: string }
+SuggestionRequest = { field: SuggestionField, entry_id?: string, text: string,   // text: the field as it is now
+                      context?: { title?: string, company?: string } }          // helps for job/project descriptions
+Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
+          resets_at: string }                  // 1st of next calendar month, 00:00 UTC
 // Parts of json_resume each status covers:
 //   contact    -> basics.email, basics.phone, basics.profiles (LinkedIn) found by pattern in the text,
 //                 without AI, within about a second; overwritten by basics when that arrives.
@@ -51,6 +60,9 @@ PartStatus = "pending" | "complete" | "failed"
 | POST | /api/auth/verify | no | `{token}` | 200 `User` |
 | POST | /api/cv/upload | yes | multipart `file` (PDF/DOCX, max 10MB) | 201 `CV` (parsing_status "pending"; parsing runs in the background, poll `GET /api/cv`) |
 | GET | /api/cv | yes | - | 200 `CV` or 404 `NOT_FOUND` |
+| GET | /api/suggestions/quota | yes | - | 200 `Quota` |
+| POST | /api/suggestions | yes | `SuggestionRequest` | 201 `Suggestion`. 402 `QUOTA_EXCEEDED` when no suggestions are left this month (checked before any AI call). 422 `VALIDATION_ERROR` for empty text or text over 5,000 characters. 503 `SUGGESTION_FAILED` if the AI call fails (not counted) |
+| PATCH | /api/suggestions/{id} | yes | `{status: "accepted" \| "declined"}` | 200 `Suggestion`; 404 `NOT_FOUND` if it is not the user's |
 | PATCH | /api/cv | yes | `CVSave` | 200 `CV`. Creates the CV (parsing_status "not_uploaded") if the user has none. 422 `VALIDATION_ERROR` if `content` is not an object, is larger than 256 KB as JSON, or `applied_parts` has unknown values |
 
 ## Rules
@@ -67,5 +79,9 @@ PartStatus = "pending" | "complete" | "failed"
   parser and `content` only by PATCH, so a save and a finishing parse never overwrite each other. On load the
   frontend restores `content`, then merges parsed parts not in `applied_parts` (filling empty fields only).
   Last write wins between two open tabs. New CVs default `privacy = "public"`.
+- Suggestions (house style: `.claude/skills/cv-house-style/SKILL.md`): one request improves one whole field.
+  Quota per calendar month (UTC): free 1, pro 50; only suggestions with `changed: true` count. Applying an
+  accepted suggestion is done by the client (it replaces the field, then auto-saves); PATCH records the decision.
+  Suggestion text is stored for the decision and deleted with the user.
 - CORS origins from env `CORS_ORIGINS`.
 - No Apple sign-in in Release 1.

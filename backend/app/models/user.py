@@ -22,6 +22,8 @@ class User(Base):
     email_verified_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # "free" or "pro" (suggestion quota). Payments are not built yet, so everyone is "free".
+    plan: Mapped[str] = mapped_column(String(20), nullable=False, default="free")
     google_id: Mapped[Optional[str]] = mapped_column(
         String(255), unique=True, nullable=True
     )

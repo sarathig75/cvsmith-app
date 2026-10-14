@@ -21,7 +21,8 @@ def test_signup_success_normalizes_email_and_hashes_password(client):
     assert body["token_type"] == "bearer" and body["access_token"]
     assert body["user"]["email"] == "new.user@example.com"
     assert body["user"]["email_verified"] is False
-    assert set(body["user"]) == {"id", "email", "email_verified", "created_at"}
+    assert set(body["user"]) == {"id", "email", "email_verified", "plan", "created_at"}
+    assert body["user"]["plan"] == "free"
     with client.session_factory() as db:
         u = db.query(User).one()
         assert u.password_hash and u.password_hash != PASSWORD

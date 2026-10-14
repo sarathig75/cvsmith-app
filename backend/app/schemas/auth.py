@@ -21,6 +21,7 @@ class UserOut(BaseModel):
     id: uuid.UUID
     email: str
     email_verified: bool
+    plan: Literal["free", "pro"] = "free"
     created_at: datetime
 
     @field_serializer("created_at")
