@@ -3,12 +3,15 @@ import { Button } from '../Common/Button';
 import { DateField } from '../Common/DateField';
 import type { Entry } from '../../types/cvDraft';
 import { parseDate } from '../../utils/dates';
+import { SuggestButton } from './SuggestButton';
 
 export type FieldSpec = {
   key: string;
   label: string;
   placeholder?: string;
   type?: 'text' | 'date' | 'textarea';
+  /** Show "💡 Improve" for this field (calls `onSuggest`). */
+  suggest?: boolean;
 };
 
 type Props = {
@@ -22,9 +25,12 @@ type Props = {
   fields: FieldSpec[];
   entries: Entry[];
   onChange: (entries: Entry[]) => void;
+  onSuggest?: (entry: Entry, key: string) => void;
 };
 
-export function EntryListSection({ title, showTitle = true, currentToggle, itemLabel, addLabel, fields, entries, onChange }: Props) {
+export function EntryListSection({
+  title, showTitle = true, currentToggle, itemLabel, addLabel, fields, entries, onChange, onSuggest,
+}: Props) {
   const base = useId();
   const update = (id: string, key: string, value: string) =>
     onChange(entries.map((e) => (e.id === id ? { ...e, [key]: value } : e)));
@@ -87,9 +93,18 @@ export function EntryListSection({ title, showTitle = true, currentToggle, itemL
                 }
                 return (
                   <div key={f.key} className={wide ? 'md:col-span-2' : ''}>
-                    <label htmlFor={id} className="mb-1 block text-sm font-medium">
-                      {f.label}
-                    </label>
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <label htmlFor={id} className="block text-sm font-medium">
+                        {f.label}
+                      </label>
+                      {f.suggest && onSuggest && (
+                        <SuggestButton
+                          text={entry[f.key] ?? ''}
+                          label={`${itemLabel} ${i + 1} ${f.label}`}
+                          onClick={() => onSuggest(entry, f.key)}
+                        />
+                      )}
+                    </div>
                     {wide ? (
                       <textarea
                         id={id}

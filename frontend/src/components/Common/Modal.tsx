@@ -1,11 +1,11 @@
 import { useEffect, useId, useRef } from 'react';
 import type { ReactNode } from 'react';
 
-type Props = { title: string; subtitle?: string; onClose: () => void; children: ReactNode };
+type Props = { title: string; subtitle?: string; onClose: () => void; children: ReactNode; size?: 'md' | 'lg' };
 
 const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select,textarea,[tabindex]:not([tabindex="-1"])';
 
-export function Modal({ title, subtitle, onClose, children }: Props) {
+export function Modal({ title, subtitle, onClose, children, size = 'md' }: Props) {
   const titleId = useId();
   const ref = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
@@ -55,7 +55,7 @@ export function Modal({ title, subtitle, onClose, children }: Props) {
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="relative my-auto w-[90%] max-w-[480px] rounded-md bg-white p-6 shadow-lg md:p-8"
+        className={`relative my-auto w-[90%] ${size === 'lg' ? 'max-w-[720px]' : 'max-w-[480px]'} rounded-md bg-white p-6 shadow-lg md:p-8`}
       >
         <button
           type="button"

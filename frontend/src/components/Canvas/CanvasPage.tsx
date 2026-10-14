@@ -1,11 +1,12 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useUploadStore } from '../../store/uploadStore';
 import { discardPendingFile, uploadPendingFile } from '../../utils/postAuth';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import type { CV, ParsePart } from '../../types';
+import { getQuota } from '../../services/suggestionService';
+import type { CV, ParsePart, Quota, SuggestionRequest } from '../../types';
 import { draftFromSaved, emptyDraft } from '../../types/cvDraft';
-import type { CvDraft } from '../../types/cvDraft';
+import type { CvDraft, Entry } from '../../types/cvDraft';
 import { mergeParsedIntoDraft, PART_SECTIONS, resumeToDraft } from '../../utils/resumeToDraft';
 import { Button } from '../Common/Button';
 import { CanvasGroup } from './CanvasGroup';
@@ -17,6 +18,8 @@ import { PersonalInfoSection } from './PersonalInfoSection';
 import { PreviewPanel } from './PreviewPanel';
 import { PrivacyToggle } from './PrivacyToggle';
 import { SkillsSection } from './SkillsSection';
+import { SuggestButton } from './SuggestButton';
+import { SuggestionModal } from './SuggestionModal';
 import { Spinner } from '../Common/Spinner';
 import { useAutosave } from './useAutosave';
 import type { SaveState } from './useAutosave';
@@ -39,6 +42,36 @@ export function CanvasPage() {
   const patch = (p: Partial<CvDraft>) => {
     userEdited.current = true;
     setDraft((d) => ({ ...d, ...p }));
+  };
+
+  // 💡 suggestions: one field at a time. The quota is shown on the canvas and refreshed after
+  // each request; the server enforces it, so a failed quota load only hides the hint.
+  const [quota, setQuota] = useState<Quota | null>(null);
+  const refreshQuota = () => {
+    getQuota().then(setQuota, () => undefined);
+  };
+  useEffect(refreshQuota, []);
+  const [suggesting, setSuggesting] = useState<{ request: SuggestionRequest; label: string } | null>(null);
+  const suggestFor = (field: 'experience' | 'projects', label: string) => (entry: Entry, key: string) =>
+    setSuggesting({
+      label,
+      request: {
+        field,
+        entry_id: entry.id,
+        text: entry[key] ?? '',
+        context:
+          field === 'experience' ? { title: entry.title ?? '', company: entry.company ?? '' } : { title: entry.name ?? '' },
+      },
+    });
+  // An accepted suggestion is a user edit like typing: it replaces the field and is auto-saved.
+  const acceptSuggestion = (request: SuggestionRequest, text: string) => {
+    userEdited.current = true;
+    setDraft((d) => {
+      if (request.field === 'summary') return { ...d, summary: text };
+      const list = request.field === 'experience' ? d.experience : d.projects;
+      const next = list.map((e) => (e.id === request.entry_id ? { ...e, description: text } : e));
+      return request.field === 'experience' ? { ...d, experience: next } : { ...d, projects: next };
+    });
   };
 
   // The saved canvas is restored before editing starts, so nothing typed can be lost and an
@@ -174,10 +207,20 @@ export function CanvasPage() {
           </CanvasGroup>
 
           <CanvasGroup title="Professional details" target="summary" note={groupNote('experience', 'extras')}>
+            <QuotaHint quota={quota} />
             <div className="mb-6" data-preview-target="summary">
-              <label htmlFor="summary" className="mb-3 block text-base font-semibold">
-                Professional Summary
-              </label>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <label htmlFor="summary" className="block text-base font-semibold">
+                  Professional Summary
+                </label>
+                <SuggestButton
+                  text={draft.summary}
+                  label="Professional Summary"
+                  onClick={() =>
+                    setSuggesting({ label: 'Professional Summary', request: { field: 'summary', text: draft.summary } })
+                  }
+                />
+              </div>
               <textarea
                 id="summary"
                 rows={4}
@@ -195,12 +238,13 @@ export function CanvasPage() {
                 addLabel="Add Experience"
                 entries={draft.experience}
                 onChange={(experience) => patch({ experience })}
+                onSuggest={suggestFor('experience', 'Work Experience description')}
                 fields={[
                   { key: 'title', label: 'Job Title', placeholder: 'Senior Software Engineer' },
                   { key: 'company', label: 'Company', placeholder: 'Acme Corp' },
                   { key: 'start', label: 'Start Date', type: 'date' },
                   { key: 'end', label: 'End Date', type: 'date' },
-                  { key: 'description', label: 'Description', type: 'textarea', placeholder: 'What did you achieve?' },
+                  { key: 'description', label: 'Description', type: 'textarea', placeholder: 'What did you achieve?', suggest: true },
                 ]}
               />
             </div>
@@ -211,12 +255,13 @@ export function CanvasPage() {
                 addLabel="Add Project"
                 entries={draft.projects}
                 onChange={(projects) => patch({ projects })}
+                onSuggest={suggestFor('projects', 'Project description')}
                 fields={[
                   { key: 'name', label: 'Project Name', placeholder: 'Final-year project, app, campaign...' },
                   { key: 'url', label: 'Link', placeholder: 'https://...' },
                   { key: 'start', label: 'Start Date', type: 'date' },
                   { key: 'end', label: 'End Date', type: 'date' },
-                  { key: 'description', label: 'Description', type: 'textarea', placeholder: 'What did you build or deliver?' },
+                  { key: 'description', label: 'Description', type: 'textarea', placeholder: 'What did you build or deliver?', suggest: true },
                 ]}
               />
             </div>
@@ -272,7 +317,31 @@ export function CanvasPage() {
           <PreviewPanel draft={draft} focusTarget={focusTarget} />
         </div>
       </div>
+      {suggesting && (
+        <SuggestionModal
+          request={suggesting.request}
+          label={suggesting.label}
+          onAccept={(text) => acceptSuggestion(suggesting.request, text)}
+          onUsed={refreshQuota}
+          onClose={() => setSuggesting(null)}
+        />
+      )}
     </div>
+  );
+}
+
+/** One line under "Professional details": what 💡 does and how many suggestions are left. */
+function QuotaHint({ quota }: { quota: Quota | null }) {
+  const known = typeof quota?.remaining === 'number';
+  const left = known
+    ? quota!.plan === 'free'
+      ? `${quota!.remaining} free suggestion${quota!.remaining === 1 ? '' : 's'} left this month.`
+      : `${quota!.remaining} of ${quota!.limit} suggestions left this month.`
+    : '';
+  return (
+    <p data-testid="quota-hint" className="mb-4 text-sm text-slate-600">
+      <span aria-hidden="true">💡</span> Improve rewrites a field in a clear, professional CV style. {left}
+    </p>
   );
 }
 

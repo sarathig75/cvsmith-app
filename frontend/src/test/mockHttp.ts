@@ -29,4 +29,4 @@ export const apiError = (status: number, code: string, message = 'msg'): MockRep
   data: { error: { code, message } },
 });
 
-export const sampleUser = { id: 'u1', email: 'a@b.co', email_verified: false, created_at: '2026-01-01T00:00:00Z' };
+export const sampleUser = { id: 'u1', email: 'a@b.co', email_verified: false, plan: 'free' as const, created_at: '2026-01-01T00:00:00Z' };

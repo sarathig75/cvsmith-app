@@ -3,6 +3,8 @@ export type User = {
   id: string;
   email: string;
   email_verified: boolean;
+  /** No payments in Release 1: everyone is "free" until Pro is sold. */
+  plan: 'free' | 'pro';
   created_at: string;
 };
 
@@ -77,6 +79,32 @@ export type JsonResume = {
   interests?: { name?: string; keywords?: string[] }[];
 };
 
+/** CV fields that can get an AI suggestion (💡 Improve). */
+export type SuggestionField = 'summary' | 'experience' | 'projects';
+
+export type Suggestion = {
+  id: string;
+  field: SuggestionField;
+  /** The canvas entry (experience or project) the text came from; null for the summary. */
+  entry_id: string | null;
+  original: string;
+  suggested: string;
+  /** false: the text already followed the rules ("unchanged"); such results are not counted. */
+  changed: boolean;
+  status: 'pending' | 'accepted' | 'declined' | 'unchanged';
+  created_at: string;
+};
+
+export type SuggestionRequest = {
+  field: SuggestionField;
+  entry_id?: string | null;
+  text: string;
+  context?: { title?: string; company?: string };
+};
+
+/** Suggestions per calendar month (UTC): free 1, pro 50. */
+export type Quota = { plan: 'free' | 'pro'; limit: number; used: number; remaining: number; resets_at: string };
+
 export type ApiErrorCode =
   | 'VALIDATION_ERROR'
   | 'EMAIL_EXISTS'
@@ -87,6 +115,8 @@ export type ApiErrorCode =
   | 'FILE_TOO_LARGE'
   | 'NOT_FOUND'
   | 'GOOGLE_AUTH_FAILED'
+  | 'QUOTA_EXCEEDED'
+  | 'SUGGESTION_FAILED'
   | 'SERVER_ERROR';
 
 export type ApiErrorBody = { error: { code: ApiErrorCode; message: string } };
