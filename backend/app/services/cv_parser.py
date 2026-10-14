@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Dict, Iterator, List, Optional, Protocol, Tuple, Union
 
 import anthropic
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from app.config import get_settings
 
@@ -275,6 +275,12 @@ class ClaudeCvParser:
         except anthropic.APIConnectionError as exc:
             logger.error("Could not reach the Claude API: %s", exc)
             raise ParseError("The CV parsing service could not be reached. Please try again later.") from exc
+        except ValidationError as exc:
+            # The SDK validates the JSON itself; output cut off at max_tokens fails here.
+            logger.error("Claude returned output that does not match the schema: %s", exc.error_count())
+            raise ParseError(
+                "This CV could not be processed automatically. Please fill in your details manually."
+            ) from exc
 
         if response.stop_reason == "refusal":
             logger.warning("Claude declined to parse a CV (request %s)", response._request_id)

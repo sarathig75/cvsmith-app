@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { parseApiError } from '../../services/api';
 import { decideSuggestion, requestSuggestion } from '../../services/suggestionService';
@@ -48,7 +48,12 @@ export function SuggestionModal({ request, label, onAccept, onUsed, onClose }: P
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Exactly one request per opening: React's StrictMode runs effects twice in development,
+  // and every request costs an AI call (and may use up the user's suggestion).
+  const started = useRef(false);
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
     void run();
   }, [run]);
 

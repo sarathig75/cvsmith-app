@@ -143,3 +143,27 @@ describe('💡 field suggestions', () => {
     expect(await screen.findByRole('heading', { name: 'Pricing page' })).toBeInTheDocument();
   });
 });
+
+describe('💡 field suggestions in StrictMode', () => {
+  it('sends one request per click', async () => {
+    const { StrictMode } = await import('react');
+    const calls = mockHttp((req) =>
+      req.url === '/api/suggestions/quota'
+        ? { status: 200, data: quota(1) }
+        : req.method === 'post' && req.url === '/api/suggestions'
+          ? { status: 201, data: suggestion() }
+          : { status: 200, data: cv },
+    );
+    render(
+      <StrictMode>
+        <MemoryRouter>
+          <CanvasPage />
+        </MemoryRouter>
+      </StrictMode>,
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.click(await screen.findByRole('button', { name: 'Improve Experience 1 Description' }));
+    await screen.findByRole('button', { name: 'Use suggestion' });
+    expect(calls.filter((c) => c.method === 'post' && c.url === '/api/suggestions')).toHaveLength(1);
+  });
+});

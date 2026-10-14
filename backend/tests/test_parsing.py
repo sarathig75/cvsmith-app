@@ -348,6 +348,21 @@ def test_claude_parser_unusable_responses_fail_each_part(stop_reason, parsed):
     assert resume == {} and set(errors) == set(PARTS)
 
 
+def test_claude_parser_cut_off_json_fails_only_that_part():
+    output = ParsedResume.model_validate({"basics": {"name": "Jane Doe"}})
+    client, messages = fake_client(SimpleNamespace(stop_reason="end_turn", parsed_output=output, _request_id="r"))
+    real_parse = messages.parse
+
+    def parse(**kwargs):
+        if kwargs["output_format"] is ExtraSections:  # the SDK raises when the JSON is cut off
+            ExtraSections.model_validate_json('{"skills": [{"name": "SQ')
+        return real_parse(**kwargs)
+
+    messages.parse = parse
+    resume, errors = collect(ClaudeCvParser(client=client, model="m").parse_text("x"))
+    assert set(errors) == {"extras"} and resume["basics"]["name"] == "Jane Doe"
+
+
 def test_cv_row_defaults(client, auth):
     client.post("/api/cv/upload", headers=auth[0], files={"file": ("cv.pdf", make_pdf(), PDF_MIME)})
     with client.session_factory() as db:

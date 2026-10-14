@@ -197,3 +197,10 @@ def test_claude_writer_maps_failures(monkeypatch):
     for resp in (Resp("refusal", None), Resp("max_tokens", None)):
         with pytest.raises(SuggestionError):
             suggestion_service.ClaudeSuggestionWriter(client=Client(resp), model="m").write("summary", "t", {})
+
+    class CutOff:  # the SDK raises a ValidationError when the JSON is cut off at max_tokens
+        beta = type("B", (), {"messages": type("M", (), {
+            "parse": lambda _s, **kw: suggestion_service.Rewrite.model_validate_json('{"suggested": "• Bet')})()})()
+
+    with pytest.raises(SuggestionError):
+        suggestion_service.ClaudeSuggestionWriter(client=CutOff(), model="m").write("summary", "t", {})

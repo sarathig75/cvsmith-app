@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Dict, Optional, Protocol, Tuple
 
 import anthropic
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -74,7 +74,8 @@ class ClaudeSuggestionWriter:
         try:
             response = self.client.beta.messages.parse(
                 model=self.model,
-                max_tokens=4000,
+                # Room for the model's thinking plus a rewrite of a 5,000-character field.
+                max_tokens=16000,
                 system=f"{HOUSE_STYLE}\n\n{TASK}",
                 messages=[{"role": "user", "content": "\n".join(lines)}],
                 output_format=Rewrite,
@@ -84,6 +85,10 @@ class ClaudeSuggestionWriter:
             )
         except (anthropic.APIStatusError, anthropic.APIConnectionError) as exc:
             logger.error("Claude API error while writing a suggestion: %s", exc)
+            raise SuggestionError from exc
+        except ValidationError as exc:
+            # The SDK validates the JSON itself; output cut off at max_tokens fails here.
+            logger.error("Suggestion output does not match the schema (%s errors)", exc.error_count())
             raise SuggestionError from exc
         if response.stop_reason in ("refusal", "max_tokens") or response.parsed_output is None:
             logger.error("Unusable suggestion response: stop_reason=%s", response.stop_reason)
