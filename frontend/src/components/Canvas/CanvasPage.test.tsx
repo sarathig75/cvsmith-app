@@ -3,7 +3,7 @@ import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { CanvasPage } from './CanvasPage';
-import { POLL_GIVE_UP_MS, POLL_INTERVAL_MS } from './CvStatus';
+import { FAST_POLL_MS, POLL_GIVE_UP_MS, POLL_INTERVAL_MS } from './CvStatus';
 import { AUTOSAVE_DELAY_MS, RETRY_DELAY_MS } from './useAutosave';
 import { apiError } from '../../test/mockHttp';
 import { emptyDraft } from '../../types/cvDraft';
@@ -111,6 +111,31 @@ describe('CanvasPage with background CV parsing', () => {
     expect(screen.queryByText('Filling in from your CV…')).not.toBeInTheDocument();
     // Professional details (projects), Skills & Certifications and Others come from the failed part
     expect(screen.getAllByText("We couldn't fill this in from your CV. Please add it yourself.")).toHaveLength(3);
+  });
+
+  it('shows email and phone from the instant contact step before the AI parts finish', async () => {
+    let cv: CV = { ...baseCv, parsing_status: 'in_progress' };
+    mockHttp(() => ({ status: 200, data: cv }));
+    renderCanvas();
+    await screen.findAllByText('Filling in from your CV…');
+    cv = {
+      ...cv,
+      parsing_parts: { contact: 'complete', basics: 'pending', experience: 'pending', extras: 'pending' },
+      json_resume: { basics: { email: 'jobs@jane.dev', phone: '+44 1234' } },
+    };
+    await act(() => vi.advanceTimersByTimeAsync(FAST_POLL_MS));
+    expect(await screen.findByDisplayValue('+44 1234')).toBeInTheDocument();
+    expect(screen.getByLabelText('Email')).toHaveValue('jobs@jane.dev');
+    expect(screen.getByLabelText('Full Name')).toHaveValue(''); // the name needs the AI part
+
+    cv = {
+      ...cv,
+      parsing_parts: { contact: 'complete', basics: 'complete', experience: 'pending', extras: 'pending' },
+      json_resume: { basics: { name: 'Jane From CV', email: 'other@jane.dev', phone: '+44 1234' } },
+    };
+    await act(() => vi.advanceTimersByTimeAsync(FAST_POLL_MS));
+    expect(await screen.findByDisplayValue('Jane From CV')).toBeInTheDocument();
+    expect(screen.getByLabelText('Email')).toHaveValue('jobs@jane.dev'); // already filled: kept
   });
 
   it('does not reset a privacy change while parsing status is being checked', async () => {

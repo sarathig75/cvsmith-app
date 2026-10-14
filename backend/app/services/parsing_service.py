@@ -4,6 +4,7 @@ Runs inside the Celery worker (app/workers/tasks.py) but has no Celery dependenc
 so tests call it directly.
 """
 import logging
+import time
 import uuid
 from pathlib import PurePosixPath
 from typing import Iterator
@@ -11,8 +12,9 @@ from typing import Iterator
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
-from app.models.cv import CV, pending_parts
+from app.models.cv import AI_PARTS, CV, pending_parts
 from app.services import event_service
+from app.services.contact_patterns import find_contact
 from app.services.cv_parser import CvParser, ParseError, PartResult, merge_fragment
 from app.services.storage_service import StorageService
 from app.services.text_extraction import ExtractionError, extract_text
@@ -40,10 +42,14 @@ def run_parsing(
     cv.parsing_error = None
     cv.parsing_parts = pending_parts()
     db.commit()
+    started = time.monotonic()
+    logger.info("CV %s: parsing started", cv_id)
 
     first_error = None
     try:
         for part, result in _parse_file(storage, parser, upload_key):
+            logger.info("CV %s: part %s %s after %.1f s", cv_id, part,
+                        "failed" if isinstance(result, ParseError) else "saved", time.monotonic() - started)
             if isinstance(result, ParseError):
                 first_error = first_error or str(result)
                 if not _save_part(db, cv_id, upload_key, part, "failed"):
@@ -88,7 +94,8 @@ def _finish(db: Session, cv_id: uuid.UUID, upload_key: str, error) -> None:
     if cv is None:
         return
     parts = {part: ("failed" if s == "pending" else s) for part, s in cv.parsing_parts.items()}
-    succeeded = any(s == "complete" for s in parts.values())
+    # The contact part always "succeeds"; whether the CV was read depends on the AI parts.
+    succeeded = any(parts.get(part) == "complete" for part in AI_PARTS)
     cv.parsing_parts = parts
     cv.parsing_status = "complete" if succeeded else "failed"
     cv.parsing_error = None if succeeded else (error or GENERIC_FAILURE)
@@ -104,9 +111,13 @@ def _parse_file(storage: StorageService, parser: CvParser, key: str) -> Iterator
     text = extract_text(data, extension)
     if len(text) > settings.MAX_CV_TEXT_CHARS:
         raise ExtractionError("This file contains too much text to be a CV. Please upload your CV only.")
+    # Email, phone and LinkedIn by pattern first: on screen within about a second, while the
+    # AI parts take a few seconds (found nothing, e.g. a scan: still "complete").
+    yield "contact", find_contact(text)
     if len(text) >= settings.MIN_EXTRACTED_TEXT_CHARS:
-        return parser.parse_text(text)
-    if extension == ".pdf":
+        yield from parser.parse_text(text)
+    elif extension == ".pdf":
         # Little or no text layer: most likely a scanned PDF.
-        return parser.parse_pdf(data)
-    raise ExtractionError("No text was found in this file. Please check it is your CV.")
+        yield from parser.parse_pdf(data)
+    else:
+        raise ExtractionError("No text was found in this file. Please check it is your CV.")

@@ -18,7 +18,7 @@ Token  = { access_token: string, token_type: "bearer", user: User }
 CV     = { id: string, title: string, privacy: "private"|"public",
            parsing_status: "not_uploaded"|"pending"|"in_progress"|"complete"|"failed",
            parsing_error: string | null,   // user-facing message when parsing_status is "failed"
-           parsing_parts: { basics: PartStatus, experience: PartStatus, extras: PartStatus },
+           parsing_parts: { contact: PartStatus, basics: PartStatus, experience: PartStatus, extras: PartStatus },
            json_resume: object,            // parser output only; JSON Resume subset; grows as parts complete ({} at first)
            content: object | null,         // the user's canvas, saved by PATCH /api/cv; null until first save
            applied_parts: ParsePart[],     // parsed parts already merged into content (client-managed)
@@ -30,6 +30,9 @@ CVSave     = { content: object,            // the canvas draft as the frontend k
                edited?: boolean }          // true if the change includes a user edit (not only parsed data)
 PartStatus = "pending" | "complete" | "failed"
 // Parts of json_resume each status covers:
+//   contact    -> basics.email, basics.phone, basics.profiles (LinkedIn) found by pattern in the text,
+//                 without AI, within about a second; overwritten by basics when that arrives.
+//                 "complete" even if nothing was found (e.g. a scanned PDF). Absent on CVs parsed before it existed.
 //   basics     -> basics (name, label, email, phone, url, location, profiles; not summary)
 //   experience -> basics.summary, work, education
 //   extras     -> skills, certificates, projects, languages, awards, volunteer, interests
@@ -56,7 +59,7 @@ PartStatus = "pending" | "complete" | "failed"
 - Access token JWT (HS256), 24h expiry, `sub` = user id. No refresh tokens in R1.
 - Passwords hashed with bcrypt; users signed up via Google have null password_hash; login with password for such users returns `INVALID_CREDENTIALS`.
 - Google sign-in with an email that already has an account links to that account (Google must report the email as verified). If that account's email was never verified, its password is removed on linking, so only the Google owner can sign in; a verified account keeps its password.
-- CV parsing is asynchronous: pending -> in_progress -> complete | failed. The upload never waits for it. Parsing runs in three parts in parallel; each part's data is saved to `json_resume` and its `parsing_parts` entry set as soon as it finishes, while `parsing_status` is still `in_progress`, so clients can show parts early. `complete` = every part finished and at least one succeeded (failed parts are `failed` in `parsing_parts`; `parsing_error` stays null). `failed` = no part succeeded, or the file could not be read (all parts `failed`, `parsing_error` set). `json_resume` uses JSON Resume field names for: basics (incl. location, profiles), work, education, skills, certificates, languages (`language`, `fluency`), awards (`title`, `awarder`, `date`, `summary`), volunteer (`organization`, `position`, `startDate`, `endDate`, `summary`, `highlights`), projects (`name`, `description`, `startDate`, `endDate`, `url`, `highlights`), interests (`name`, `keywords`). Empty fields are omitted; list sections are always present once parsed. Extension: `work[].current` (boolean) is true only when the CV states the role is ongoing.
+- CV parsing is asynchronous: pending -> in_progress -> complete | failed. The upload never waits for it. Parsing first saves the `contact` part (pattern-based, instant), then runs three AI parts in parallel; each part's data is saved to `json_resume` and its `parsing_parts` entry set as soon as it finishes, while `parsing_status` is still `in_progress`, so clients can show parts early. `complete` = every part finished and at least one AI part (basics, experience, extras) succeeded (failed parts are `failed` in `parsing_parts`; `parsing_error` stays null). `failed` = no part succeeded, or the file could not be read (all parts `failed`, `parsing_error` set). `json_resume` uses JSON Resume field names for: basics (incl. location, profiles), work, education, skills, certificates, languages (`language`, `fluency`), awards (`title`, `awarder`, `date`, `summary`), volunteer (`organization`, `position`, `startDate`, `endDate`, `summary`, `highlights`), projects (`name`, `description`, `startDate`, `endDate`, `url`, `highlights`), interests (`name`, `keywords`). Empty fields are omitted; list sections are always present once parsed. Extension: `work[].current` (boolean) is true only when the CV states the role is ongoing.
 - One CV per user in R1 (new upload replaces the existing record). A new upload also clears `content` and
   `applied_parts`: the new CV replaces the user's edits (the frontend asks the user to confirm first when
   `content` is not null).

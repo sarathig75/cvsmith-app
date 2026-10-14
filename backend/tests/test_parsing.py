@@ -20,6 +20,12 @@ CV_TEXT = (
     "Education: University of Leeds, BSc Mathematics, 2015 - 2018.\n"
     "Skills: Python, SQL, Tableau, statistics, stakeholder communication."
 )
+
+
+def parts(contact="complete", basics="complete", experience="complete", extras="complete"):
+    return {"contact": contact, "basics": basics, "experience": experience, "extras": extras}
+
+
 PARSED = {"basics": {"name": "Jane Doe"}, "work": [{"name": "Acme Ltd", "position": "Data Analyst"}]}
 
 
@@ -150,8 +156,9 @@ def test_upload_queues_a_parse_job_without_waiting(client, auth):
 def test_text_pdf_is_parsed_and_stored(stored_cv):
     body, parser = stored_cv(make_text_pdf(CV_TEXT))
     assert body["parsing_status"] == "complete" and body["parsing_error"] is None
-    assert body["json_resume"] == PARSED
-    assert body["parsing_parts"] == {"basics": "complete", "experience": "complete", "extras": "complete"}
+    # the email comes from the instant pattern step; the (fake) AI parts add the rest
+    assert body["json_resume"] == {**PARSED, "basics": {"name": "Jane Doe", "email": "jane@example.com"}}
+    assert body["parsing_parts"] == parts()
     assert parser.calls[0][0] == "text" and "Acme Ltd" in parser.calls[0][1]
 
 
@@ -182,15 +189,16 @@ def test_docx_without_text_fails_with_message(stored_cv):
 def test_parser_error_message_is_shown(stored_cv):
     body, _ = stored_cv(make_text_pdf(CV_TEXT), parser=FakeParser(error=ParseError("Service down.")))
     assert body["parsing_status"] == "failed" and body["parsing_error"] == "Service down."
-    assert body["json_resume"] == {}
-    assert set(body["parsing_parts"].values()) == {"failed"}
+    # the instant contact step still saved what it found, but without an AI part the parse failed
+    assert body["json_resume"] == {"basics": {"email": "jane@example.com"}}
+    assert body["parsing_parts"] == parts(basics="failed", experience="failed", extras="failed")
 
 
 def test_a_failed_part_keeps_the_others(stored_cv):
     body, _ = stored_cv(make_text_pdf(CV_TEXT), parser=FakeParser(fail_parts={"experience"}))
     assert body["parsing_status"] == "complete" and body["parsing_error"] is None
-    assert body["parsing_parts"] == {"basics": "complete", "experience": "failed", "extras": "complete"}
-    assert body["json_resume"] == {"basics": {"name": "Jane Doe"}}
+    assert body["parsing_parts"] == parts(experience="failed")
+    assert body["json_resume"] == {"basics": {"email": "jane@example.com", "name": "Jane Doe"}}
 
 
 def test_all_parts_failed_is_a_failed_parse(stored_cv):
@@ -206,16 +214,21 @@ def test_each_part_is_visible_as_soon_as_it_is_saved(client, auth):
 
     class Watching(FakeParser):
         def _parts(self):
+            # the AI parts start only after the contact step has been saved
+            seen.append(client.get("/api/cv", headers=auth[0]).json())
             for part, fragment in super()._parts():
                 yield part, fragment
                 seen.append(client.get("/api/cv", headers=auth[0]).json())
 
     with client.session_factory() as db:
         parsing_service.run_parsing(db, storage, Watching(), cv_id, key)
-    first = seen[0]
-    assert first["parsing_status"] == "in_progress"
-    assert first["parsing_parts"] == {"basics": "complete", "experience": "pending", "extras": "pending"}
-    assert first["json_resume"] == {"basics": {"name": "Jane Doe"}}
+    # the pattern step comes first: email on screen before any AI part has finished
+    first, second = seen[0], seen[1]
+    assert first["parsing_parts"] == parts(basics="pending", experience="pending", extras="pending")
+    assert first["json_resume"] == {"basics": {"email": "jane@example.com"}}
+    assert second["parsing_status"] == "in_progress"
+    assert second["parsing_parts"] == parts(experience="pending", extras="pending")
+    assert second["json_resume"] == {"basics": {"email": "jane@example.com", "name": "Jane Doe"}}
 
 
 def test_unexpected_error_shows_generic_message(stored_cv):
@@ -436,3 +449,23 @@ def test_extras_part_does_not_repeat_job_achievements():
     from app.services.cv_parser import EXTRA_TASK
 
     assert "never repeat it here" in EXTRA_TASK and "outside any job" in EXTRA_TASK
+
+
+def test_contact_patterns_take_only_unambiguous_details():
+    from app.services.contact_patterns import find_contact
+
+    text = "Jane Doe\nJane.Doe@Example.com | +44 20 7946 0958 | linkedin.com/in/jane-doe/\nAcme 2014 - 2018"
+    assert find_contact(text) == {"basics": {
+        "email": "Jane.Doe@Example.com", "phone": "+44 20 7946 0958",
+        "profiles": [{"network": "LinkedIn", "url": "linkedin.com/in/jane-doe"}],
+    }}
+    # year ranges, dates and long reference numbers are not phone numbers
+    assert find_contact("Worked 2014 - 2018, 2012-2014; 06/2014 - 05/2018; ID 1234567890123456789") == {}
+    assert find_contact("") == {}
+
+
+def test_contact_step_never_decides_success():
+    # the instant contact step always completes; whether the CV was read depends on the AI parts
+    from app.models.cv import AI_PARTS
+
+    assert "contact" not in AI_PARTS

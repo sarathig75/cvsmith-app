@@ -12,7 +12,9 @@ PRIVACY_VALUES = ("private", "public")
 # "not_uploaded": the CV was created by saving the canvas, without a file.
 PARSING_STATUSES = ("not_uploaded", "pending", "in_progress", "complete", "failed")
 PART_STATUSES = ("pending", "complete", "failed")
-PARSING_PARTS = ("basics", "experience", "extras")  # same order as cv_parser.PARTS
+# "contact" is found by pattern without AI (instant); the other three are AI parts (cv_parser.PARTS).
+PARSING_PARTS = ("contact", "basics", "experience", "extras")
+AI_PARTS = ("basics", "experience", "extras")
 
 
 def pending_parts() -> Dict[str, str]:

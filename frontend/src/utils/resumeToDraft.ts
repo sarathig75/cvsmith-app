@@ -108,6 +108,9 @@ function dedupe(items: string[]): string[] {
 
 /** Canvas sections filled by each parsing part (see parsing_parts in docs/API_CONTRACT.md). */
 export const PART_SECTIONS: Record<ParsePart, (keyof CvDraft)[]> = {
+  // contact fills email/phone/LinkedIn within a second; basics adds name, headline and location
+  // (filling only fields still empty, so the two never fight).
+  contact: ['personal'],
   basics: ['personal'],
   experience: ['summary', 'experience', 'education'],
   extras: ['projects', 'skills', 'certifications', 'others'],

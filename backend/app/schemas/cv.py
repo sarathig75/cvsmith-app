@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
 
 from app.schemas.common import as_utc
 
-ParsePart = Literal["basics", "experience", "extras"]
+ParsePart = Literal["contact", "basics", "experience", "extras"]
 
 
 class CVOut(BaseModel):

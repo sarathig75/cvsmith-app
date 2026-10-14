@@ -20,7 +20,8 @@ export type CV = {
   parsing_status: 'not_uploaded' | 'pending' | 'in_progress' | 'complete' | 'failed';
   parsing_error: string | null;
   /** Parsing runs in three parts; each part's data appears in json_resume as soon as it is "complete". */
-  parsing_parts: Record<ParsePart, PartStatus>;
+  /** `contact` is absent on CVs parsed before it existed. */
+  parsing_parts: Record<Exclude<ParsePart, 'contact'>, PartStatus> & { contact?: PartStatus };
   /** Parser output only. */
   json_resume: JsonResume;
   /** The user's canvas as last saved (PATCH /api/cv); null until the first save. */
@@ -33,7 +34,8 @@ export type CV = {
 
 export type CVSave = { content: Record<string, unknown>; applied_parts: ParsePart[]; edited?: boolean };
 
-export type ParsePart = 'basics' | 'experience' | 'extras';
+/** "contact": email, phone and LinkedIn found by pattern (instant, no AI); the others are AI parts. */
+export type ParsePart = 'contact' | 'basics' | 'experience' | 'extras';
 export type PartStatus = 'pending' | 'complete' | 'failed';
 
 /** The JSON Resume subset the backend fills when parsing completes ({} before that). Every field is optional. */

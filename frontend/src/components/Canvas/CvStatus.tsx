@@ -6,6 +6,9 @@ import type { CV, ParsePart } from '../../types';
 import { Spinner } from '../Common/Spinner';
 
 export const POLL_INTERVAL_MS = 2000;
+/** While parsing has just started, check more often so each part shows up promptly. */
+export const FAST_POLL_MS = 500;
+export const FAST_POLL_FOR_MS = 60 * 1000;
 /** Stop checking after this long; the worker's own time limit is shorter, so this only guards against a stuck job. */
 export const POLL_GIVE_UP_MS = 3 * 60 * 1000;
 
@@ -39,7 +42,8 @@ export function CvStatus({ onLoaded, onError }: { onLoaded?: (cv: CV | null) => 
           const gaveUp = isParsing(cv) && Date.now() - startedAt >= POLL_GIVE_UP_MS;
           setState({ loading: false, cv, error: null, gaveUp });
           onLoaded?.(cv);
-          if (isParsing(cv) && !gaveUp) timer = setTimeout(check, POLL_INTERVAL_MS);
+          const elapsed = Date.now() - startedAt;
+          if (isParsing(cv) && !gaveUp) timer = setTimeout(check, elapsed < FAST_POLL_FOR_MS ? FAST_POLL_MS : POLL_INTERVAL_MS);
         })
         .catch((err) => {
           if (cancelled) return;
