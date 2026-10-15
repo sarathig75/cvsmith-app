@@ -29,7 +29,7 @@ CVSave     = { content: object,            // the canvas draft as the frontend k
                applied_parts: ParsePart[],
                edited?: boolean }          // true if the change includes a user edit (not only parsed data)
 PartStatus = "pending" | "complete" | "failed"
-SuggestionField = "summary" | "experience" | "projects"
+SuggestionField = "summary" | "experience" | "projects" | "headline"
 Suggestion = { id: string, field: SuggestionField, entry_id: string | null,  // entry_id: the canvas entry (job/project)
                original: string, suggested: string,
                changed: boolean,                    // false: the text already follows the house style
@@ -61,7 +61,7 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
 | POST | /api/cv/upload | yes | multipart `file` (PDF/DOCX, max 10MB) | 201 `CV` (parsing_status "pending"; parsing runs in the background, poll `GET /api/cv`) |
 | GET | /api/cv | yes | - | 200 `CV` or 404 `NOT_FOUND` |
 | GET | /api/suggestions/quota | yes | - | 200 `Quota` |
-| POST | /api/suggestions | yes | `SuggestionRequest` | 201 `Suggestion`. 402 `QUOTA_EXCEEDED` when no suggestions are left this month (checked before any AI call). 422 `VALIDATION_ERROR` for empty text or text over 5,000 characters. 503 `SUGGESTION_FAILED` if the AI call fails (not counted) |
+| POST | /api/suggestions | yes | `SuggestionRequest` | 201 `Suggestion`. 402 `QUOTA_EXCEEDED` when no suggestions are left this month (checked before any AI call). 422 `VALIDATION_ERROR` for empty text (except `headline`, which may be empty: a headline is then written from the CV's current roles and summary; 422 if the saved CV has neither) or text over 5,000 characters. 503 `SUGGESTION_FAILED` if the AI call fails (not counted) |
 | PATCH | /api/suggestions/{id} | yes | `{status: "accepted" \| "declined"}` | 200 `Suggestion`; 404 `NOT_FOUND` if it is not the user's |
 | PATCH | /api/cv | yes | `CVSave` | 200 `CV`. Creates the CV (parsing_status "not_uploaded") if the user has none. 422 `VALIDATION_ERROR` if `content` is not an object, is larger than 256 KB as JSON, or `applied_parts` has unknown values |
 | PATCH | /api/cv/privacy | yes | `{privacy: "private" \| "public"}` | 200 `CV`. Creates the CV (like PATCH /api/cv) if the user has none. 422 `VALIDATION_ERROR` for other values |

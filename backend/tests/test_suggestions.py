@@ -109,6 +109,7 @@ def test_failed_ai_call_is_not_counted(client, auth, writer):
     {"text": "   "},
     {"text": "x" * 5001},
     {"field": "education"},
+    {"field": "summary", "text": ""},
     {"text": SUMMARY, "context": {"salary": "1"}},
 ])
 def test_bad_requests_are_rejected_without_ai_call(client, auth, writer, body):
@@ -204,3 +205,39 @@ def test_claude_writer_maps_failures(monkeypatch):
 
     with pytest.raises(SuggestionError):
         suggestion_service.ClaudeSuggestionWriter(client=CutOff(), model="m").write("summary", "t", {})
+
+
+# --- headline ----------------------------------------------------------------------
+
+HEADLINE_CV = {
+    "summary": "Product manager with 9 years in payments.",
+    "experience": [
+        {"id": "e1", "title": "Senior Product Manager", "company": "Acme Pay", "start": "2021-04", "current": "true"},
+        {"id": "e2", "title": "Analyst", "company": "Old Co", "start": "2015", "end": "2017"},
+    ],
+}
+
+
+def test_empty_headline_gets_a_suggestion_from_roles_and_summary(client, auth, writer):
+    client.patch("/api/cv", headers=auth[0], json={"content": HEADLINE_CV})
+    writer.suggested = "Senior Product Manager · Payments\n"
+    r = ask(client, auth[0], field="headline", text="")
+    assert r.status_code == 201, r.text
+    assert r.json()["suggested"] == "Senior Product Manager · Payments" and r.json()["changed"] is True
+    field, text, ctx = writer.calls[0]
+    assert (field, text) == ("headline", "")
+    assert "Role (current): Senior Product Manager, Acme Pay, 2021-04–present" in ctx["cv_facts"]
+    assert "Role: Analyst, Old Co, 2015–2017" in ctx["cv_facts"]
+    assert "Summary: Product manager with 9 years in payments." in ctx["cv_facts"]
+
+
+def test_headline_needs_roles_or_summary_and_no_ai_call(client, auth, writer):
+    r = ask(client, auth[0], field="headline", text="")
+    assert r.status_code == 422 and "current role or a summary" in r.json()["error"]["message"]
+    assert writer.calls == [] and quota(client, auth[0])["remaining"] == 1
+
+
+def test_summary_facts_do_not_repeat_the_summary(client, auth, writer):
+    client.patch("/api/cv", headers=auth[0], json={"content": HEADLINE_CV})
+    ask(client, auth[0], field="summary", text="Seeking a role")
+    assert "Summary:" not in writer.calls[0][2]["cv_facts"]

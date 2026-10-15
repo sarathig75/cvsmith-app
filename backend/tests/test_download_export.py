@@ -173,7 +173,7 @@ def test_summary_suggestion_gets_cv_facts_without_contact_details(client, auth):
     save(client, auth[0])
     client.post("/api/suggestions", headers=auth[0], json={"field": "summary", "text": "Seeking a role"})
     facts = w.calls[0][2]["cv_facts"]
-    assert "Role: Analyst, Acme, 2021-04–present" in facts
+    assert "Role (current): Analyst, Acme, 2021-04–present" in facts
     assert "Education: BSc Statistics, Leeds, 2014–2017" in facts
     assert "Skills: SQL, Python" in facts and "Certification: Tableau Desktop" in facts
     for private in ("jane@example.com", "+44 1", "linkedin"):

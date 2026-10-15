@@ -6,12 +6,14 @@ type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'> & {
   label: string;
   error?: string | null;
   hint?: ReactNode;
+  /** Shown on the label's line, at the right (e.g. a 💡 button). */
+  labelAction?: ReactNode;
   required?: boolean;
   onChange?: (value: string) => void;
 };
 
 export const Input = forwardRef<HTMLInputElement, Props>(function Input(
-  { label, error, hint, required, onChange, className, id, ...rest },
+  { label, error, hint, labelAction, required, onChange, className, id, ...rest },
   ref,
 ) {
   const auto = useId();
@@ -21,14 +23,17 @@ export const Input = forwardRef<HTMLInputElement, Props>(function Input(
   const describedBy = [error ? errId : null, hint ? hintId : null].filter(Boolean).join(' ') || undefined;
   return (
     <div className="mb-4">
-      <label htmlFor={inputId} className="mb-2 block text-sm font-medium text-slate-900">
-        {label}
-        {required && (
-          <span className="ml-0.5 text-error-text" aria-hidden="true">
-            *
-          </span>
-        )}
-      </label>
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <label htmlFor={inputId} className="block text-sm font-medium text-slate-900">
+          {label}
+          {required && (
+            <span className="ml-0.5 text-error-text" aria-hidden="true">
+              *
+            </span>
+          )}
+        </label>
+        {labelAction}
+      </div>
       <input
         ref={ref}
         id={inputId}

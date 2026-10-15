@@ -100,7 +100,7 @@ export function SuggestionModal({ request, label, onAccept, onUsed, onClose }: P
       {state.kind === 'result' && state.suggestion.changed && (
         <div className="mt-4">
           <div className="grid gap-4">
-            <TextBox title="Current" text={state.suggestion.original} />
+            <TextBox title="Current" text={state.suggestion.original || '(empty)'} />
             <TextBox title="Suggested" text={state.suggestion.suggested} highlight />
           </div>
           <div className="mt-6 flex flex-wrap gap-3">

@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 from app.models.user import utcnow
 
-SUGGESTION_FIELDS = ("summary", "experience", "projects")
+SUGGESTION_FIELDS = ("summary", "experience", "projects", "headline")
 SUGGESTION_STATUSES = ("pending", "accepted", "declined", "unchanged")
 
 

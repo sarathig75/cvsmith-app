@@ -80,7 +80,7 @@ export type JsonResume = {
 };
 
 /** CV fields that can get an AI suggestion (💡 Improve). */
-export type SuggestionField = 'summary' | 'experience' | 'projects';
+export type SuggestionField = 'summary' | 'experience' | 'projects' | 'headline';
 
 export type Suggestion = {
   id: string;

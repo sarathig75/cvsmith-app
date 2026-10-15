@@ -72,6 +72,7 @@ export function CanvasPage() {
     userEdited.current = true;
     setDraft((d) => {
       if (request.field === 'summary') return { ...d, summary: text };
+      if (request.field === 'headline') return { ...d, personal: { ...d.personal, headline: text } };
       const list = request.field === 'experience' ? d.experience : d.projects;
       const next = list.map((e) => (e.id === request.entry_id ? { ...e, description: text } : e));
       return request.field === 'experience' ? { ...d, experience: next } : { ...d, projects: next };
@@ -146,6 +147,13 @@ export function CanvasPage() {
     } finally {
       setBusy(null);
     }
+  };
+
+  // Headline and summary suggestions use facts from the saved CV, so save pending edits first
+  // (if saving fails the suggestion still runs, on the last saved CV).
+  const suggestWithLatest = async (s: { request: SuggestionRequest; label: string }) => {
+    await flush();
+    setSuggesting(s);
   };
 
   // The visibility setting is saved straight away; it goes back if saving fails.
@@ -268,7 +276,11 @@ export function CanvasPage() {
           {/* Five fixed groups (agreed 2026-10-13). New kinds of CV content go into "Others",
               so the layout does not change every time a section is added. */}
           <CanvasGroup title="Personal details" target="personal" note={groupNote('basics')}>
-            <PersonalInfoSection value={draft.personal} onChange={(personal) => patch({ personal })} />
+            <PersonalInfoSection
+              value={draft.personal}
+              onChange={(personal) => patch({ personal })}
+              onSuggestHeadline={() => suggestWithLatest({ label: 'Headline', request: { field: 'headline', text: draft.personal.headline } })}
+            />
           </CanvasGroup>
 
           <CanvasGroup title="Professional details" target="summary" note={groupNote('experience', 'extras')}>
@@ -282,7 +294,7 @@ export function CanvasPage() {
                   text={draft.summary}
                   label="Professional Summary"
                   onClick={() =>
-                    setSuggesting({ label: 'Professional Summary', request: { field: 'summary', text: draft.summary } })
+                    suggestWithLatest({ label: 'Professional Summary', request: { field: 'summary', text: draft.summary } })
                   }
                 />
               </div>

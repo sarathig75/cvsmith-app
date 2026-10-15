@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from app.schemas.common import as_utc
 
-SuggestionField = Literal["summary", "experience", "projects"]
+SuggestionField = Literal["summary", "experience", "projects", "headline"]
 
 
 class SuggestionContext(BaseModel):

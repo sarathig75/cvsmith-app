@@ -167,3 +167,23 @@ describe('💡 field suggestions in StrictMode', () => {
     expect(calls.filter((c) => c.method === 'post' && c.url === '/api/suggestions')).toHaveLength(1);
   });
 });
+
+describe('💡 headline', () => {
+  it('suggests a headline for an empty field, after saving pending edits, and fills it in', async () => {
+    const calls = setup(() => ({
+      status: 201,
+      data: suggestion({ field: 'headline', entry_id: null, original: '', suggested: 'Sales Lead · Enterprise Accounts' }),
+    }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const button = await screen.findByRole('button', { name: 'Suggest Headline' }); // empty headline: "Suggest", not disabled
+    await user.type(screen.getByLabelText('Professional Summary'), ' More.');
+    await user.click(button);
+    expect(await screen.findByRole('region', { name: 'Current' })).toHaveTextContent('(empty)');
+    const order = calls.filter((c) => c.method !== 'get').map((c) => `${c.method} ${c.url}`);
+    expect(order.slice(0, 2)).toEqual(['patch /api/cv', 'post /api/suggestions']); // saved first, so the AI sees the latest summary
+    expect(calls.find((c) => c.method === 'post')?.data).toEqual({ field: 'headline', text: '' });
+    await user.click(screen.getByRole('button', { name: 'Use suggestion' }));
+    expect(screen.getByLabelText('Headline')).toHaveValue('Sales Lead · Enterprise Accounts');
+    expect(screen.getByRole('button', { name: 'Improve Headline' })).toBeEnabled();
+  });
+});
