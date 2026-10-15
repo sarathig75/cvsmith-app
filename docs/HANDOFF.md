@@ -1,6 +1,6 @@
 # CVSmith handoff
 
-Updated: 2026-10-15 · Last commit on main: a24a076 (privacy draft); this note sits on top of it.
+Updated: 2026-10-15 · Last commit on main: ad80f31 (new start page); this note sits on top of it.
 Everything is merged (session branch `claude/clever-meitner-049zyv`). Pilot not deployed yet.
 
 ## Product decisions (stable)
@@ -22,11 +22,14 @@ Everything is merged (session branch `claude/clever-meitner-049zyv`). Pilot not 
 - Pilot: ≤25 testers in India, invited emails only (`INVITE_ONLY`; `python -m app.cli invites
   add …`), one server running `deploy/docker-compose.prod.yml` (Hetzner Singapore planned; nothing
   is provider-specific, the host may change). Guide: `docs/DEPLOY.md`.
+- Start page: "Built for AI screening. Polished by AI. Still 100% you." + How it works (3 steps),
+  before/after example (invented sample, `components/Landing/`), sign-up card. Claim only what
+  works today: ATS/AI-readable, AI suggestions; no recruiter search until Release 2.
 - Drop-off metrics in our own `events` table (`docs/FUNNEL.md`), never CV content.
 
 ## Current state
 - Backend: pytest 151/151, flake8 clean; migrations up to 0008 (SQLite + Postgres).
-- Frontend: type-check clean, vitest 90/90, build OK. CI (GitHub Actions) green on every push.
+- Frontend: type-check clean, vitest 94/94, build OK. CI (GitHub Actions) green on every push.
 - Open branches / PRs: none open. `claude/trusting-darwin-wwr74d` is old and fully merged.
 - Production setup rehearsed without Docker (production build behind Caddy, production-mode API,
   invite-only, code over SMTP, PDF, real client IP, backup restore). The Docker production stack
@@ -38,6 +41,7 @@ Everything is merged (session branch `claude/clever-meitner-049zyv`). Pilot not 
 - Week 9 and the Weeks 1–9 gap fixes (code login, sessions, upload from canvas, delete, rate
   limits, move up/down, 💡 Headline, CI) — e5be3c3.
 - Pilot: invite-only mode (06b95eb), `deploy/` + `docs/DEPLOY.md` (28f97a3), privacy draft (a24a076).
+- New start page (ad80f31); Google sign-in hidden there until its client ID is set.
 
 ## Next steps
 1. User decides the domain and the privacy details (operator, contact, applicable law); Claude
