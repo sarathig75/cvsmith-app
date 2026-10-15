@@ -484,3 +484,16 @@ def test_contact_step_never_decides_success():
     from app.models.cv import AI_PARTS
 
     assert "contact" not in AI_PARTS
+
+
+def test_uploaded_file_is_deleted_once_parsing_has_finished(client, stored_cv):
+    from pathlib import Path
+
+    def files():
+        return [p for p in Path(client.upload_dir).rglob("*") if p.is_file()]
+
+    body, _ = stored_cv(make_text_pdf(CV_TEXT))
+    assert body["parsing_status"] == "complete" and files() == []
+    # also when nothing could be read
+    body, _ = stored_cv(make_pdf())
+    assert body["parsing_status"] == "failed" and files() == []

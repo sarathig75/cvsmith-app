@@ -61,7 +61,21 @@ def run_parsing(
     except Exception:
         logger.exception("Unexpected error parsing CV %s", cv_id)
         first_error = GENERIC_FAILURE
-    _finish(db, cv_id, upload_key, first_error)
+    if _finish(db, cv_id, upload_key, first_error):
+        _delete_upload(storage, cv_id, upload_key)
+
+
+def _delete_upload(storage: StorageService, cv_id: uuid.UUID, upload_key: str) -> None:
+    """The uploaded file is only needed for parsing (agreed 2026-10-15): delete it now.
+
+    raw_upload_path keeps the key: it identifies this upload, so a stale parse job can still
+    tell that the CV was replaced. A new upload is needed to parse again.
+    """
+    try:
+        storage.delete(upload_key)
+        logger.info("CV %s: uploaded file deleted after parsing", cv_id)
+    except Exception:
+        logger.exception("CV %s: could not delete the uploaded file after parsing", cv_id)
 
 
 def _current_cv(db: Session, cv_id: uuid.UUID, upload_key: str):
@@ -88,11 +102,12 @@ def _save_part(db: Session, cv_id: uuid.UUID, upload_key: str, part: str, status
     return True
 
 
-def _finish(db: Session, cv_id: uuid.UUID, upload_key: str, error) -> None:
-    """Close the job: parts still pending have failed; complete if any part succeeded."""
+def _finish(db: Session, cv_id: uuid.UUID, upload_key: str, error) -> bool:
+    """Close the job: parts still pending have failed; complete if any part succeeded.
+    Returns False if the CV was replaced meanwhile."""
     cv = _current_cv(db, cv_id, upload_key)
     if cv is None:
-        return
+        return False
     parts = {part: ("failed" if s == "pending" else s) for part, s in cv.parsing_parts.items()}
     # The contact part always "succeeds"; whether the CV was read depends on the AI parts.
     succeeded = any(parts.get(part) == "complete" for part in AI_PARTS)
@@ -102,6 +117,7 @@ def _finish(db: Session, cv_id: uuid.UUID, upload_key: str, error) -> None:
     db.commit()
     failed = sorted(part for part, s in parts.items() if s == "failed")
     event_service.record(db, cv.user_id, "parsing_finished", {"status": cv.parsing_status, "failed_parts": failed})
+    return True
 
 
 def _parse_file(storage: StorageService, parser: CvParser, key: str) -> Iterator[PartResult]:
