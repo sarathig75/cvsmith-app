@@ -3,6 +3,8 @@ import { Button } from '../Common/Button';
 import { DateField } from '../Common/DateField';
 import type { Entry } from '../../types/cvDraft';
 import { parseDate } from '../../utils/dates';
+import { moveItem } from '../../utils/moveItem';
+import { MoveButtons } from './MoveButtons';
 import { SuggestButton } from './SuggestButton';
 
 export type FieldSpec = {
@@ -63,9 +65,18 @@ export function EntryListSection({
               <span className="text-sm font-semibold text-slate-800">
                 {itemLabel} {i + 1}
               </span>
-              <Button variant="ghost" size="sm" onClick={() => remove(entry.id)} aria-label={`Remove ${itemLabel} ${i + 1}`}>
-                Remove
-              </Button>
+              <span className="flex items-center gap-1">
+                <MoveButtons
+                  label={`${itemLabel} ${i + 1}`}
+                  canUp={i > 0}
+                  canDown={i < entries.length - 1}
+                  onUp={() => onChange(moveItem(entries, i, i - 1))}
+                  onDown={() => onChange(moveItem(entries, i, i + 1))}
+                />
+                <Button variant="ghost" size="sm" onClick={() => remove(entry.id)} aria-label={`Remove ${itemLabel} ${i + 1}`}>
+                  Remove
+                </Button>
+              </span>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
               {fields.map((f) => {

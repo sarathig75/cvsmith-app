@@ -4,6 +4,8 @@ import { DateField } from '../Common/DateField';
 import type { Entry, OtherKind } from '../../types/cvDraft';
 import { isOtherKind, OTHER_KIND_ORDER, OTHER_KINDS } from '../../utils/otherKinds';
 import { parseDate } from '../../utils/dates';
+import { moveItem } from '../../utils/moveItem';
+import { MoveButtons } from './MoveButtons';
 
 type Props = { entries: Entry[]; onChange: (entries: Entry[]) => void };
 
@@ -43,6 +45,17 @@ export function OthersSection({ entries, onChange }: Props) {
     });
   };
 
+  // The preview groups items by type, so an item moves past the next item of its own type.
+  const kindOf = (e: Entry) => (isOtherKind(e.kind) ? e.kind : 'custom');
+  const sameKindIndex = (i: number, step: -1 | 1) => {
+    for (let j = i + step; j >= 0 && j < entries.length; j += step) {
+      if (kindOf(entries[j]) === kindOf(entries[i]) && (kindOf(entries[i]) !== 'custom' || entries[j].section === entries[i].section)) {
+        return j;
+      }
+    }
+    return -1;
+  };
+
   return (
     <div>
       <ul className="space-y-4">
@@ -73,14 +86,23 @@ export function OthersSection({ entries, onChange }: Props) {
             <li key={entry.id} className="rounded-sm bg-slate-100 p-4">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-800">{name}</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onChange(entries.filter((e) => e.id !== entry.id))}
-                  aria-label={`Remove ${name}`}
-                >
-                  Remove
-                </Button>
+                <span className="flex items-center gap-1">
+                  <MoveButtons
+                    label={name}
+                    canUp={sameKindIndex(i, -1) >= 0}
+                    canDown={sameKindIndex(i, 1) >= 0}
+                    onUp={() => onChange(moveItem(entries, i, sameKindIndex(i, -1)))}
+                    onDown={() => onChange(moveItem(entries, i, sameKindIndex(i, 1)))}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onChange(entries.filter((e) => e.id !== entry.id))}
+                    aria-label={`Remove ${name}`}
+                  >
+                    Remove
+                  </Button>
+                </span>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
