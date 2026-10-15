@@ -81,11 +81,3 @@ def google_login(db: Session, id_token: str) -> Tuple[User, bool]:
             db.rollback()
             raise errors.google_auth_failed()
     return user, created
-
-
-def mark_email_verified(db: Session, user: User) -> User:
-    if not user.email_verified:
-        user.email_verified = True
-        user.email_verified_at = datetime.now(timezone.utc)
-        db.commit()
-    return user

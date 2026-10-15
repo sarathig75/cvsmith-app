@@ -1,4 +1,4 @@
-"""JWT creation/verification for access and email-verification tokens."""
+"""JWT creation/verification for access tokens."""
 import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
@@ -8,7 +8,6 @@ import jwt
 from app.config import get_settings
 
 ACCESS = "access"
-EMAIL_VERIFY = "email_verify"
 
 
 def _encode(payload: Dict[str, Any], hours: int, token_type: str) -> str:
@@ -26,14 +25,6 @@ def _encode(payload: Dict[str, Any], hours: int, token_type: str) -> str:
 
 def create_access_token(user_id: uuid.UUID) -> str:
     return _encode({"sub": str(user_id)}, get_settings().JWT_EXPIRATION_HOURS, ACCESS)
-
-
-def create_verification_token(user_id: uuid.UUID, email: str) -> str:
-    return _encode(
-        {"sub": str(user_id), "email": email},
-        get_settings().VERIFICATION_TOKEN_EXPIRATION_HOURS,
-        EMAIL_VERIFY,
-    )
 
 
 def decode_token(token: str, expected_type: str) -> Optional[Dict[str, Any]]:

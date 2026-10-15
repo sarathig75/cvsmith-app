@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { parseApiError } from '../../services/api';
-import { getUser, logout, sendVerification } from '../../services/authService';
+import { getUser, logout } from '../../services/authService';
 import { useAuthStore } from '../../store/authStore';
 import { Button } from '../Common/Button';
 
@@ -10,11 +9,9 @@ export function SettingsPage() {
   const setUser = useAuthStore((s) => s.setUser);
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const navigate = useNavigate();
-  const [sending, setSending] = useState(false);
-  const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
-  // Refresh the user so the verified badge is current (e.g. verified in another tab).
+  // Refresh the user so plan and email details are current.
   useEffect(() => {
     let cancelled = false;
     getUser()
@@ -24,19 +21,6 @@ export function SettingsPage() {
       cancelled = true;
     };
   }, [setUser]);
-
-  async function onSend() {
-    setSending(true);
-    setNotice(null);
-    try {
-      const res = await sendVerification();
-      setNotice({ kind: 'ok', text: res.message || 'Verification email sent. Check your inbox.' });
-    } catch (err) {
-      setNotice({ kind: 'error', text: parseApiError(err).message });
-    } finally {
-      setSending(false);
-    }
-  }
 
   async function onLogout() {
     setLoggingOut(true);
@@ -62,33 +46,13 @@ export function SettingsPage() {
           <div className="mb-2 text-sm font-medium">Email Address</div>
           <div className="flex flex-wrap items-center gap-3">
             <span className="break-all">{user.email}</span>
-            {user.email_verified ? (
+            {user.email_verified && (
               <span className="rounded-full bg-success-bg px-3 py-0.5 text-sm font-medium text-success-text">
                 <span aria-hidden="true">✓ </span>Verified
               </span>
-            ) : (
-              <span className="rounded-full bg-warning-bg px-3 py-0.5 text-sm font-medium text-warning-text">Not verified</span>
             )}
           </div>
         </div>
-
-        {!user.email_verified && (
-          <div className="mb-6">
-            <div className="mb-2 text-sm font-medium">Verify Email</div>
-            <Button variant="secondary" onClick={onSend} loading={sending}>
-              Send verification email
-            </Button>
-            <p className="mt-2 text-xs text-slate-600">Optional - helps with account recovery</p>
-            {notice && (
-              <p
-                role={notice.kind === 'error' ? 'alert' : 'status'}
-                className={`mt-3 text-sm font-medium ${notice.kind === 'ok' ? 'text-success-text' : 'text-error-text'}`}
-              >
-                {notice.text}
-              </p>
-            )}
-          </div>
-        )}
 
         <Button variant="secondary" onClick={onLogout} loading={loggingOut}>
           Log out

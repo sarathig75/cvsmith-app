@@ -3,11 +3,10 @@ import { Button } from '../Common/Button';
 import { Header } from '../Common/Header';
 import { CvDropzone } from './CvDropzone';
 import { GoogleSignIn } from './GoogleSignIn';
-import { LoginModal } from './LoginModal';
-import { SignupModal } from './SignupModal';
+import { EmailCodeModal } from './EmailCodeModal';
 
 export function OnboardingScreen() {
-  const [modal, setModal] = useState<'signup' | 'login' | null>(null);
+  const [modal, setModal] = useState<'start' | 'login' | null>(null);
   return (
     <>
       <Header showNav={false} />
@@ -20,8 +19,8 @@ export function OnboardingScreen() {
 
           <CvDropzone />
 
-          <Button fullWidth onClick={() => setModal('signup')} className="mb-4">
-            Get Started with Email
+          <Button fullWidth onClick={() => setModal('start')} className="mb-4">
+            Continue with Email
           </Button>
 
           <div className="my-6 flex items-center gap-3 text-sm text-slate-600" role="separator" aria-label="Or">
@@ -42,8 +41,7 @@ export function OnboardingScreen() {
           </p>
         </div>
       </main>
-      {modal === 'signup' && <SignupModal onClose={() => setModal(null)} onSwitchToLogin={() => setModal('login')} />}
-      {modal === 'login' && <LoginModal onClose={() => setModal(null)} onSwitchToSignup={() => setModal('signup')} />}
+      {modal && <EmailCodeModal mode={modal} onClose={() => setModal(null)} />}
     </>
   );
 }

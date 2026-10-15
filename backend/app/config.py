@@ -22,12 +22,23 @@ class Settings(BaseSettings):
     JWT_SECRET: str = DEFAULT_JWT_SECRET
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_HOURS: int = 24
-    VERIFICATION_TOKEN_EXPIRATION_HOURS: int = 24
 
     GOOGLE_OAUTH_CLIENT_ID: str = ""
 
+    # Email (login codes). See app/services/email_service.py.
+    EMAIL_PROVIDER: str = ""  # "log" | "sendgrid" | "smtp"; empty = sendgrid if a key is set, else log
+    EMAIL_FROM: str = "noreply@cvsmith.com"
     SENDGRID_API_KEY: str = ""
-    SENDGRID_FROM_EMAIL: str = "noreply@cvsmith.com"
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_STARTTLS: bool = True
+    LOGIN_CODE_MINUTES: int = 10
+    LOGIN_CODE_MAX_ATTEMPTS: int = 5
+    LOGIN_CODE_RESEND_SECONDS: int = 60
+    # Password sign-up and login are off in Release 1 (login is by email code); kept for later.
+    PASSWORD_LOGIN_ENABLED: bool = False
     FRONTEND_URL: str = "http://localhost:5173"
 
     UPLOAD_DIR: str = "./uploads"

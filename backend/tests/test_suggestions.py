@@ -149,7 +149,7 @@ def test_events_hold_no_cv_text(client, auth, writer):
     ask(client, auth[0])
     ask(client, auth[0], field="projects")
     events = event_list(client)
-    assert events[1:] == [
+    assert events[2:] == [  # after signup and email_verified
         ("suggestion_requested", {"field": "summary", "changed": True}),
         ("upgrade_prompt_shown", {"field": "projects"}),
     ]

@@ -1,10 +1,7 @@
-import uuid
-
 from app.models.cv import CV
 from app.models.event import Event
 from app.services import event_service, google_service, parsing_service
 from app.services.storage_service import LocalStorage
-from app.utils.jwt_handler import create_verification_token
 from tests.conftest import PDF_MIME, make_pdf, signup
 from tests.test_parsing import CV_TEXT, FakeParser, make_text_pdf
 
@@ -97,7 +94,8 @@ def test_signup_upload_parse_and_first_edit_are_recorded(client, auth):
     save(client, auth[0], edited=True)  # first_edit is recorded once
 
     assert events(client) == [
-        ("signup", {"method": "email"}),
+        ("signup", {"method": "email_code"}),
+        ("email_verified", {"method": "email_code"}),
         ("cv_uploaded", {"file_type": ".pdf"}),
         ("parsing_finished", {"status": "complete", "failed_parts": ["extras"]}),
         ("first_edit", {}),
@@ -112,12 +110,10 @@ def test_events_never_hold_cv_content_or_personal_data(client, auth):
         assert secret not in stored
 
 
-def test_email_verification_is_recorded_once(client, auth):
-    _, body = auth
-    token = create_verification_token(uuid.UUID(body["user"]["id"]), body["user"]["email"])
-    assert client.post("/api/auth/verify", json={"token": token}).status_code == 200
-    assert client.post("/api/auth/verify", json={"token": token}).status_code == 200
-    assert events(client, "email_verified") == [("email_verified", {"method": "email"})]
+def test_code_login_records_signup_and_verified_email_once(client):
+    signup(client, "coder@example.com")
+    signup(client, "coder@example.com")  # logging in again is not a signup
+    assert events(client) == [("signup", {"method": "email_code"}), ("email_verified", {"method": "email_code"})]
 
 
 def test_google_signup_records_signup_and_verified_email(client, monkeypatch):

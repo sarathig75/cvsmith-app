@@ -1,5 +1,6 @@
 import pytest
 
+from app.config import get_settings
 from app.models.user import User
 from app.services import google_service
 from tests.conftest import PASSWORD, signup
@@ -9,13 +10,32 @@ def err(resp):
     return resp.json()["error"]
 
 
+@pytest.fixture()
+def password_login(monkeypatch):
+    """Password sign-up/login are off in Release 1; these tests switch them on."""
+    monkeypatch.setenv("PASSWORD_LOGIN_ENABLED", "true")
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
+def pw_signup(client, email="user@example.com", password=PASSWORD):
+    return client.post("/api/auth/signup", json={"email": email, "password": password})
+
+
+def test_password_signup_and_login_are_off_by_default(client):
+    for path in ("/api/auth/signup", "/api/auth/login"):
+        r = client.post(path, json={"email": "a@example.com", "password": PASSWORD})
+        assert r.status_code == 404 and "email code" in err(r)["message"]
+
+
 def test_health(client):
     r = client.get("/api/health")
     assert r.status_code == 200 and r.json() == {"status": "ok"}
 
 
-def test_signup_success_normalizes_email_and_hashes_password(client):
-    r = signup(client, email="  New.User@Example.COM ")
+def test_signup_success_normalizes_email_and_hashes_password(client, password_login):
+    r = pw_signup(client, email="  New.User@Example.COM ")
     assert r.status_code == 201
     body = r.json()
     assert body["token_type"] == "bearer" and body["access_token"]
@@ -28,34 +48,34 @@ def test_signup_success_normalizes_email_and_hashes_password(client):
         assert u.password_hash and u.password_hash != PASSWORD
 
 
-def test_signup_duplicate_email_case_insensitive(client):
-    assert signup(client, "a@example.com").status_code == 201
-    r = signup(client, "A@Example.com")
+def test_signup_duplicate_email_case_insensitive(client, password_login):
+    assert pw_signup(client, "a@example.com").status_code == 201
+    r = pw_signup(client, "A@Example.com")
     assert r.status_code == 409 and err(r)["code"] == "EMAIL_EXISTS"
 
 
 @pytest.mark.parametrize("pw", ["short1", "allletters", "12345678", ""])
-def test_signup_weak_password(client, pw):
-    r = signup(client, password=pw)
+def test_signup_weak_password(client, password_login, pw):
+    r = pw_signup(client, password=pw)
     assert r.status_code == 422
     assert err(r)["code"] == "VALIDATION_ERROR"
     assert pw not in err(r)["message"] or pw == ""
 
 
-def test_signup_invalid_email(client):
-    r = signup(client, email="not-an-email")
+def test_signup_invalid_email(client, password_login):
+    r = pw_signup(client, email="not-an-email")
     assert r.status_code == 422 and err(r)["code"] == "VALIDATION_ERROR"
 
 
-def test_login_success(client):
-    signup(client)
+def test_login_success(client, password_login):
+    pw_signup(client)
     r = client.post("/api/auth/login", json={"email": "USER@example.com", "password": PASSWORD})
     assert r.status_code == 200
     assert r.json()["user"]["email"] == "user@example.com"
 
 
-def test_login_wrong_password_and_unknown_email_are_indistinguishable(client):
-    signup(client)
+def test_login_wrong_password_and_unknown_email_are_indistinguishable(client, password_login):
+    pw_signup(client)
     wrong = client.post("/api/auth/login", json={"email": "user@example.com", "password": "Nope1234"})
     unknown = client.post("/api/auth/login", json={"email": "who@example.com", "password": "Nope1234"})
     assert wrong.status_code == unknown.status_code == 401
@@ -63,7 +83,7 @@ def test_login_wrong_password_and_unknown_email_are_indistinguishable(client):
     assert err(wrong)["code"] == "INVALID_CREDENTIALS"
 
 
-def test_login_password_for_google_only_user_fails(client, monkeypatch):
+def test_login_password_for_google_only_user_fails(client, password_login, monkeypatch):
     monkeypatch.setattr(
         google_service,
         "verify_google_id_token",
@@ -104,9 +124,9 @@ def test_google_login_existing_user_links_and_reuses_account(client, monkeypatch
         assert db.query(User).count() == 1
 
 
-def test_google_link_removes_password_of_unverified_account(client, monkeypatch):
+def test_google_link_removes_password_of_unverified_account(client, password_login, monkeypatch):
     # Someone pre-registers the address with a password, never verifying it.
-    signup(client, "victim@example.com")
+    pw_signup(client, "victim@example.com")
     monkeypatch.setattr(
         google_service,
         "verify_google_id_token",
@@ -119,26 +139,15 @@ def test_google_link_removes_password_of_unverified_account(client, monkeypatch)
         assert db.query(User).one().password_hash is None
 
 
-def test_google_link_keeps_password_of_verified_account(client, monkeypatch, caplog):
-    import logging
-    import re
-
-    headers = {"Authorization": f"Bearer {signup(client, 'owner@example.com').json()['access_token']}"}
-    with caplog.at_level(logging.INFO, logger="cvsmith.email"):
-        client.post("/api/auth/send-verification", headers=headers)
-    token = next(
-        m.group(1) for rec in caplog.records if (m := re.search(r"token=([\w\-.]+)", rec.getMessage()))
-    )
-    assert client.post("/api/auth/verify", json={"token": token}).status_code == 200
-
+def test_google_login_links_a_code_login_account(client, monkeypatch):
+    first = signup(client, "owner@example.com").json()
     monkeypatch.setattr(
         google_service,
         "verify_google_id_token",
         lambda t: {"sub": "g-o", "email": "owner@example.com", "email_verified": True},
     )
-    assert client.post("/api/auth/google", json={"id_token": "t"}).status_code == 200
-    r = client.post("/api/auth/login", json={"email": "owner@example.com", "password": PASSWORD})
-    assert r.status_code == 200
+    r = client.post("/api/auth/google", json={"id_token": "t"})
+    assert r.status_code == 200 and r.json()["user"]["id"] == first["user"]["id"]
 
 
 def test_google_login_rejects_invalid_token_and_unverified_email(client, monkeypatch):
@@ -180,17 +189,6 @@ def test_user_with_token(client, auth):
     assert r.status_code == 200 and r.json()["id"] == body["user"]["id"]
 
 
-def test_verification_token_cannot_be_used_as_access_token(client, auth):
-    from app.utils.jwt_handler import create_verification_token
-
-    _, body = auth
-    import uuid
-
-    tok = create_verification_token(uuid.UUID(body["user"]["id"]), "user@example.com")
-    r = client.get("/api/user", headers={"Authorization": f"Bearer {tok}"})
-    assert r.status_code == 401
-
-
 def test_logout_requires_auth_and_returns_204(client, auth):
     assert client.post("/api/auth/logout").status_code == 401
     r = client.post("/api/auth/logout", headers=auth[0])
@@ -198,7 +196,7 @@ def test_logout_requires_auth_and_returns_204(client, auth):
 
 
 def test_validation_and_404_use_contract_error_format(client):
-    r = client.post("/api/auth/login", json={})
+    r = client.post("/api/auth/code", json={})
     assert r.status_code == 422 and err(r)["code"] == "VALIDATION_ERROR"
     r = client.get("/api/nope")
     assert r.status_code == 404 and err(r)["code"] == "NOT_FOUND"

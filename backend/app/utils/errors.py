@@ -58,6 +58,22 @@ def suggestion_failed() -> AppError:
     return AppError("SUGGESTION_FAILED", "We couldn't write a suggestion right now. Please try again in a moment.", 503)
 
 
+def invalid_code(message: str) -> AppError:
+    return AppError("INVALID_CODE", message, 400)
+
+
+def rate_limited(message: str = "Too many attempts. Please wait a moment and try again.") -> AppError:
+    return AppError("RATE_LIMITED", message, 429)
+
+
+def email_failed() -> AppError:
+    return AppError("EMAIL_FAILED", "We couldn't send the email right now. Please try again in a moment.", 503)
+
+
+def password_login_disabled() -> AppError:
+    return AppError("NOT_FOUND", "Password sign-in is not available. Please log in with an email code.", 404)
+
+
 def pro_required() -> AppError:
     return AppError(
         "PRO_REQUIRED",

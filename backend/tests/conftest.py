@@ -12,6 +12,7 @@ from sqlalchemy.orm import sessionmaker  # noqa: E402
 from app.config import get_settings  # noqa: E402
 from app.database import Base, get_db, make_engine  # noqa: E402
 from app.main import app  # noqa: E402
+from app.services.email_service import get_email_sender  # noqa: E402
 from app.services.parse_queue import get_parse_queue  # noqa: E402
 
 PASSWORD = "Passw0rdOK"
@@ -36,18 +37,32 @@ def client(tmp_path, monkeypatch):
     queued = []
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_parse_queue] = lambda: (lambda cv_id, key: queued.append((cv_id, key)))
+    # Login codes are kept here instead of being emailed.
+    mailbox = FakeMailbox()
+    app.dependency_overrides[get_email_sender] = lambda: mailbox
     with TestClient(app) as c:
         c.session_factory = Session
         c.upload_dir = tmp_path / "uploads"
         c.queued_parse_jobs = queued
+        c.mailbox = mailbox
         yield c
     app.dependency_overrides.clear()
     engine.dispose()
     get_settings.cache_clear()
 
 
-def signup(client, email="user@example.com", password=PASSWORD):
-    return client.post("/api/auth/signup", json={"email": email, "password": password})
+class FakeMailbox:
+    def __init__(self):
+        self.codes = {}
+
+    def send_login_code(self, to_email, code):
+        self.codes[to_email] = code
+
+
+def signup(client, email="user@example.com"):
+    """Log in with an emailed code (the first login creates the account). Returns the response."""
+    assert client.post("/api/auth/code", json={"email": email}).status_code == 200
+    return client.post("/api/auth/code/verify", json={"email": email, "code": client.mailbox.codes[email.lower()]})
 
 
 @pytest.fixture()

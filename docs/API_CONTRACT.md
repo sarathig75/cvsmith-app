@@ -8,7 +8,7 @@ Auth: `Authorization: Bearer <access_token>` on protected routes.
 { "error": { "code": "EMAIL_EXISTS", "message": "Human readable" } }
 ```
 Codes: `VALIDATION_ERROR` (422), `EMAIL_EXISTS` (409), `INVALID_CREDENTIALS` (401), `UNAUTHORIZED` (401),
-`INVALID_TOKEN` (400), `UNSUPPORTED_FILE_TYPE` (415), `FILE_TOO_LARGE` (413), `NOT_FOUND` (404),
+`INVALID_TOKEN` (400), `INVALID_CODE` (400), `RATE_LIMITED` (429), `EMAIL_FAILED` (503), `UNSUPPORTED_FILE_TYPE` (415), `FILE_TOO_LARGE` (413), `NOT_FOUND` (404),
 `GOOGLE_AUTH_FAILED` (401), `QUOTA_EXCEEDED` (402), `PRO_REQUIRED` (402), `SUGGESTION_FAILED` (503), `PDF_FAILED` (503), `SERVER_ERROR` (500).
 
 ## Types
@@ -51,13 +51,13 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
 | Method | Path | Auth | Body | Success |
 |---|---|---|---|---|
 | GET | /api/health | no | - | 200 `{status:"ok"}` |
-| POST | /api/auth/signup | no | `{email, password}` | 201 `Token` |
-| POST | /api/auth/login | no | `{email, password}` | 200 `Token` |
+| POST | /api/auth/code | no | `{email}` | 200 `{message}`: a 6-digit login code is emailed (for any address; the answer never says whether an account exists). 429 `RATE_LIMITED` if the last code was sent under 60 s ago. 503 `EMAIL_FAILED` if the email could not be sent |
+| POST | /api/auth/code/verify | no | `{email, code}` | 201 `Token` when this login created the account, else 200 `Token`. 400 `INVALID_CODE` for a wrong, expired, used or replaced code (the message says how many tries are left; 5 wrong tries end the code) |
+| POST | /api/auth/signup | no | `{email, password}` | Off in Release 1 (`PASSWORD_LOGIN_ENABLED=false`): 404 `NOT_FOUND`. When on: 201 `Token` |
+| POST | /api/auth/login | no | `{email, password}` | Off in Release 1: 404 `NOT_FOUND`. When on: 200 `Token` |
 | POST | /api/auth/google | no | `{id_token}` (Google ID token) | 200 `Token` (creates user if new) |
 | POST | /api/auth/logout | yes | - | 204 |
 | GET | /api/user | yes | - | 200 `User` |
-| POST | /api/auth/send-verification | yes | - | 202 `{message}` |
-| POST | /api/auth/verify | no | `{token}` | 200 `User` |
 | POST | /api/cv/upload | yes | multipart `file` (PDF/DOCX, max 10MB) | 201 `CV` (parsing_status "pending"; parsing runs in the background, poll `GET /api/cv`) |
 | GET | /api/cv | yes | - | 200 `CV` or 404 `NOT_FOUND` |
 | GET | /api/suggestions/quota | yes | - | 200 `Quota` |
@@ -70,7 +70,9 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
 
 ## Rules
 - Password: min 8 chars, at least 1 letter and 1 number. Email normalized to lowercase.
-- Signup/login/google never block on email verification.
+- Release 1 logs in with a one-time email code (decided 2026-10-15): codes are 6 digits, valid 10 minutes,
+  single use, replaced by a newer code, and stored only as a keyed hash. The first code login creates the
+  account with `email_verified = true`; there is no separate verification step.
 - Access token JWT (HS256), 24h expiry, `sub` = user id. No refresh tokens in R1.
 - Passwords hashed with bcrypt; users signed up via Google have null password_hash; login with password for such users returns `INVALID_CREDENTIALS`.
 - Google sign-in with an email that already has an account links to that account (Google must report the email as verified). If that account's email was never verified, its password is removed on linking, so only the Google owner can sign in; a verified account keeps its password.

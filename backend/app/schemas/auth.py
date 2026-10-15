@@ -70,8 +70,24 @@ class GoogleLoginIn(BaseModel):
     id_token: str = Field(min_length=1, max_length=8192)
 
 
-class VerifyIn(BaseModel):
-    token: str = Field(min_length=1, max_length=4096)
+class CodeRequestIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: EmailStr
+
+    @field_validator("email")
+    @classmethod
+    def _lower(cls, v: str) -> str:
+        return v.strip().lower()
+
+
+class CodeVerifyIn(CodeRequestIn):
+    code: str = Field(pattern=r"^\s*\d{6}\s*$")
+
+    @field_validator("code")
+    @classmethod
+    def _strip(cls, v: str) -> str:
+        return v.strip()
 
 
 class MessageOut(BaseModel):

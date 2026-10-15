@@ -119,8 +119,10 @@ export type ApiErrorCode =
   | 'SUGGESTION_FAILED'
   | 'PRO_REQUIRED'
   | 'PDF_FAILED'
+  | 'INVALID_CODE'
+  | 'RATE_LIMITED'
+  | 'EMAIL_FAILED'
   | 'SERVER_ERROR';
 
 export type ApiErrorBody = { error: { code: ApiErrorCode; message: string } };
 
-export type Credentials = { email: string; password: string };

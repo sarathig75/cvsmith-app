@@ -1,30 +1,26 @@
 import logging
-import uuid
 
 from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.database import get_db
 from app.models.user import User
 from app.routes.deps import get_current_user
 from app.schemas.auth import (
+    CodeRequestIn,
+    CodeVerifyIn,
     GoogleLoginIn,
     LoginIn,
     MessageOut,
     SignupIn,
     TokenOut,
     UserOut,
-    VerifyIn,
 )
-from app.services import auth_service, event_service
-from app.services.email_service import get_email_sender
+from app.services import auth_service, event_service, login_code_service
+from app.services.email_service import EmailSender, get_email_sender
 from app.utils import errors
-from app.utils.jwt_handler import (
-    EMAIL_VERIFY,
-    create_access_token,
-    create_verification_token,
-    decode_token,
-)
+from app.utils.jwt_handler import create_access_token
 
 logger = logging.getLogger("cvsmith.auth")
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -37,20 +33,40 @@ def _token_response(user: User) -> TokenOut:
     )
 
 
-@router.post("/signup", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
-def signup(body: SignupIn, db: Session = Depends(get_db)):
-    user = auth_service.signup(db, body.email, body.password)
-    event_service.record(db, user.id, "signup", {"method": "email"})
-    # Verification is optional and never blocks signup.
-    try:
-        token = create_verification_token(user.id, user.email)
-        get_email_sender().send_verification(user.email, token)
-    except Exception:
-        logger.exception("Failed to send verification email on signup")
+def _password_login_enabled() -> None:
+    # Release 1 logs in with an email code; password login is kept for a later release.
+    if not get_settings().PASSWORD_LOGIN_ENABLED:
+        raise errors.password_login_disabled()
+
+
+@router.post("/code", response_model=MessageOut)
+def request_code(body: CodeRequestIn, db: Session = Depends(get_db), sender: EmailSender = Depends(get_email_sender)):
+    """Email a 6-digit login code. The same answer for every address (no account lookup)."""
+    login_code_service.request_code(db, sender, body.email)
+    minutes = get_settings().LOGIN_CODE_MINUTES
+    return MessageOut(message=f"We've sent a 6-digit code to {body.email}. It expires in {minutes} minutes.")
+
+
+@router.post("/code/verify", response_model=TokenOut)
+def verify_code(body: CodeVerifyIn, response: Response, db: Session = Depends(get_db)):
+    """Log in with the emailed code; the first login creates the account (201)."""
+    user, created = login_code_service.verify_code(db, body.email, body.code)
+    if created:
+        response.status_code = status.HTTP_201_CREATED
+        event_service.record(db, user.id, "signup", {"method": "email_code"})
+    event_service.record(db, user.id, "email_verified", {"method": "email_code"})  # once per user
     return _token_response(user)
 
 
-@router.post("/login", response_model=TokenOut)
+@router.post("/signup", response_model=TokenOut, status_code=status.HTTP_201_CREATED,
+             dependencies=[Depends(_password_login_enabled)])
+def signup(body: SignupIn, db: Session = Depends(get_db)):
+    user = auth_service.signup(db, body.email, body.password)
+    event_service.record(db, user.id, "signup", {"method": "email"})
+    return _token_response(user)
+
+
+@router.post("/login", response_model=TokenOut, dependencies=[Depends(_password_login_enabled)])
 def login(body: LoginIn, db: Session = Depends(get_db)):
     return _token_response(auth_service.login(db, body.email, body.password))
 
@@ -67,40 +83,5 @@ def google(body: GoogleLoginIn, db: Session = Depends(get_db)):
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(_: User = Depends(get_current_user)):
-    # Stateless JWT: the client discards the token (no refresh tokens in R1).
+    # The client discards the token.
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@router.post(
-    "/send-verification",
-    response_model=MessageOut,
-    status_code=status.HTTP_202_ACCEPTED,
-)
-def send_verification(user: User = Depends(get_current_user)):
-    if user.email_verified:
-        return MessageOut(message="Email is already verified.")
-    token = create_verification_token(user.id, user.email)
-    try:
-        get_email_sender().send_verification(user.email, token)
-    except Exception:
-        logger.exception("Failed to send verification email")
-        raise errors.AppError("SERVER_ERROR", "Could not send verification email.", 500)
-    return MessageOut(message="Verification email sent.")
-
-
-@router.post("/verify", response_model=UserOut)
-def verify(body: VerifyIn, db: Session = Depends(get_db)):
-    claims = decode_token(body.token, EMAIL_VERIFY)
-    if claims is None:
-        raise errors.invalid_token()
-    try:
-        user_id = uuid.UUID(claims["sub"])
-    except ValueError:
-        raise errors.invalid_token()
-    user = db.get(User, user_id)
-    # Token is bound to the email it was issued for.
-    if user is None or user.email != claims.get("email"):
-        raise errors.invalid_token()
-    user = auth_service.mark_email_verified(db, user)
-    event_service.record(db, user.id, "email_verified", {"method": "email"})
-    return user

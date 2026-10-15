@@ -26,7 +26,7 @@ def test_alembic_migration_creates_schema(tmp_path):
     cfg.set_main_option("sqlalchemy.url", url)
     command.upgrade(cfg, "head")
     insp = inspect(create_engine(url))
-    assert {"users", "cvs", "events", "suggestions"} <= set(insp.get_table_names())
+    assert {"users", "cvs", "events", "suggestions", "login_codes"} <= set(insp.get_table_names())
     cols = {c["name"] for c in insp.get_columns("users")}
     assert {"id", "email", "password_hash", "email_verified", "google_id", "plan"} <= cols
     command.downgrade(cfg, "base")
