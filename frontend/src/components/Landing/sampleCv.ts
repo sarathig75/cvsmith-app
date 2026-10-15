@@ -1,6 +1,7 @@
-// TEMPORARY landing mockup data — invented person, not committed.
-import type { CvDraft } from '../types/cvDraft';
-export const sampleDraft: CvDraft = {
+// An invented person for the start-page picture. Never put real CV data here.
+import type { CvDraft } from '../../types/cvDraft';
+
+export const sampleCv: CvDraft = {
   personal: { name: 'Meera Raghavan', headline: 'Senior Product Manager · Payments & Fintech', email: 'meera.r@example.com', phone: '+91 98765 43210', location: 'Bengaluru, IN', linkedin: 'linkedin.com/in/meera-example', portfolio: '' },
   summary: 'Product manager with 9 years in payments and lending products. Led cross-functional teams of up to 25 people and launched products used by 4 million customers.',
   experience: [

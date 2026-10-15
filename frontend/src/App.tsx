@@ -8,8 +8,6 @@ import { ProtectedRoute, PublicOnlyRoute } from './components/Common/ProtectedRo
 import { SettingsPage } from './components/Settings/SettingsPage';
 import { PricingPage } from './pages/PricingPage';
 import { PrivacyPage } from './pages/PrivacyPage';
-import { LandingA } from './mock/LandingA';
-import { LandingB } from './mock/LandingB';
 
 export default function App() {
   // While logged in, activity keeps the session alive; 7 days without activity end it.
@@ -19,8 +17,6 @@ export default function App() {
     <Routes>
       <Route path="/" element={<PublicOnlyRoute><OnboardingScreen /></PublicOnlyRoute>} />
       <Route path="/privacy" element={<PrivacyPage />} />
-      <Route path="/mock/landing-a" element={<LandingA />} />
-      <Route path="/mock/landing-b" element={<LandingB />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/canvas" element={<CanvasPage />} />
         <Route path="/pricing" element={<PricingPage />} />
