@@ -18,6 +18,7 @@ import { EntryListSection } from './EntryListSection';
 import { OthersSection } from './OthersSection';
 import { PersonalInfoSection } from './PersonalInfoSection';
 import { PreviewPanel } from './PreviewPanel';
+import { ReplaceCvModal } from './ReplaceCvModal';
 import { PrivacyToggle } from './PrivacyToggle';
 import { SkillsSection } from './SkillsSection';
 import { SuggestButton } from './SuggestButton';
@@ -174,6 +175,14 @@ export function CanvasPage() {
     setLoad('loading');
     await uploadPendingFile();
   };
+  // "Upload new CV" (top bar, or the empty/error state): the chosen file replaces the CV.
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const uploadNewCv = async (file: File) => {
+    setUploadOpen(false);
+    useUploadStore.getState().setPendingFile(file);
+    await replaceCv();
+  };
+
 
   // A note under a group's heading while its parts are still being read, or if one failed.
   const groupNote = (...groupParts: ParsePart[]) => {
@@ -214,6 +223,9 @@ export function CanvasPage() {
           >
             Export JSON
           </Button>
+          <Button variant="secondary" onClick={() => setUploadOpen(true)} disabled={uploadStatus === 'uploading'}>
+            Upload new CV
+          </Button>
           <Link
             to="/settings"
             className="inline-flex min-h-[44px] items-center rounded-sm border border-slate-200 bg-slate-100 px-6 py-3 font-medium hover:bg-slate-200"
@@ -230,7 +242,7 @@ export function CanvasPage() {
 
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="card lg:col-span-3" onFocus={onFormFocus}>
-          <CvStatus onLoaded={onCvLoaded} onError={onCvError} />
+          <CvStatus onLoaded={onCvLoaded} onError={onCvError} onUpload={() => setUploadOpen(true)} />
           {uploadStatus === 'confirm' && pendingFile && (
             <div role="alertdialog" aria-labelledby="replace-title" className="mb-6 rounded-sm border border-warning-text/30 bg-warning-bg p-4 text-sm">
               <p id="replace-title" className="mb-3 text-warning-text">
@@ -377,6 +389,13 @@ export function CanvasPage() {
           onAccept={(text) => acceptSuggestion(suggesting.request, text)}
           onUsed={refreshQuota}
           onClose={() => setSuggesting(null)}
+        />
+      )}
+      {uploadOpen && (
+        <ReplaceCvModal
+          hasCv={!!cv && (cv.parsing_status !== 'not_uploaded' || !!cv.content)}
+          onUpload={uploadNewCv}
+          onClose={() => setUploadOpen(false)}
         />
       )}
       {upgradeMessage && <UpgradeModal message={upgradeMessage} onClose={() => setUpgradeMessage(null)} />}

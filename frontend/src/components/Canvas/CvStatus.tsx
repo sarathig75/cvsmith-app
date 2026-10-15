@@ -3,6 +3,7 @@ import { parseApiError } from '../../services/api';
 import { getCv } from '../../services/cvService';
 import { useUploadStore } from '../../store/uploadStore';
 import type { CV, ParsePart } from '../../types';
+import { Button } from '../Common/Button';
 import { Spinner } from '../Common/Spinner';
 
 export const POLL_INTERVAL_MS = 2000;
@@ -18,7 +19,16 @@ const isParsing = (cv: CV | null) => cv?.parsing_status === 'pending' || cv?.par
  * Shows the uploaded CV and its parsing status from GET /api/cv. While parsing runs in the
  * background it re-checks quietly; the user can keep editing the canvas the whole time.
  */
-export function CvStatus({ onLoaded, onError }: { onLoaded?: (cv: CV | null) => void; onError?: () => void }) {
+export function CvStatus({
+  onLoaded,
+  onError,
+  onUpload,
+}: {
+  onLoaded?: (cv: CV | null) => void;
+  onError?: () => void;
+  /** Opens "Upload your CV" (shown when there is no CV yet, and after a failed upload). */
+  onUpload?: () => void;
+}) {
   const uploadStatus = useUploadStore((s) => s.status);
   const uploadError = useUploadStore((s) => s.error);
   const [state, setState] = useState<{ loading: boolean; cv: CV | null; error: string | null; gaveUp: boolean }>({
@@ -71,7 +81,14 @@ export function CvStatus({ onLoaded, onError }: { onLoaded?: (cv: CV | null) => 
       ) : state.error && !cv ? (
         <p className="text-error-text">Could not load CV status: {state.error}</p>
       ) : !cv || cv.parsing_status === 'not_uploaded' ? (
-        <p className="text-slate-600">No CV uploaded yet.</p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-slate-600">No CV uploaded yet. Upload one and we fill in your details, or type them below.</p>
+          {onUpload && (
+            <Button size="sm" onClick={onUpload}>
+              Upload your CV
+            </Button>
+          )}
+        </div>
       ) : isParsing(cv) && state.gaveUp ? (
         <p className="text-slate-800">
           {cv.title} - Reading your CV is taking longer than usual. Keep editing; refresh the page later to see the result.
@@ -89,7 +106,16 @@ export function CvStatus({ onLoaded, onError }: { onLoaded?: (cv: CV | null) => 
           details below.
         </p>
       )}
-      {uploadError && !busy && <p role="alert" className="mt-2 text-error-text">Your CV could not be uploaded: {uploadError}</p>}
+      {uploadError && !busy && (
+        <div role="alert" className="mt-2 flex flex-wrap items-center gap-3 text-error-text">
+          <span>Your CV could not be uploaded: {uploadError}</span>
+          {onUpload && (
+            <Button size="sm" variant="secondary" onClick={onUpload}>
+              Try again
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
