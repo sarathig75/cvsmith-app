@@ -1,68 +1,61 @@
 # CVSmith handoff
 
-Updated: 2026-10-14 · Last commit on main: c74df6e docs: update handoff. Week 9 is on the session
-branch `claude/clever-meitner-049zyv`, not merged yet (waiting for the user's OK).
+Updated: 2026-10-15 · Last commit on main: a6e12d8 (Week 9). The Weeks 1–9 gap fixes are on the
+session branch `claude/clever-meitner-049zyv`, **not merged yet** (waiting for the user's test and OK).
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
-- Google is the only social login (no Apple in Release 1). Same-email accounts are linked.
-- Pricing: Free = 1 suggestion/month, Pro = $9.99 for 50/month (calendar month, UTC).
-- One CV per user, public by default; a new upload replaces the CV after the user confirms.
+- **Login = one-time 6-digit code by email** (decided 2026-10-15); no passwords in Release 1 (the
+  code is kept, switched off by `PASSWORD_LOGIN_ENABLED`). Google sign-in stays. Phone/SMS login
+  was considered and rejected (paid per SMS, DLT registration in India, abuse risk).
+- Email provider not chosen yet (SendGrid now has no free plan; Resend or Brevo suggested): it
+  is a setting, `EMAIL_PROVIDER` = log | sendgrid | smtp.
+- Sessions end after 7 days without activity; unsaved edits are kept on the device and offered back.
+- Pricing: Free = 1 suggestion/month, Pro = $9.99 for 50/month (calendar month, UTC). PDF
+  download free; JSON Resume export Pro only. Nobody can buy Pro yet (Week 10).
+- One CV per user, public by default ("Public" is a saved flag until recruiter search, Release 2).
+  "Upload new CV" replaces the CV after a warning; "new version" is a later release.
+- Uploaded files are deleted once parsing finishes. Cloud storage (S3) comes with hosting (Week 12).
 - PDF and DOCX only (no PowerPoint).
 - Parsing is faithful to the candidate's wording; model `claude-sonnet-5-5` (`CLAUDE_MODEL`).
-  Progressive: contact part (pattern, ~1 s), then basics / experience / extras (AI, parallel).
-- Writing rules apply to Suggestions only. Master copy: `.claude/skills/cv-house-style/SKILL.md`;
-  the backend uses a copy in `backend/app/prompts/cv_house_style.md` (a test keeps them equal).
-- Suggestions (Week 7–8, details in the plan doc): 💡 Improve on the Summary, each Work
-  Experience description and each Project description; one click = one suggestion for the
-  whole field; "no change needed" and failures don't count; Sonnet (`SUGGESTION_MODEL`), Opus
-  compared and not chosen (~2x cost, slower, similar quality). Nobody is Pro yet (`users.plan`).
-- Week 9: PDF made by headless Chromium from the frontend's `print.html` (the same Classic
-  template as the preview); PDF download free for all, JSON Resume export Pro only; "Public" is
-  a saved flag only until recruiter search (Release 2). Suggestions: small edits = "no change";
-  objective-style summaries are rewritten from the CV's own facts.
-- Canvas = five fixed groups (Personal, Professional, Education, Skills & Certifications,
-  Others). New content types go into Others (`frontend/src/utils/otherKinds.ts`).
-- Preview: 60/40 layout, Classic template (`CvTemplate.{tsx,css}`; the Week 9 PDF must match),
-  follows the section being edited, − Fit + zoom, "View full CV". Title bar with Download PDF
-  and Settings stays in view (tablet and up).
-- Saving: auto-save ~2 s after a change; drop-off metrics in our own `events` table
-  (`docs/FUNNEL.md`), never CV content.
-- Release 2: current-employer shield for recruiter search (plan doc).
+- Writing rules apply to Suggestions only. Master copy `.claude/skills/cv-house-style/SKILL.md`;
+  backend copy `backend/app/prompts/cv_house_style.md` (a test keeps them equal).
+- 💡 on Headline (from current roles + summary), Summary, each job and project description. Small
+  edits = "no change" (not counted); objective-style summaries are rewritten from the CV's facts.
+- Canvas: five fixed groups; entries can be moved up/down; preview and PDF use one Classic
+  template (`CvTemplate.{tsx,css}`, printed via `frontend/print.html`).
+- Drop-off metrics in our own `events` table (`docs/FUNNEL.md`), never CV content.
 
 ## Current state
-- Backend: pytest 114/114, flake8 clean. Frontend: type-check clean, vitest 71/71, build OK.
-- Open branches / PRs: `claude/clever-meitner-049zyv` = main + Week 9 (unmerged); no PRs.
-  `claude/trusting-darwin-wwr74d` is old and fully merged (the user may delete it).
-- Week 9 checked end to end in the running app (Postgres, API, Vite, browser): an unsaved edit
-  is saved, then the PDF downloads in ~1.6 s as "<Name> CV.pdf" (A4, real selectable text, one
-  column); free Export JSON → upgrade prompt; Pro export has `meta.cvsmith.privacy`; Private
-  survives a reload; events recorded once.
-- New suggestion rules checked on the real API with test-CV fields: objective summary rewritten
-  from CV facts (2/2), near-fine job description returned "no change" (2/2).
-- **Not tested: Docker.** The backend image now installs Chromium (`playwright install
-  --with-deps chromium`, ~+300 MB) and compose sets `PDF_TEMPLATE_URL=http://frontend:5173`.
+- Backend: pytest 144/144, flake8 clean; migrations 0005–0007 tested up/down (SQLite + Postgres).
+- Frontend: type-check clean, vitest 85/85, build OK.
+- CI: GitHub Actions runs both on every push (`.github/workflows/ci.yml`).
+- Open branches / PRs: `claude/clever-meitner-049zyv` = main + gap fixes (unmerged); no PRs.
+  `claude/trusting-darwin-wwr74d` is old and fully merged (can be deleted).
+- Checked end to end in the running app: code login (code from the log), upload from the
+  canvas (parsed in ~4 s, file deleted after), move up/down with preview following, delete
+  account (user gone, events kept without the link). Not tested in Docker yet.
 
 ## Done this session
-- Suggestions: materiality rule and objective-summary rewrite (server adds CV facts for summaries).
-- PATCH /api/cv/privacy, GET /api/cv/download (PDF), GET /api/cv/export (JSON Resume, Pro).
-- Frontend: Download PDF (saves pending edits first), Export JSON, privacy saved on click,
-  shared Upgrade modal, `print.html` + `print.css` (A4 pages, entries not split across pages).
-- Contract, FUNNEL.md (pdf_downloaded, json_exported) and plan doc (Week 9 ticked) updated.
+- Week 9 merged (a6e12d8). Then the Weeks 1–9 gap fixes:
+  upload from the canvas (8c9da61), 💡 Headline (d1a7016), email-code login (575fbf9),
+  7-day sessions + kept edits (2437822), delete CV/account (69c9956), login rate limits
+  (d90e26f), raw file deleted after parsing (c81c37a), move up/down (3ada871), real plan in
+  Settings/Pricing + Log out in header + download message (8887864), CI and docs.
 
 ## Next steps
-1. User: approve the merge of Week 9, then test it with Docker. It needs a rebuild, not just a
-   restart: `git pull`, then `docker compose up -d --build` (first build downloads Chromium).
-2. Next build (user to choose): Week 10 billing (Stripe, Pro upgrade, receipts, admin
-   dashboard) or the Weeks 1–4 gaps (password reset, real email sending, S3, CI).
-3. The user uploads "scanned CV sample.pdf" in their running app to check a real scan.
-4. Parsing quality (open): bullets covering a whole employer land under its latest title.
-5. Known limits: two open tabs = last write wins; no "upload a new CV" button for logged-in
-   users yet; two simultaneous 💡 clicks could both pass the quota check (accepted for R1).
+1. User: test the gap fixes in Docker: `git pull`, then `docker compose up -d --build`
+   (migrations 0005–0007 run on start). Log in with the code from `docker compose logs backend`.
+   Then approve the merge to main.
+2. User: choose the email provider and a sending domain; then set `EMAIL_PROVIDER` etc. in `.env`.
+3. Week 10: billing (Stripe checkout and webhooks, Pro upgrade, receipts, admin dashboard).
+4. Open: the user's scanned-CV check; parsing puts employer-wide bullets under the latest title.
+5. Known limits: two open tabs = last write wins; rate limits use the direct client IP (behind
+   a proxy in production this must use the forwarded address, Week 12).
 
 ## Open questions for the user
-- Merge Week 9 to main?
-- After Week 9: Week 10 billing next, or the Weeks 1–4 gaps first?
+- Which email provider (Resend, Brevo, other) and which domain to send from?
+- Merge the gap fixes to main after testing?
 
 ## Setup notes
 - Backend: `cd backend && python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt`.
@@ -75,12 +68,18 @@ branch `claude/clever-meitner-049zyv`, not merged yet (waiting for the user's OK
   running at `PDF_TEMPLATE_URL` (default `FRONTEND_URL`).
 - API key: **`CVSMITH_CLAUDE_KEY`** in the Claude Code cloud environment (`ANTHROPIC_*` is
   reserved there); `ANTHROPIC_API_KEY` in a root `.env` for Docker. Never commit it.
+- Login codes: with no email provider set, they appear in the backend log
+  (`docker compose logs backend --tail 20`). Providers: `EMAIL_PROVIDER` = log | sendgrid | smtp
+  (see backend/README.md). To make a test account Pro:
+  `docker compose exec postgres psql -U cvsmith_user -d cvsmith_db -c "update users set plan='pro' where lower(email)=lower('...')"`.
 - Docker (`docker-compose.yml`) works on the user's Windows machine. If `.env` is not read
   again: re-save it as UTF-8 without BOM, one line, no spaces or quotes. After code changes:
-  `docker compose restart` (the worker does not reload code).
+  `docker compose restart` (the worker does not reload code); after Dockerfile or requirements
+  changes: `docker compose up -d --build`.
 - Cloud container (no Docker): Postgres 16 in `/tmp/cvsmith-pg/data`, port 5433, started with
   `pg_ctl` as the `postgres` user (remove stale `.s.PGSQL.5433*` files first);
-  `redis-server --daemonize yes`; then `alembic upgrade head`, uvicorn, the worker, `npx vite`.
+  `redis-server --daemonize yes`; then `alembic upgrade head`, uvicorn (no `--reload`: restart it
+  after backend changes), the worker, `npx vite`.
 - Test CVs are real people's CVs in the user's Drive folder "CVSmith": never commit them or
   their contents. Read them with the Drive connector (`read_file_content`).
 - `cv-house-style` also lives in the user's claude.ai account. After a rule change: copy the

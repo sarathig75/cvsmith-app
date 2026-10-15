@@ -91,6 +91,11 @@ ACCOUNT SETTINGS (No blockers)
 
 ## Database Schema (Final)
 
+> Note (2026-10-15): this was the starting design. The real schema is in
+> `backend/alembic/versions/` (migrations 0001–0007). Main differences: CVs default to **public**;
+> `cvs` also holds `content`, `applied_parts` and `parsing_parts`; `suggestions` records
+> `field`, `changed` and `status`; plus `events`, `login_codes`, `users.plan` and `users.token_version`.
+
 ```sql
 -- Users
 CREATE TABLE users (
@@ -246,31 +251,31 @@ GET    /api/billing/status           → Check billing status
 ## Implementation Timeline (Detailed)
 
 ### Week 1–2: Foundation & Auth
-- [ ] Set up GitHub repo (backend + frontend)
-- [ ] Configure GitHub Actions (CI/CD)
-- [ ] Set up PostgreSQL, Redis, S3
-- [ ] Implement JWT auth system
-- [ ] Email/password signup + login endpoints
-- [ ] Google OAuth integration
-- [ ] Optional email verification (non-blocking, available in Settings)
-- [ ] Frontend: Single-page onboarding (email, password, CV upload)
-- [ ] Frontend: Google sign-in button
-- [ ] Frontend: Login modal for returning users
-- [ ] Basic error handling + validation
+- [x] Set up GitHub repo (backend + frontend)
+- [x] Configure GitHub Actions (CI: tests, lint, type-check, build; CD comes with hosting in Week 12)
+- [x] Set up PostgreSQL, Redis (S3: with hosting in Week 12; local storage until then)
+- [x] Implement JWT auth system (7-day sessions renewed while active; token version ends all sessions)
+- [x] Email signup + login — **changed 2026-10-15: one-time code by email, no passwords** (password code kept, switched off; may return in a later release)
+- [x] Google OAuth integration
+- [x] Email verification — every code login proves the email, so no separate step
+- [x] Frontend: Single-page onboarding (email code, CV upload)
+- [x] Frontend: Google sign-in button
+- [x] Frontend: Login with the same email-code dialog
+- [x] Basic error handling + validation (plus rate limits on login, 2026-10-15)
 
 **Definition of Done:** User can signup/login with email or social, upload CV, proceed to dashboard without blocking verification
 
 ---
 
 ### Week 3–4: CV Upload & Parsing
-- [ ] File upload endpoint (POST /api/cv/upload)
-- [ ] Temp file storage (S3 or local)
-- [ ] PDF/Word text extraction (PyPDF2, python-docx)
-- [ ] CV parsing worker (Claude API to structure CV)
-- [ ] cvs table + migrations
-- [ ] parsing_status tracking
-- [ ] Frontend: CVUpload component (drag-drop, progress)
-- [ ] Error handling (unsupported format, parse failure)
+- [x] File upload endpoint (POST /api/cv/upload); logged-in users upload or replace from the canvas
+- [x] Temp file storage (local; the file is deleted once parsing finishes)
+- [x] PDF/Word text extraction (pypdf, python-docx; scans go to Claude as PDF)
+- [x] CV parsing worker (Claude API to structure CV, in parallel parts)
+- [x] cvs table + migrations
+- [x] parsing_status tracking (per part)
+- [x] Frontend: CVUpload component (drag-drop, progress)
+- [x] Error handling (unsupported format, parse failure)
 
 **Definition of Done:** User can upload PDF/Word, parsing completes, JSON Resume created
 
@@ -384,6 +389,20 @@ only. "Public" is a saved flag only in Release 1 (nothing reads it until recruit
 Release 2). Funnel events `pdf_downloaded`, `json_exported`.
 
 **Definition of Done:** User can download PDF, export JSON, toggle privacy (default Public), see privacy status
+
+### Gap fixes for Weeks 1–9 (agreed 2026-10-15)
+- [x] Upload a new CV from the canvas ("Replace my current CV"; "Create a new version" shown as coming soon)
+- [x] Login with a one-time email code; email provider is a setting (log / SendGrid / SMTP)
+- [x] Sessions end after 7 days without activity; "session expired" message; unsaved edits kept and offered back
+- [x] Delete my CV and delete my account (Settings "Danger zone")
+- [x] Rate limits on login (codes per address and IP, code checks, Google logins)
+- [x] Uploaded file deleted after parsing
+- [x] Move entries up and down
+- [x] 💡 for the Headline (from the current roles and the summary)
+- [x] Settings and Pricing show the real plan; Log out in the header; message after a download
+- Not in this round: cloud file storage (Week 12), confirm before Remove, phone sticky bar, editable CV title.
+- Dropped from the API list: `GET /api/suggestions` (list) and an "edit" decision (nothing needs them);
+  `GET /api/user/suggestion-quota` is `GET /api/suggestions/quota`; password reset (no passwords).
 
 ---
 

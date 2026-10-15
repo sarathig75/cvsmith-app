@@ -35,19 +35,37 @@ If Redis is unreachable, the upload still succeeds and the CV is marked `failed`
 In any `ENVIRONMENT` other than `development`, the app refuses to start unless
 `JWT_SECRET` is a non-default value of at least 32 characters.
 
+### Login (one-time email codes)
+Release 1 has no passwords: `POST /api/auth/code` emails a 6-digit code and
+`POST /api/auth/code/verify` logs in (the first login creates the account). The email provider
+is a setting, `EMAIL_PROVIDER`:
+- `log` (default without a key): the code is written to the backend log, development only.
+  With Docker: `docker compose logs backend --tail 20`.
+- `sendgrid`: set `SENDGRID_API_KEY`.
+- `smtp`: any SMTP service (Resend, Brevo, Mailgun, Amazon SES): set `SMTP_HOST`, `SMTP_PORT`,
+  `SMTP_USERNAME`, `SMTP_PASSWORD`.
+Set `EMAIL_FROM` to an address on a domain you verified with the provider. Login requests are
+rate-limited with Redis (skipped if Redis is down). Sessions last 7 days without activity.
+
+### PDF download
+`GET /api/cv/download` prints the frontend's `print.html` (the Classic template) with headless
+Chromium, so the frontend must be running at `PDF_TEMPLATE_URL` (default `FRONTEND_URL`).
+Install the browser once: `playwright install chromium` (the Docker image does this), or point
+`PDF_CHROMIUM_PATH` at an existing Chromium.
+
 ## Test
 ```bash
 pytest
 flake8 app tests
 ```
 Tests use a temporary SQLite database and upload directory; no external services needed
-(Celery, Redis and the Claude API are replaced with fakes).
+(Celery, Redis, email, Chromium and the Claude API are replaced with fakes). GitHub Actions
+runs the same checks on every push (`.github/workflows/ci.yml`).
 
 ## Notes
 - Google sign-in needs `GOOGLE_OAUTH_CLIENT_ID`; verification is in `app/services/google_service.py`.
-- Without `SENDGRID_API_KEY` the email verification link is logged (development only).
 - Uploads are stored under `UPLOAD_DIR/<user_id>/<random>.<ext>` via `app/services/storage_service.py`
-  (swap for S3 later).
+  and deleted once parsing has finished (cloud storage such as S3 comes with hosting, Week 12).
 
 ## Docker
 ```bash
