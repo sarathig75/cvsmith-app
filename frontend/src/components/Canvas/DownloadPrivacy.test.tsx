@@ -66,6 +66,7 @@ describe('Download PDF, Export JSON and visibility', () => {
     expect(order).toEqual(['/api/cv', '/api/cv/download']); // the edit is saved before the PDF is made
     expect((calls.find((c) => c.method === 'patch')?.data as { content: { personal: { name: string } } }).content.personal.name).toBe('Jane Doe Smith');
     expect(saved[0]).toEqual({ name: 'CV.pdf', href: 'blob:cv' });
+    expect(await screen.findByText(/Downloaded "CV.pdf"/)).toBeInTheDocument();
   });
 
   it('shows the error when the PDF cannot be made', async () => {

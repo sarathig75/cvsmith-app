@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { deleteAccount, getUser, logout } from '../../services/authService';
+import { deleteAccount, getUser } from '../../services/authService';
+import { getQuota } from '../../services/suggestionService';
+import type { Quota } from '../../types';
+import { logOut } from '../../utils/logOut';
 import { deleteCv } from '../../services/cvService';
 import { clearUnsavedDraft } from '../../utils/unsavedDraft';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
@@ -43,14 +46,15 @@ export function SettingsPage() {
 
   async function onLogout() {
     setLoggingOut(true);
-    try {
-      await logout();
-    } catch {
-      /* the token is discarded locally regardless */
-    }
-    clearAuth();
+    await logOut();
     navigate('/', { replace: true });
   }
+
+  // The plan and this month's suggestions, read fresh from the server.
+  const [quota, setQuota] = useState<Quota | null>(null);
+  useEffect(() => {
+    getQuota().then(setQuota, () => undefined);
+  }, []);
 
   if (!user) return null;
   return (
@@ -82,11 +86,12 @@ export function SettingsPage() {
         <h2 id="billing-title" className="mb-4 text-2xl font-semibold">
           Billing
         </h2>
-        <p className="font-semibold">Current Plan: Free</p>
-        <p className="mb-4 mt-1 text-sm text-slate-600">1 AI suggestion per month</p>
-        <Link to="/pricing" className="inline-flex min-h-[44px] items-center rounded-sm bg-brand px-6 py-3 font-medium text-white hover:bg-brand-dark">
-          Upgrade to Pro - $9.99/mo
-        </Link>
+        <PlanSummary quota={quota} plan={quota?.plan ?? user.plan} />
+        {(quota?.plan ?? user.plan) !== 'pro' && (
+          <Link to="/pricing" className="inline-flex min-h-[44px] items-center rounded-sm bg-brand px-6 py-3 font-medium text-white hover:bg-brand-dark">
+            Upgrade to Pro - $9.99/mo
+          </Link>
+        )}
       </section>
 
       <section className="card mb-6 border border-error-border" aria-labelledby="danger-title">
@@ -128,8 +133,28 @@ export function SettingsPage() {
       )}
 
       <Link to="/canvas" className="inline-flex min-h-[44px] items-center rounded-sm border border-slate-200 bg-slate-100 px-6 py-3 font-medium hover:bg-slate-200">
-        Back to Dashboard
+        Back to your CV
       </Link>
+    </div>
+  );
+}
+
+function PlanSummary({ quota, plan }: { quota: Quota | null; plan: 'free' | 'pro' }) {
+  const resets = quota?.resets_at
+    ? new Date(quota.resets_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', timeZone: 'UTC' })
+    : null;
+  return (
+    <div className="mb-4">
+      <p className="font-semibold" data-testid="current-plan">
+        Current plan: {plan === 'pro' ? 'Pro' : 'Free'}
+      </p>
+      <p className="mt-1 text-sm text-slate-600">
+        {quota
+          ? `${quota.remaining} of ${quota.limit} AI suggestion${quota.limit === 1 ? '' : 's'} left this month${resets ? ` (renews ${resets})` : ''}.`
+          : plan === 'pro'
+            ? '50 AI suggestions per month, JSON export.'
+            : '1 AI suggestion per month.'}
+      </p>
     </div>
   );
 }

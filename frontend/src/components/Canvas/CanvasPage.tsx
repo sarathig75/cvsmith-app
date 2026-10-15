@@ -147,16 +147,24 @@ export function CanvasPage() {
   // Download PDF (everyone) and Export JSON (Pro): both use the saved CV, so save first.
   const [busy, setBusy] = useState<'pdf' | 'json' | null>(null);
   const [actionError, setActionError] = useState('');
+  const [downloaded, setDownloaded] = useState('');
+  useEffect(() => {
+    if (!downloaded) return;
+    const t = setTimeout(() => setDownloaded(''), 8000);
+    return () => clearTimeout(t);
+  }, [downloaded]);
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
   const runDownload = async (kind: 'pdf' | 'json') => {
     setBusy(kind);
     setActionError('');
+    setDownloaded('');
     try {
       if (!(await flush())) {
         setActionError("We couldn't save your latest changes, so they can't be included yet. Please try again.");
         return;
       }
-      await (kind === 'pdf' ? downloadPdf() : exportJson());
+      const name = await (kind === 'pdf' ? downloadPdf() : exportJson());
+      setDownloaded(`Downloaded "${name}". You can download it again any time; it always uses your latest changes.`);
     } catch (err) {
       const e = parseApiError(err);
       if (e.code === 'PRO_REQUIRED') setUpgradeMessage(e.message);
@@ -258,6 +266,11 @@ export function CanvasPage() {
             Settings
           </Link>
         </div>
+        {downloaded && (
+          <p role="status" className="rounded-sm bg-success-bg p-3 text-sm text-success-text md:basis-full">
+            {downloaded}
+          </p>
+        )}
         {actionError && (
           <p role="alert" className="rounded-sm bg-warning-bg p-3 text-sm text-warning-text md:basis-full">
             {actionError}
