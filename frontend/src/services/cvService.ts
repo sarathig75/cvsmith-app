@@ -69,3 +69,8 @@ export const downloadPdf = () => download('/api/cv/download', 'CV.pdf', 60000);
 
 /** The saved CV as JSON Resume (Pro only: fails with PRO_REQUIRED otherwise). */
 export const exportJson = () => download('/api/cv/export', 'CV.json', 30000);
+
+/** Deletes the CV (canvas, parsed data and uploaded file); the account stays. */
+export const deleteCv = async () => {
+  await api.delete('/api/cv');
+};

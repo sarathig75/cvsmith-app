@@ -56,6 +56,7 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
 | POST | /api/auth/signup | no | `{email, password}` | Off in Release 1 (`PASSWORD_LOGIN_ENABLED=false`): 404 `NOT_FOUND`. When on: 201 `Token` |
 | POST | /api/auth/login | no | `{email, password}` | Off in Release 1: 404 `NOT_FOUND`. When on: 200 `Token` |
 | POST | /api/auth/google | no | `{id_token}` (Google ID token) | 200 `Token` (creates user if new) |
+| DELETE | /api/user | yes | `{confirm: "DELETE"}` | 204. Deletes the account, CV, uploaded file, suggestions and login codes; funnel events stay without the user link. Every session ends. 422 if `confirm` is not "DELETE" |
 | POST | /api/auth/refresh | yes | - | 200 `Token` (a fresh 7-day token) |
 | POST | /api/auth/logout | yes | - | 204 |
 | GET | /api/user | yes | - | 200 `User` |
@@ -66,6 +67,7 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
 | PATCH | /api/suggestions/{id} | yes | `{status: "accepted" \| "declined"}` | 200 `Suggestion`; 404 `NOT_FOUND` if it is not the user's |
 | PATCH | /api/cv | yes | `CVSave` | 200 `CV`. Creates the CV (parsing_status "not_uploaded") if the user has none. 422 `VALIDATION_ERROR` if `content` is not an object, is larger than 256 KB as JSON, or `applied_parts` has unknown values |
 | PATCH | /api/cv/privacy | yes | `{privacy: "private" \| "public"}` | 200 `CV`. Creates the CV (like PATCH /api/cv) if the user has none. 422 `VALIDATION_ERROR` for other values |
+| DELETE | /api/cv | yes | - | 204. Deletes the CV (canvas, parsed data, uploaded file); the account stays and suggestions keep counting toward the month. 404 `NOT_FOUND` if there is no CV |
 | GET | /api/cv/download | yes | - | 200 `application/pdf` of the saved `content` in the Classic template, `Content-Disposition: attachment` ("<Name> CV.pdf"). All plans. 404 `NOT_FOUND` if nothing is saved yet. 503 `PDF_FAILED` if the PDF cannot be made |
 | GET | /api/cv/export | yes | - | 200 `application/json`: the saved `content` as JSON Resume v1.0.0, with `meta.cvsmith = {privacy, customSections?}`; attachment "<Name> CV.json". Pro only: 402 `PRO_REQUIRED` for free users. 404 `NOT_FOUND` if nothing is saved yet |
 

@@ -13,3 +13,7 @@ export const logout = async () => {
   await api.post('/api/auth/logout');
 };
 export const getUser = async () => (await api.get<User>('/api/user')).data;
+/** Deletes the account and all its data. The user confirms by typing DELETE. */
+export const deleteAccount = async () => {
+  await api.delete('/api/user', { data: { confirm: 'DELETE' } });
+};

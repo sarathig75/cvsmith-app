@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getUser, logout } from '../../services/authService';
+import { deleteAccount, getUser, logout } from '../../services/authService';
+import { deleteCv } from '../../services/cvService';
+import { clearUnsavedDraft } from '../../utils/unsavedDraft';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 import { useAuthStore } from '../../store/authStore';
 import { Button } from '../Common/Button';
 
@@ -10,6 +13,22 @@ export function SettingsPage() {
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const navigate = useNavigate();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [confirming, setConfirming] = useState<'cv' | 'account' | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  async function onDeleteCv() {
+    await deleteCv();
+    clearUnsavedDraft();
+    setConfirming(null);
+    setNotice('Your CV was deleted. You can upload or write a new one any time.');
+  }
+
+  async function onDeleteAccount() {
+    await deleteAccount();
+    clearUnsavedDraft();
+    clearAuth();
+    navigate('/', { replace: true });
+  }
 
   // Refresh the user so plan and email details are current.
   useEffect(() => {
@@ -69,6 +88,44 @@ export function SettingsPage() {
           Upgrade to Pro - $9.99/mo
         </Link>
       </section>
+
+      <section className="card mb-6 border border-error-border" aria-labelledby="danger-title">
+        <h2 id="danger-title" className="mb-2 text-2xl font-semibold">
+          Danger zone
+        </h2>
+        <p className="mb-4 text-sm text-slate-600">These can't be undone.</p>
+        {notice && (
+          <p role="status" className="mb-4 rounded-sm bg-success-bg p-3 text-sm text-success-text">
+            {notice}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-3">
+          <Button variant="danger" onClick={() => setConfirming('cv')}>
+            Delete my CV
+          </Button>
+          <Button variant="danger" onClick={() => setConfirming('account')}>
+            Delete my account
+          </Button>
+        </div>
+      </section>
+
+      {confirming === 'cv' && (
+        <ConfirmDeleteModal title="Delete your CV?" confirmLabel="Delete my CV" onConfirm={onDeleteCv} onClose={() => setConfirming(null)}>
+          Your CV, everything you entered and the file you uploaded are deleted. Your account stays.
+        </ConfirmDeleteModal>
+      )}
+      {confirming === 'account' && (
+        <ConfirmDeleteModal
+          title="Delete your account?"
+          confirmLabel="Delete my account"
+          typeToConfirm="DELETE"
+          onConfirm={onDeleteAccount}
+          onClose={() => setConfirming(null)}
+        >
+          Your account, your CV, your uploaded file and your suggestions are deleted for good, and you are logged out
+          everywhere.
+        </ConfirmDeleteModal>
+      )}
 
       <Link to="/canvas" className="inline-flex min-h-[44px] items-center rounded-sm border border-slate-200 bg-slate-100 px-6 py-3 font-medium hover:bg-slate-200">
         Back to Dashboard

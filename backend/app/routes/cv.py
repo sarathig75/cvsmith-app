@@ -14,7 +14,7 @@ from app.models.cv import PARSING_PARTS
 from app.models.user import User
 from app.routes.deps import get_current_user
 from app.schemas.cv import CVOut, CVSave, PrivacyIn
-from app.services import cv_service, event_service, export_service
+from app.services import account_service, cv_service, event_service, export_service
 from app.services.parse_queue import ParseQueue, get_parse_queue
 from app.services.pdf_service import PdfError, PdfRenderer, get_pdf_renderer
 from app.services.storage_service import StorageService, get_storage
@@ -118,3 +118,14 @@ def export_json(user: User = Depends(get_current_user), db: Session = Depends(ge
         "Content-Disposition": _attachment(export_service.download_name(cv.content, "json")),
         "Cache-Control": "no-store",
     })
+
+
+@router.delete("", status_code=status.HTTP_204_NO_CONTENT)
+def delete_cv(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    storage: StorageService = Depends(get_storage),
+):
+    """Delete the CV: canvas, parsed data and the uploaded file. The account stays."""
+    account_service.delete_cv(db, storage, user)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -13,6 +13,7 @@ from app.models.user import utcnow
 EVENT_TYPES = (
     "signup", "email_verified", "cv_uploaded", "parsing_finished", "first_edit",
     "suggestion_requested", "upgrade_prompt_shown", "pdf_downloaded", "json_exported",
+    "cv_deleted", "account_deleted",
 )
 # Steps recorded at most once per user.
 ONCE_PER_USER = ("email_verified", "first_edit")
