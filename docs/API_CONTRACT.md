@@ -74,6 +74,7 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
 ## Rules
 - Password: min 8 chars, at least 1 letter and 1 number. Email normalized to lowercase.
 - Sessions: the access token lasts 7 days and carries `ver` (`users.token_version`); `POST /api/auth/refresh` (auth) returns a fresh `Token`, called by the app while the user is active, so 7 days without activity end the session. Bumping the version ends every session.
+- Rate limits (429 `RATE_LIMITED`): login codes 5 per address and 20 per IP per hour; code checks and Google logins 30 per IP per 10 minutes. Skipped if Redis is unavailable.
 - Release 1 logs in with a one-time email code (decided 2026-10-15): codes are 6 digits, valid 10 minutes,
   single use, replaced by a newer code, and stored only as a keyed hash. The first code login creates the
   account with `email_verified = true`; there is no separate verification step.

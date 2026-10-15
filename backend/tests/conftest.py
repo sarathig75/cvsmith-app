@@ -14,6 +14,7 @@ from app.database import Base, get_db, make_engine  # noqa: E402
 from app.main import app  # noqa: E402
 from app.services.email_service import get_email_sender  # noqa: E402
 from app.services.parse_queue import get_parse_queue  # noqa: E402
+from app.services.rate_limit import MemoryRateLimiter, get_rate_limiter  # noqa: E402
 
 PASSWORD = "Passw0rdOK"
 
@@ -40,6 +41,8 @@ def client(tmp_path, monkeypatch):
     # Login codes are kept here instead of being emailed.
     mailbox = FakeMailbox()
     app.dependency_overrides[get_email_sender] = lambda: mailbox
+    limiter = MemoryRateLimiter()
+    app.dependency_overrides[get_rate_limiter] = lambda: limiter
     with TestClient(app) as c:
         c.session_factory = Session
         c.upload_dir = tmp_path / "uploads"

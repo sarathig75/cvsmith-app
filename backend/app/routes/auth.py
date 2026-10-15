@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -17,8 +17,9 @@ from app.schemas.auth import (
     TokenOut,
     UserOut,
 )
-from app.services import auth_service, event_service, login_code_service
+from app.services import auth_service, event_service, login_code_service, rate_limit
 from app.services.email_service import EmailSender, get_email_sender
+from app.services.rate_limit import RateLimiter, get_rate_limiter
 from app.utils import errors
 from app.utils.jwt_handler import create_access_token
 
@@ -40,16 +41,31 @@ def _password_login_enabled() -> None:
 
 
 @router.post("/code", response_model=MessageOut)
-def request_code(body: CodeRequestIn, db: Session = Depends(get_db), sender: EmailSender = Depends(get_email_sender)):
+def request_code(
+    body: CodeRequestIn,
+    request: Request,
+    db: Session = Depends(get_db),
+    sender: EmailSender = Depends(get_email_sender),
+    limiter: RateLimiter = Depends(get_rate_limiter),
+):
     """Email a 6-digit login code. The same answer for every address (no account lookup)."""
+    rate_limit.check(limiter, "code_ip", rate_limit.client_ip(request))
+    rate_limit.check(limiter, "code_email", body.email)
     login_code_service.request_code(db, sender, body.email)
     minutes = get_settings().LOGIN_CODE_MINUTES
     return MessageOut(message=f"We've sent a 6-digit code to {body.email}. It expires in {minutes} minutes.")
 
 
 @router.post("/code/verify", response_model=TokenOut)
-def verify_code(body: CodeVerifyIn, response: Response, db: Session = Depends(get_db)):
+def verify_code(
+    body: CodeVerifyIn,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+    limiter: RateLimiter = Depends(get_rate_limiter),
+):
     """Log in with the emailed code; the first login creates the account (201)."""
+    rate_limit.check(limiter, "verify_ip", rate_limit.client_ip(request))
     user, created = login_code_service.verify_code(db, body.email, body.code)
     if created:
         response.status_code = status.HTTP_201_CREATED
@@ -72,7 +88,13 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
 
 
 @router.post("/google", response_model=TokenOut)
-def google(body: GoogleLoginIn, db: Session = Depends(get_db)):
+def google(
+    body: GoogleLoginIn,
+    request: Request,
+    db: Session = Depends(get_db),
+    limiter: RateLimiter = Depends(get_rate_limiter),
+):
+    rate_limit.check(limiter, "google_ip", rate_limit.client_ip(request))
     user, created = auth_service.google_login(db, body.id_token)
     if created:
         event_service.record(db, user.id, "signup", {"method": "google"})
