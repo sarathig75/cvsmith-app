@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { Button } from '../Common/Button';
 import { Header } from '../Common/Header';
@@ -40,6 +41,14 @@ export function OnboardingScreen() {
           <div className="mb-6">
             <GoogleSignIn />
           </div>
+
+          <p className="mb-4 text-center text-xs text-slate-600">
+            By continuing you agree to our{' '}
+            <Link to="/privacy" className="font-medium text-brand hover:underline">
+              Privacy notice
+            </Link>
+            .
+          </p>
 
           <p className="text-center text-sm text-slate-600">
             Already have an account?{' '}

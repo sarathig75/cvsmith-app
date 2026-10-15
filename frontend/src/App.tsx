@@ -7,6 +7,7 @@ import { CanvasPage } from './components/Canvas/CanvasPage';
 import { ProtectedRoute, PublicOnlyRoute } from './components/Common/ProtectedRoute';
 import { SettingsPage } from './components/Settings/SettingsPage';
 import { PricingPage } from './pages/PricingPage';
+import { PrivacyPage } from './pages/PrivacyPage';
 
 export default function App() {
   // While logged in, activity keeps the session alive; 7 days without activity end it.
@@ -15,6 +16,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<PublicOnlyRoute><OnboardingScreen /></PublicOnlyRoute>} />
+      <Route path="/privacy" element={<PrivacyPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/canvas" element={<CanvasPage />} />
         <Route path="/pricing" element={<PricingPage />} />

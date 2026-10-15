@@ -133,9 +133,12 @@ sudo ./deploy/dc start backend worker
 - **CV not read / PDF fails:** `sudo ./deploy/dc logs worker` / `logs backend`.
 
 ## Before inviting real testers
-- [ ] **Privacy notice.** Testers upload real CVs: say what is stored (CV content, email), that
-  the uploaded file is deleted once read, and how to delete the account (Settings → Danger
-  zone). Claude can draft one; please review it yourself, as it is legal text.
+- [ ] **Privacy notice.** A draft is at `/privacy` in the app and in `docs/PRIVACY_DRAFT.md`.
+  Review it (it is legal text) and fill every placeholder in
+  `frontend/src/pages/privacyText.ts`: operator name, contact email, hosting provider and region,
+  provider links, applicable law, date. Then run
+  `cd frontend && npx vite-node scripts/privacy-md.ts`. The "DRAFT" banner disappears once no
+  placeholder is left.
 - [ ] **Running costs for a 25-person pilot (estimates):**
   - server about $10–25 a month;
   - domain about $10 a year;

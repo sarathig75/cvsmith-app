@@ -98,7 +98,13 @@ export function SettingsPage() {
         <h2 id="danger-title" className="mb-2 text-2xl font-semibold">
           Danger zone
         </h2>
-        <p className="mb-4 text-sm text-slate-600">These can't be undone.</p>
+        <p className="mb-4 text-sm text-slate-600">
+          These can't be undone. See the{' '}
+          <Link to="/privacy" className="font-medium text-brand hover:underline">
+            Privacy notice
+          </Link>{' '}
+          for what we keep and for how long.
+        </p>
         {notice && (
           <p role="status" className="mb-4 rounded-sm bg-success-bg p-3 text-sm text-success-text">
             {notice}

@@ -1,15 +1,15 @@
 # CVSmith handoff
 
-Updated: 2026-10-15 · main = e5be3c3 (Weeks 1–9 + gap fixes). Pilot deployment setup and
-invite-only mode are on the session branch `claude/clever-meitner-049zyv`, **not merged yet**.
+Updated: 2026-10-15 · Everything is merged into main (fast-forward from the session branch
+`claude/clever-meitner-049zyv`; this note is the last commit). Pilot not deployed yet.
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
 - **Login = one-time 6-digit code by email** (decided 2026-10-15); no passwords in Release 1 (the
   code is kept, switched off by `PASSWORD_LOGIN_ENABLED`). Google sign-in stays. Phone/SMS login
   was considered and rejected (paid per SMS, DLT registration in India, abuse risk).
-- Email provider not chosen yet (SendGrid now has no free plan; Resend or Brevo suggested): it
-  is a setting, `EMAIL_PROVIDER` = log | sendgrid | smtp.
+- Email: Resend (free: 3,000/month, 100/day) over SMTP for the pilot; provider is a setting,
+  `EMAIL_PROVIDER` = log | sendgrid | smtp (SendGrid has no free plan any more).
 - Sessions end after 7 days without activity; unsaved edits are kept on the device and offered back.
 - Pricing: Free = 1 suggestion/month, Pro = $9.99 for 50/month (calendar month, UTC). PDF
   download free; JSON Resume export Pro only. Nobody can buy Pro yet (Week 10).
@@ -31,44 +31,38 @@ invite-only mode are on the session branch `claude/clever-meitner-049zyv`, **not
 - Drop-off metrics in our own `events` table (`docs/FUNNEL.md`), never CV content.
 
 ## Current state
-- Backend: pytest 151/151, flake8 clean; migrations 0005–0007 tested up/down (SQLite + Postgres).
-- Frontend: type-check clean, vitest 86/86, build OK.
-- Production setup rehearsed in the cloud container without Docker: production web build behind
-  Caddy (config validated), API in production mode (docs hidden, security headers, client IP from
-  Caddy, spoofed X-Forwarded-For ignored), invite-only refusal, login code delivered over SMTP,
-  PDF download through `/api` + `print.html`; backup restore commands tested on Postgres.
-  The Docker production stack itself has not run yet (no Docker here): first run = first deploy.
-- CI: GitHub Actions runs both on every push (`.github/workflows/ci.yml`).
-- Open branches / PRs: `claude/clever-meitner-049zyv` = main + pilot setup (unmerged); no PRs.
+- Backend: pytest 151/151, flake8 clean; migrations up to 0008 tested up/down (SQLite + Postgres).
+- Frontend: type-check clean, vitest 90/90, build OK. CI (GitHub Actions) green on every push.
+- Open branches / PRs: `claude/clever-meitner-049zyv` (fully merged); no PRs.
   `claude/trusting-darwin-wwr74d` is old and fully merged (can be deleted).
-- Checked end to end in the running app: code login (code from the log), upload from the
-  canvas (parsed in ~4 s, file deleted after), move up/down with preview following, delete
-  account (user gone, events kept without the link). CI green on GitHub. The user is still
-  testing in Docker and will report findings.
+- Production setup rehearsed without Docker (none in the cloud container): production build
+  behind Caddy, API in production mode, invite-only refusal, login code over SMTP, PDF through
+  `/api` + `print.html`, real client IP via Caddy, backup restore tested. The Docker production
+  stack runs for the first time on the real server.
+- Privacy notice: a DRAFT at `/privacy` (linked from the start page and Settings) and in
+  `docs/PRIVACY_DRAFT.md`; placeholders listed there; a test keeps both copies equal.
 
 ## Done this session
-- Week 9 merged (a6e12d8). Then the Weeks 1–9 gap fixes:
-  upload from the canvas (8c9da61), 💡 Headline (d1a7016), email-code login (575fbf9),
-  7-day sessions + kept edits (2437822), delete CV/account (69c9956), login rate limits
-  (d90e26f), raw file deleted after parsing (c81c37a), move up/down (3ada871), real plan in
-  Settings/Pricing + Log out in header + download message (8887864), CI and docs (dcb4c3e).
-- User feedback: theme-coloured "Choose file" and bigger bold ↑ ↓ buttons (82a9c28).
-- Merged to main after the user's OK (e5be3c3).
-- Pilot: invite-only mode (06b95eb), production setup in `deploy/` and `docs/DEPLOY.md`.
+- Week 9 and the Weeks 1–9 gap fixes (code login, sessions, upload from canvas, delete,
+  rate limits, move up/down, 💡 Headline, CI) — merged (e5be3c3).
+- Pilot: invite-only mode (06b95eb), production setup `deploy/` + `docs/DEPLOY.md` (28f97a3),
+  privacy notice draft — merged.
 
 ## Next steps
 1. User: keep testing in Docker (`git checkout main`, `git pull`, `docker compose up -d --build`
    once for this update; migrations 0005–0007 run on start). Log in with the code from
    `docker compose logs backend --tail 20`. Fix the findings they report.
-2. Pilot go-live with the user, following `docs/DEPLOY.md`: they buy the domain, create the
-   server, Resend and (optionally) Google OAuth origin; then run `deploy/setup.sh` together.
-   Before real testers: a privacy notice (Claude drafts, user reviews).
+2. Pilot go-live with the user, following `docs/DEPLOY.md`: they choose and buy the domain,
+   create the server (Hetzner Singapore planned; host may change), Resend and (optionally) the
+   Google OAuth origin; then run `deploy/setup.sh` together and invite testers.
+   Before real testers: the user fills the privacy placeholders and reviews the text.
 3. Week 10: billing (Stripe checkout and webhooks, Pro upgrade, receipts, admin dashboard).
 4. Open: the user's scanned-CV check; parsing puts employer-wide bullets under the latest title.
 5. Known limits: two open tabs = last write wins.
 
 ## Open questions for the user
-- Merge the pilot setup to main? Which domain name?
+- Which domain name?
+- Privacy notice: operator name, contact email, applicable law (placeholders in the draft).
 
 ## Setup notes
 - Backend: `cd backend && python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt`.
