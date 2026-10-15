@@ -23,8 +23,9 @@ def _encode(payload: Dict[str, Any], hours: int, token_type: str) -> str:
     return jwt.encode(claims, s.JWT_SECRET, algorithm=s.JWT_ALGORITHM)
 
 
-def create_access_token(user_id: uuid.UUID) -> str:
-    return _encode({"sub": str(user_id)}, get_settings().JWT_EXPIRATION_HOURS, ACCESS)
+def create_access_token(user_id: uuid.UUID, version: int = 0) -> str:
+    """Valid JWT_EXPIRATION_HOURS (7 days); the app refreshes it while the user is active."""
+    return _encode({"sub": str(user_id), "ver": version}, get_settings().JWT_EXPIRATION_HOURS, ACCESS)
 
 
 def decode_token(token: str, expected_type: str) -> Optional[Dict[str, Any]]:

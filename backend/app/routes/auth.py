@@ -28,7 +28,7 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 def _token_response(user: User) -> TokenOut:
     return TokenOut(
-        access_token=create_access_token(user.id),
+        access_token=create_access_token(user.id, user.token_version),
         user=UserOut.model_validate(user),
     )
 
@@ -78,6 +78,12 @@ def google(body: GoogleLoginIn, db: Session = Depends(get_db)):
         event_service.record(db, user.id, "signup", {"method": "google"})
     # Google asserts the address is verified (recorded once per user).
     event_service.record(db, user.id, "email_verified", {"method": "google"})
+    return _token_response(user)
+
+
+@router.post("/refresh", response_model=TokenOut)
+def refresh(user: User = Depends(get_current_user)):
+    """A fresh 7-day token for an active session (called by the app while the user is active)."""
     return _token_response(user)
 
 

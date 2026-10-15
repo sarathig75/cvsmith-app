@@ -56,6 +56,7 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
 | POST | /api/auth/signup | no | `{email, password}` | Off in Release 1 (`PASSWORD_LOGIN_ENABLED=false`): 404 `NOT_FOUND`. When on: 201 `Token` |
 | POST | /api/auth/login | no | `{email, password}` | Off in Release 1: 404 `NOT_FOUND`. When on: 200 `Token` |
 | POST | /api/auth/google | no | `{id_token}` (Google ID token) | 200 `Token` (creates user if new) |
+| POST | /api/auth/refresh | yes | - | 200 `Token` (a fresh 7-day token) |
 | POST | /api/auth/logout | yes | - | 204 |
 | GET | /api/user | yes | - | 200 `User` |
 | POST | /api/cv/upload | yes | multipart `file` (PDF/DOCX, max 10MB) | 201 `CV` (parsing_status "pending"; parsing runs in the background, poll `GET /api/cv`) |
@@ -70,6 +71,7 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
 
 ## Rules
 - Password: min 8 chars, at least 1 letter and 1 number. Email normalized to lowercase.
+- Sessions: the access token lasts 7 days and carries `ver` (`users.token_version`); `POST /api/auth/refresh` (auth) returns a fresh `Token`, called by the app while the user is active, so 7 days without activity end the session. Bumping the version ends every session.
 - Release 1 logs in with a one-time email code (decided 2026-10-15): codes are 6 digits, valid 10 minutes,
   single use, replaced by a newer code, and stored only as a keyed hash. The first code login creates the
   account with `email_verified = true`; there is no separate verification step.

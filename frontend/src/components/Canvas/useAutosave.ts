@@ -24,6 +24,7 @@ export function useAutosave(
   state: SaveState;
   markSaved: (draft: CvDraft, appliedParts: ParsePart[]) => void;
   flush: () => Promise<boolean>;
+  hasUnsaved: () => boolean;
 } {
   const [state, setState] = useState<SaveState>('idle');
   const latest = useRef({ draft, appliedParts });
@@ -107,5 +108,7 @@ export function useAutosave(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [save]);
 
-  return { state, markSaved, flush };
+  const hasUnsaved = useCallback(() => enabledRef.current && serialize() !== lastSaved.current, []);
+
+  return { state, markSaved, flush, hasUnsaved };
 }

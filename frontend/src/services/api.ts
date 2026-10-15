@@ -2,6 +2,13 @@ import axios, { AxiosError } from 'axios';
 import { useAuthStore } from '../store/authStore';
 import type { ApiErrorBody, ApiErrorCode } from '../types';
 
+const sessionEndHandlers = new Set<() => void>();
+/** Runs just before an expired session is cleared (e.g. to keep unsaved edits). Returns an unregister. */
+export function onSessionEnd(handler: () => void): () => void {
+  sessionEndHandlers.add(handler);
+  return () => sessionEndHandlers.delete(handler);
+}
+
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
   timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 30000,
@@ -19,9 +26,17 @@ api.interceptors.response.use(
     // Only treat 401 as "session expired" when we actually sent a token;
     // a 401 from /auth/login (INVALID_CREDENTIALS) must reach the form.
     const sentToken = !!error.config?.headers?.get?.('Authorization');
-    if (error.response?.status === 401 && sentToken) {
-      // Clearing auth makes ProtectedRoute redirect to "/".
-      useAuthStore.getState().clearAuth();
+    if (error.response?.status === 401 && sentToken && useAuthStore.getState().token) {
+      // The session ended (expired after 7 idle days, or ended on the server). Let open pages
+      // keep unsaved work first; clearing auth then makes ProtectedRoute redirect to "/".
+      for (const handler of [...sessionEndHandlers]) {
+        try {
+          handler();
+        } catch {
+          /* never block the logout */
+        }
+      }
+      useAuthStore.getState().expireSession();
     }
     return Promise.reject(error);
   },

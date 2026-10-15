@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import Boolean, DateTime, String, Uuid
+from sqlalchemy import Boolean, DateTime, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -24,6 +24,8 @@ class User(Base):
     )
     # "free" or "pro" (suggestion quota). Payments are not built yet, so everyone is "free".
     plan: Mapped[str] = mapped_column(String(20), nullable=False, default="free")
+    # Carried in every access token; bumping it ends all of the user's sessions.
+    token_version: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     google_id: Mapped[Optional[str]] = mapped_column(
         String(255), unique=True, nullable=True
     )

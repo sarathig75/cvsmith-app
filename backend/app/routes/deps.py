@@ -27,6 +27,7 @@ def get_current_user(
     except ValueError:
         raise errors.unauthorized("Invalid or expired token.")
     user = db.get(User, user_id)
-    if user is None:
+    # A token from before the user's sessions were ended (e.g. account changes) is refused.
+    if user is None or claims.get("ver", 0) != user.token_version:
         raise errors.unauthorized("Invalid or expired token.")
     return user

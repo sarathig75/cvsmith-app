@@ -28,9 +28,12 @@ function write(value: Persisted | null) {
 type AuthState = {
   token: string | null;
   user: User | null;
+  /** The session ended by itself (expired or ended on the server): the start page says so. */
+  sessionExpired: boolean;
   setAuth: (token: string, user: User) => void;
   setUser: (user: User) => void;
   clearAuth: () => void;
+  expireSession: () => void;
 };
 
 const initial = read();
@@ -38,9 +41,10 @@ const initial = read();
 export const useAuthStore = create<AuthState>((set, get) => ({
   token: initial?.token ?? null,
   user: initial?.user ?? null,
+  sessionExpired: false,
   setAuth: (token, user) => {
     write({ token, user });
-    set({ token, user });
+    set({ token, user, sessionExpired: false });
   },
   setUser: (user) => {
     const token = get().token;
@@ -49,7 +53,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
   clearAuth: () => {
     write(null);
-    set({ token: null, user: null });
+    set({ token: null, user: null, sessionExpired: false });
+  },
+  expireSession: () => {
+    write(null);
+    set({ token: null, user: null, sessionExpired: true });
   },
 }));
 

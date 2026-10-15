@@ -48,7 +48,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       JWT_SECRET: dev-secret-key-change-in-production
       JWT_ALGORITHM: HS256
-      JWT_EXPIRATION_HOURS: 24
+      JWT_EXPIRATION_HOURS: 168
       ENVIRONMENT: development
       DEBUG: "true"
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}

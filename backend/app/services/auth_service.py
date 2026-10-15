@@ -64,6 +64,7 @@ def google_login(db: Session, id_token: str) -> Tuple[User, bool]:
                 # may belong to someone who pre-registered the address. Drop it: from now
                 # on only the verified Google owner can sign in.
                 user.password_hash = None
+                user.token_version += 1  # and end any session opened with that password
                 user.email_verified = True
                 user.email_verified_at = datetime.now(timezone.utc)
         else:

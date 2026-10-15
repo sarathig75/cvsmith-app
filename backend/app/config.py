@@ -21,7 +21,8 @@ class Settings(BaseSettings):
 
     JWT_SECRET: str = DEFAULT_JWT_SECRET
     JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRATION_HOURS: int = 24
+    # Sessions end after this long without activity: the app refreshes the token while in use.
+    JWT_EXPIRATION_HOURS: int = 168
 
     GOOGLE_OAUTH_CLIENT_ID: str = ""
 

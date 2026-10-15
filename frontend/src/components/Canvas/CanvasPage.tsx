@@ -3,7 +3,9 @@ import { useUploadStore } from '../../store/uploadStore';
 import { discardPendingFile, uploadPendingFile } from '../../utils/postAuth';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { parseApiError } from '../../services/api';
+import { onSessionEnd, parseApiError } from '../../services/api';
+import { clearUnsavedDraft, keepUnsavedDraft, takeUnsavedDraft } from '../../utils/unsavedDraft';
+import type { UnsavedDraft } from '../../utils/unsavedDraft';
 import { downloadPdf, exportJson, setPrivacy as savePrivacy } from '../../services/cvService';
 import { getQuota } from '../../services/suggestionService';
 import type { CV, ParsePart, Quota, SuggestionRequest } from '../../types';
@@ -89,7 +91,21 @@ export function CanvasPage() {
   const applied = useRef(new Set<ParsePart>());
   const privacyLoaded = useRef(false);
   const [cv, setCv] = useState<CV | null>(null);
-  const { state: saveState, markSaved, flush } = useAutosave(load === 'ok', draft, appliedParts, userEdited);
+  const { state: saveState, markSaved, flush, hasUnsaved } = useAutosave(load === 'ok', draft, appliedParts, userEdited);
+
+  // If the session ends with edits not yet saved, keep them on this device and offer them back
+  // after the next login (auto-save keeps everything else).
+  const latestDraft = useRef({ draft, appliedParts });
+  latestDraft.current = { draft, appliedParts };
+  useEffect(
+    () =>
+      onSessionEnd(() => {
+        if (!user || !hasUnsaved()) return;
+        keepUnsavedDraft({ userId: user.id, ...latestDraft.current, at: new Date().toISOString() });
+      }),
+    [user, hasUnsaved],
+  );
+  const [kept, setKept] = useState<UnsavedDraft | null>(null);
   // CvStatus keeps the callback it was given when it started polling, so state read here can be
   // stale: whether the saved canvas was restored is kept in a ref.
   const restored = useRef(false);
@@ -104,6 +120,7 @@ export function CanvasPage() {
       setAppliedParts(savedParts);
       markSaved(savedDraft, savedParts);
       setLoad('ok');
+      if (user) setKept(takeUnsavedDraft(user.id));
     }
     if (!loaded) return;
     // CvStatus reports on every status check; take privacy from the server only once so a
@@ -262,6 +279,38 @@ export function CanvasPage() {
                 </Button>
                 <Button size="sm" variant="secondary" onClick={discardPendingFile}>
                   Keep my current CV
+                </Button>
+              </div>
+            </div>
+          )}
+          {kept && (
+            <div role="alert" className="mb-6 rounded-sm border border-warning-text/30 bg-warning-bg p-4 text-sm">
+              <p className="mb-3 text-warning-text">
+                Your session ended before your last changes were saved. We kept them on this device.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    userEdited.current = true;
+                    setDraft(kept.draft);
+                    setAppliedParts(kept.appliedParts);
+                    applied.current = new Set(kept.appliedParts);
+                    clearUnsavedDraft();
+                    setKept(null);
+                  }}
+                >
+                  Restore my changes
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    clearUnsavedDraft();
+                    setKept(null);
+                  }}
+                >
+                  Discard them
                 </Button>
               </div>
             </div>

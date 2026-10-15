@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuthStore } from '../../store/authStore';
 import { Button } from '../Common/Button';
 import { Header } from '../Common/Header';
 import { CvDropzone } from './CvDropzone';
@@ -7,6 +8,7 @@ import { EmailCodeModal } from './EmailCodeModal';
 
 export function OnboardingScreen() {
   const [modal, setModal] = useState<'start' | 'login' | null>(null);
+  const sessionExpired = useAuthStore((s) => s.sessionExpired);
   return (
     <>
       <Header showNav={false} />
@@ -16,6 +18,12 @@ export function OnboardingScreen() {
             <h1 className="text-3xl font-semibold">✨ CVSmith</h1>
             <p className="mt-1 text-slate-600">Create your CV in seconds with AI</p>
           </div>
+
+          {sessionExpired && (
+            <p role="status" className="mb-6 rounded-sm bg-warning-bg p-3 text-sm text-warning-text">
+              Your session expired. Please log in again; any changes that weren't saved yet will be offered back.
+            </p>
+          )}
 
           <CvDropzone />
 
