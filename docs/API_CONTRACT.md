@@ -8,7 +8,7 @@ Auth: `Authorization: Bearer <access_token>` on protected routes.
 { "error": { "code": "EMAIL_EXISTS", "message": "Human readable" } }
 ```
 Codes: `VALIDATION_ERROR` (422), `EMAIL_EXISTS` (409), `INVALID_CREDENTIALS` (401), `UNAUTHORIZED` (401),
-`INVALID_TOKEN` (400), `INVALID_CODE` (400), `RATE_LIMITED` (429), `EMAIL_FAILED` (503), `UNSUPPORTED_FILE_TYPE` (415), `FILE_TOO_LARGE` (413), `NOT_FOUND` (404),
+`INVALID_TOKEN` (400), `INVALID_CODE` (400), `RATE_LIMITED` (429), `EMAIL_FAILED` (503), `NOT_INVITED` (403), `UNSUPPORTED_FILE_TYPE` (415), `FILE_TOO_LARGE` (413), `NOT_FOUND` (404),
 `GOOGLE_AUTH_FAILED` (401), `QUOTA_EXCEEDED` (402), `PRO_REQUIRED` (402), `SUGGESTION_FAILED` (503), `PDF_FAILED` (503), `SERVER_ERROR` (500).
 
 ## Types
@@ -74,6 +74,7 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
 ## Rules
 - Password: min 8 chars, at least 1 letter and 1 number. Email normalized to lowercase.
 - Sessions: the access token lasts 7 days and carries `ver` (`users.token_version`); `POST /api/auth/refresh` (auth) returns a fresh `Token`, called by the app while the user is active, so 7 days without activity end the session. Bumping the version ends every session.
+- Invite-only mode (`INVITE_ONLY=true`, used for the pilot): `POST /api/auth/code`, `/api/auth/code/verify` and `/api/auth/google` answer 403 `NOT_INVITED` for addresses that are neither invited nor existing accounts. Invites are managed with `python -m app.cli invites add|remove|list`.
 - Rate limits (429 `RATE_LIMITED`): login codes 5 per address and 20 per IP per hour; code checks and Google logins 30 per IP per 10 minutes. Skipped if Redis is unavailable.
 - Release 1 logs in with a one-time email code (decided 2026-10-15): codes are 6 digits, valid 10 minutes,
   single use, replaced by a newer code, and stored only as a keyed hash. The first code login creates the

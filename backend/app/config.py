@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     LOGIN_CODE_RESEND_SECONDS: int = 60
     # Password sign-up and login are off in Release 1 (login is by email code); kept for later.
     PASSWORD_LOGIN_ENABLED: bool = False
+    # Pilot: only invited addresses (python -m app.cli invites add ...) and existing accounts log in.
+    INVITE_ONLY: bool = False
     FRONTEND_URL: str = "http://localhost:5173"
 
     UPLOAD_DIR: str = "./uploads"

@@ -122,6 +122,7 @@ export type ApiErrorCode =
   | 'INVALID_CODE'
   | 'RATE_LIMITED'
   | 'EMAIL_FAILED'
+  | 'NOT_INVITED'
   | 'SERVER_ERROR';
 
 export type ApiErrorBody = { error: { code: ApiErrorCode; message: string } };

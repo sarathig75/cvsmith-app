@@ -91,4 +91,13 @@ describe('EmailCodeModal', () => {
     await user.click(screen.getByRole('button', { name: 'Email me a code' }));
     expect(await screen.findByRole('alert')).toHaveTextContent("We couldn't send the email right now.");
   });
+
+  it('explains the private beta to an address that is not invited', async () => {
+    setup(() => apiError(403, 'NOT_INVITED', 'CVSmith is in private beta. Please ask us for an invite to join.'));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.type(screen.getByLabelText(/email address/i), 'stranger@b.co');
+    await user.click(screen.getByRole('button', { name: 'Email me a code' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('private beta');
+    expect(screen.queryByLabelText(/6-digit code/i)).not.toBeInTheDocument();
+  });
 });

@@ -62,6 +62,10 @@ def invalid_code(message: str) -> AppError:
     return AppError("INVALID_CODE", message, 400)
 
 
+def not_invited() -> AppError:
+    return AppError("NOT_INVITED", "CVSmith is in private beta. Please ask us for an invite to join.", 403)
+
+
 def rate_limited(message: str = "Too many attempts. Please wait a moment and try again.") -> AppError:
     return AppError("RATE_LIMITED", message, 429)
 

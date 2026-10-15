@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.user import User
-from app.services import google_service
+from app.services import google_service, invite_service
 from app.utils import errors
 from app.utils.security import burn_password_check, hash_password, verify_password
 
@@ -51,6 +51,7 @@ def google_login(db: Session, id_token: str) -> Tuple[User, bool]:
     email = (claims.get("email") or "").strip().lower()
     if not google_id or not email or claims.get("email_verified") is not True:
         raise errors.google_auth_failed()
+    invite_service.check(db, email)
 
     created = False
     user = db.scalar(select(User).where(User.google_id == google_id))

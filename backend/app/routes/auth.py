@@ -17,7 +17,7 @@ from app.schemas.auth import (
     TokenOut,
     UserOut,
 )
-from app.services import auth_service, event_service, login_code_service, rate_limit
+from app.services import auth_service, event_service, invite_service, login_code_service, rate_limit
 from app.services.email_service import EmailSender, get_email_sender
 from app.services.rate_limit import RateLimiter, get_rate_limiter
 from app.utils import errors
@@ -51,6 +51,7 @@ def request_code(
     """Email a 6-digit login code. The same answer for every address (no account lookup)."""
     rate_limit.check(limiter, "code_ip", rate_limit.client_ip(request))
     rate_limit.check(limiter, "code_email", body.email)
+    invite_service.check(db, body.email)
     login_code_service.request_code(db, sender, body.email)
     minutes = get_settings().LOGIN_CODE_MINUTES
     return MessageOut(message=f"We've sent a 6-digit code to {body.email}. It expires in {minutes} minutes.")
@@ -66,6 +67,7 @@ def verify_code(
 ):
     """Log in with the emailed code; the first login creates the account (201)."""
     rate_limit.check(limiter, "verify_ip", rate_limit.client_ip(request))
+    invite_service.check(db, body.email)  # an invite may have been removed after the code was sent
     user, created = login_code_service.verify_code(db, body.email, body.code)
     if created:
         response.status_code = status.HTTP_201_CREATED
