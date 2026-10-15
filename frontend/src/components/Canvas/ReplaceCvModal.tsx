@@ -33,7 +33,13 @@ export function ReplaceCvModal({ hasCv, onUpload, onClose }: Props) {
     <Modal title={hasCv ? 'Upload a new CV' : 'Upload your CV'} onClose={onClose}>
       <p className="mb-4 text-slate-700">PDF or Word .docx, up to 10 MB. We read it and fill in your CV for you.</p>
       <div className="mb-4">
-        <Button variant="secondary" onClick={() => inputRef.current?.click()} aria-describedby={error ? errId : undefined}>
+        {/* The first step stands out in the theme colour; once a file is chosen, "Upload" does. */}
+        <Button
+          variant={file ? 'secondary' : 'primary'}
+          onClick={() => inputRef.current?.click()}
+          aria-describedby={error ? errId : undefined}
+        >
+          {!file && <span aria-hidden="true">📄</span>}
           {file ? 'Choose a different file' : 'Choose file'}
         </Button>
         <input
@@ -49,7 +55,12 @@ export function ReplaceCvModal({ hasCv, onUpload, onClose }: Props) {
             e.target.value = '';
           }}
         />
-        {file && <p className="mt-2 truncate text-sm text-slate-800">✓ {file.name}</p>}
+        {file && (
+          <p className="mt-3 truncate rounded-sm border border-brand/30 bg-brand-light/50 px-3 py-2 text-sm font-medium text-slate-900">
+            <span aria-hidden="true">✓ </span>
+            {file.name}
+          </p>
+        )}
         {error && (
           <p id={errId} role="alert" className="mt-2 text-sm font-medium text-error-text">
             {error}
