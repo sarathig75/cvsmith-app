@@ -28,7 +28,15 @@ def create_app() -> FastAPI:
     settings.validate_for_startup()
     logging.basicConfig(level=settings.LOG_LEVEL)
 
-    app = FastAPI(title=settings.APP_NAME, version=settings.APP_VERSION)
+    # The interactive API docs are for development only.
+    docs = settings.is_development
+    app = FastAPI(
+        title=settings.APP_NAME,
+        version=settings.APP_VERSION,
+        docs_url="/docs" if docs else None,
+        redoc_url="/redoc" if docs else None,
+        openapi_url="/openapi.json" if docs else None,
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,

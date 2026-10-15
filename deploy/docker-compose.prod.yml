@@ -1,0 +1,118 @@
+# CVSmith production (pilot). Works on any Linux server with Docker; nothing here is specific
+# to one hosting provider. Use it through ./deploy/dc (it passes this file and .env.prod).
+name: cvsmith
+
+x-backend-env: &backend-env
+  ENVIRONMENT: production
+  DATABASE_URL: postgresql://cvsmith:${POSTGRES_PASSWORD:?set in .env.prod}@postgres:5432/cvsmith
+  REDIS_URL: redis://redis:6379/0
+  UPLOAD_DIR: /app/uploads
+  FRONTEND_URL: https://${DOMAIN:?set in .env.prod}
+  CORS_ORIGINS: https://${DOMAIN}
+  PDF_TEMPLATE_URL: http://web:8080
+  JWT_SECRET: ${JWT_SECRET:?set in .env.prod}
+  INVITE_ONLY: ${INVITE_ONLY:-true}
+  EMAIL_PROVIDER: ${EMAIL_PROVIDER:-smtp}
+  EMAIL_FROM: ${EMAIL_FROM:?set in .env.prod}
+  SMTP_HOST: ${SMTP_HOST:-smtp.resend.com}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USERNAME: ${SMTP_USERNAME:-resend}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set in .env.prod}
+  CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-sonnet-5-5}
+  SUGGESTION_MODEL: ${SUGGESTION_MODEL:-claude-sonnet-5-5}
+  GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+  LOG_LEVEL: INFO
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.web
+      args:
+        VITE_GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+    environment:
+      DOMAIN: ${DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  backend:
+    build: ../backend
+    environment: *backend-env
+    # Migrations run on every start (safe to repeat). Only Caddy reaches the API, so the
+    # forwarded client address it sends is trusted (used by the login rate limits).
+    command: >-
+      sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000
+      --workers 2 --proxy-headers --forwarded-allow-ips='*'"
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  worker:
+    build: ../backend
+    environment: *backend-env
+    command: celery -A app.workers.celery_app worker --concurrency=2 --loglevel=info
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: cvsmith
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: cvsmith
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cvsmith -d cvsmith"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  # Nightly database backup into deploy/backups on the server; keeps 14 days.
+  backup:
+    image: postgres:16-alpine
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ./backups:/backups
+    entrypoint: >-
+      sh -c 'while true; do
+      pg_dump -h postgres -U cvsmith cvsmith | gzip > /backups/cvsmith-$$(date +%F).sql.gz
+      && find /backups -name "cvsmith-*.sql.gz" -mtime +14 -delete;
+      sleep 86400; done'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  uploads:
+  caddy_data:
+  caddy_config:

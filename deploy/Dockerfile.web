@@ -1,0 +1,15 @@
+# Production website: the built React app served by Caddy (which also proxies /api and does HTTPS).
+# Build context: the repository root.
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY frontend/package*.json ./
+RUN npm ci
+COPY frontend/ ./
+# Same-site API (/api), so the build works with any domain or host.
+ARG VITE_GOOGLE_OAUTH_CLIENT_ID=""
+ENV VITE_API_URL="" VITE_GOOGLE_OAUTH_CLIENT_ID=$VITE_GOOGLE_OAUTH_CLIENT_ID
+RUN npm run build
+
+FROM caddy:2-alpine
+COPY --from=build /app/dist /srv
+COPY deploy/Caddyfile /etc/caddy/Caddyfile

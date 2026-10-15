@@ -10,7 +10,8 @@ export function onSessionEnd(handler: () => void): () => void {
 }
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  // Empty (production build) = same site: the web server forwards /api to the backend.
+  baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8000',
   timeout: Number(import.meta.env.VITE_API_TIMEOUT) || 30000,
 });
 

@@ -400,6 +400,8 @@ Release 2). Funnel events `pdf_downloaded`, `json_exported`.
 - [x] Move entries up and down
 - [x] 💡 for the Headline (from the current roles and the summary)
 - [x] Settings and Pricing show the real plan; Log out in the header; message after a download
+- Pilot setup (2026-10-15): invite-only mode, `deploy/` (Caddy HTTPS, production compose, backups),
+  `docs/DEPLOY.md`; any Linux host with Docker (Hetzner Singapore chosen for the pilot).
 - Not in this round: cloud file storage (Week 12), confirm before Remove, phone sticky bar, editable CV title.
 - Dropped from the API list: `GET /api/suggestions` (list) and an "edit" decision (nothing needs them);
   `GET /api/user/suggestion-quota` is `GET /api/suggestions/quota`; password reset (no passwords).

@@ -68,6 +68,6 @@ runs the same checks on every push (`.github/workflows/ci.yml`).
   and deleted once parsing has finished (cloud storage such as S3 comes with hosting, Week 12).
 
 ## Docker
-```bash
-docker build -t cvsmith-api . && docker run -p 8000:8000 --env-file .env cvsmith-api
-```
+Development: `docker compose up` from the repository root. Production (pilot): see
+`docs/DEPLOY.md` and `deploy/` (Caddy with HTTPS, production settings, nightly backups,
+invite-only; any Linux server with Docker).

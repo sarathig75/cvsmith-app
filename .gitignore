@@ -12,3 +12,5 @@ dist/
 *.log
 .DS_Store
 uploads/
+deploy/.env.prod
+deploy/backups/

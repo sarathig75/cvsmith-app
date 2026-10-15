@@ -1,0 +1,30 @@
+# CVSmith production web server. DOMAIN comes from deploy/.env.prod.
+# Caddy gets and renews the HTTPS certificate automatically (Let's Encrypt).
+{$DOMAIN} {
+	encode gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+
+	# The single-page app: unknown paths load index.html (React Router handles them).
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
+
+# Internal only (not published): the backend's Chromium loads print.html from here to make PDFs.
+http://:8080 {
+	root * /srv
+	file_server
+}

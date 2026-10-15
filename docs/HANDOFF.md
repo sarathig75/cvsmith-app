@@ -1,7 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-15 · Weeks 1–9 and the gap fixes are merged into main (fast-forward from the
-session branch `claude/clever-meitner-049zyv`; this note is the last commit).
+Updated: 2026-10-15 · main = e5be3c3 (Weeks 1–9 + gap fixes). Pilot deployment setup and
+invite-only mode are on the session branch `claude/clever-meitner-049zyv`, **not merged yet**.
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
@@ -24,13 +24,22 @@ session branch `claude/clever-meitner-049zyv`; this note is the last commit).
   edits = "no change" (not counted); objective-style summaries are rewritten from the CV's facts.
 - Canvas: five fixed groups; entries can be moved up/down; preview and PDF use one Classic
   template (`CvTemplate.{tsx,css}`, printed via `frontend/print.html`).
+- Pilot (decided 2026-10-15): up to 25 testers in India, invited emails only (`INVITE_ONLY`,
+  `python -m app.cli invites add …`), one rented server running `deploy/docker-compose.prod.yml`
+  (Hetzner Singapore chosen, but nothing is provider-specific: the host may change). Email:
+  Resend free plan over SMTP. The user is buying a domain. Guide: `docs/DEPLOY.md`.
 - Drop-off metrics in our own `events` table (`docs/FUNNEL.md`), never CV content.
 
 ## Current state
-- Backend: pytest 145/145, flake8 clean; migrations 0005–0007 tested up/down (SQLite + Postgres).
-- Frontend: type-check clean, vitest 85/85, build OK.
+- Backend: pytest 151/151, flake8 clean; migrations 0005–0007 tested up/down (SQLite + Postgres).
+- Frontend: type-check clean, vitest 86/86, build OK.
+- Production setup rehearsed in the cloud container without Docker: production web build behind
+  Caddy (config validated), API in production mode (docs hidden, security headers, client IP from
+  Caddy, spoofed X-Forwarded-For ignored), invite-only refusal, login code delivered over SMTP,
+  PDF download through `/api` + `print.html`; backup restore commands tested on Postgres.
+  The Docker production stack itself has not run yet (no Docker here): first run = first deploy.
 - CI: GitHub Actions runs both on every push (`.github/workflows/ci.yml`).
-- Open branches / PRs: `claude/clever-meitner-049zyv` (fully merged into main); no PRs.
+- Open branches / PRs: `claude/clever-meitner-049zyv` = main + pilot setup (unmerged); no PRs.
   `claude/trusting-darwin-wwr74d` is old and fully merged (can be deleted).
 - Checked end to end in the running app: code login (code from the log), upload from the
   canvas (parsed in ~4 s, file deleted after), move up/down with preview following, delete
@@ -44,20 +53,22 @@ session branch `claude/clever-meitner-049zyv`; this note is the last commit).
   (d90e26f), raw file deleted after parsing (c81c37a), move up/down (3ada871), real plan in
   Settings/Pricing + Log out in header + download message (8887864), CI and docs (dcb4c3e).
 - User feedback: theme-coloured "Choose file" and bigger bold ↑ ↓ buttons (82a9c28).
-- Merged to main after the user's OK.
+- Merged to main after the user's OK (e5be3c3).
+- Pilot: invite-only mode (06b95eb), production setup in `deploy/` and `docs/DEPLOY.md`.
 
 ## Next steps
 1. User: keep testing in Docker (`git checkout main`, `git pull`, `docker compose up -d --build`
    once for this update; migrations 0005–0007 run on start). Log in with the code from
    `docker compose logs backend --tail 20`. Fix the findings they report.
-2. User: choose the email provider and a sending domain; then set `EMAIL_PROVIDER` etc. in `.env`.
+2. Pilot go-live with the user, following `docs/DEPLOY.md`: they buy the domain, create the
+   server, Resend and (optionally) Google OAuth origin; then run `deploy/setup.sh` together.
+   Before real testers: a privacy notice (Claude drafts, user reviews).
 3. Week 10: billing (Stripe checkout and webhooks, Pro upgrade, receipts, admin dashboard).
 4. Open: the user's scanned-CV check; parsing puts employer-wide bullets under the latest title.
-5. Known limits: two open tabs = last write wins; rate limits use the direct client IP (behind
-   a proxy in production this must use the forwarded address, Week 12).
+5. Known limits: two open tabs = last write wins.
 
 ## Open questions for the user
-- Which email provider (Resend, Brevo, other) and which domain to send from?
+- Merge the pilot setup to main? Which domain name?
 
 ## Setup notes
 - Backend: `cd backend && python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt`.
