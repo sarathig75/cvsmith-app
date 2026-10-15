@@ -1,7 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-15 · Last commit on main: a6e12d8 (Week 9). The Weeks 1–9 gap fixes are on the
-session branch `claude/clever-meitner-049zyv`, **not merged yet** (waiting for the user's test and OK).
+Updated: 2026-10-15 · Weeks 1–9 and the gap fixes are merged into main (fast-forward from the
+session branch `claude/clever-meitner-049zyv`; this note is the last commit).
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
@@ -27,26 +27,29 @@ session branch `claude/clever-meitner-049zyv`, **not merged yet** (waiting for t
 - Drop-off metrics in our own `events` table (`docs/FUNNEL.md`), never CV content.
 
 ## Current state
-- Backend: pytest 144/144, flake8 clean; migrations 0005–0007 tested up/down (SQLite + Postgres).
+- Backend: pytest 145/145, flake8 clean; migrations 0005–0007 tested up/down (SQLite + Postgres).
 - Frontend: type-check clean, vitest 85/85, build OK.
 - CI: GitHub Actions runs both on every push (`.github/workflows/ci.yml`).
-- Open branches / PRs: `claude/clever-meitner-049zyv` = main + gap fixes (unmerged); no PRs.
+- Open branches / PRs: `claude/clever-meitner-049zyv` (fully merged into main); no PRs.
   `claude/trusting-darwin-wwr74d` is old and fully merged (can be deleted).
 - Checked end to end in the running app: code login (code from the log), upload from the
   canvas (parsed in ~4 s, file deleted after), move up/down with preview following, delete
-  account (user gone, events kept without the link). Not tested in Docker yet.
+  account (user gone, events kept without the link). CI green on GitHub. The user is still
+  testing in Docker and will report findings.
 
 ## Done this session
 - Week 9 merged (a6e12d8). Then the Weeks 1–9 gap fixes:
   upload from the canvas (8c9da61), 💡 Headline (d1a7016), email-code login (575fbf9),
   7-day sessions + kept edits (2437822), delete CV/account (69c9956), login rate limits
   (d90e26f), raw file deleted after parsing (c81c37a), move up/down (3ada871), real plan in
-  Settings/Pricing + Log out in header + download message (8887864), CI and docs.
+  Settings/Pricing + Log out in header + download message (8887864), CI and docs (dcb4c3e).
+- User feedback: theme-coloured "Choose file" and bigger bold ↑ ↓ buttons (82a9c28).
+- Merged to main after the user's OK.
 
 ## Next steps
-1. User: test the gap fixes in Docker: `git pull`, then `docker compose up -d --build`
-   (migrations 0005–0007 run on start). Log in with the code from `docker compose logs backend`.
-   Then approve the merge to main.
+1. User: keep testing in Docker (`git checkout main`, `git pull`, `docker compose up -d --build`
+   once for this update; migrations 0005–0007 run on start). Log in with the code from
+   `docker compose logs backend --tail 20`. Fix the findings they report.
 2. User: choose the email provider and a sending domain; then set `EMAIL_PROVIDER` etc. in `.env`.
 3. Week 10: billing (Stripe checkout and webhooks, Pro upgrade, receipts, admin dashboard).
 4. Open: the user's scanned-CV check; parsing puts employer-wide bullets under the latest title.
@@ -55,7 +58,6 @@ session branch `claude/clever-meitner-049zyv`, **not merged yet** (waiting for t
 
 ## Open questions for the user
 - Which email provider (Resend, Brevo, other) and which domain to send from?
-- Merge the gap fixes to main after testing?
 
 ## Setup notes
 - Backend: `cd backend && python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt`.
