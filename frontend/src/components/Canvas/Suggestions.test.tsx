@@ -187,3 +187,21 @@ describe('💡 headline', () => {
     expect(screen.getByRole('button', { name: 'Improve Headline' })).toBeEnabled();
   });
 });
+
+describe('💡 summary', () => {
+  it('suggests a new summary when the field is empty, after saving pending edits', async () => {
+    const calls = setup(() => ({
+      status: 201,
+      data: suggestion({ field: 'summary', entry_id: null, original: '', suggested: 'Sales lead with 8 years in enterprise accounts.' }),
+    }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.clear(await screen.findByLabelText('Professional Summary'));
+    await user.click(screen.getByRole('button', { name: 'Suggest Professional Summary' })); // empty: "Suggest", not disabled
+    expect(await screen.findByRole('region', { name: 'Current' })).toHaveTextContent('(empty)');
+    const order = calls.filter((c) => c.method !== 'get').map((c) => `${c.method} ${c.url}`);
+    expect(order.slice(0, 2)).toEqual(['patch /api/cv', 'post /api/suggestions']);
+    expect(calls.find((c) => c.method === 'post')?.data).toEqual({ field: 'summary', text: '' });
+    await user.click(screen.getByRole('button', { name: 'Use suggestion' }));
+    expect(screen.getByLabelText('Professional Summary')).toHaveValue('Sales lead with 8 years in enterprise accounts.');
+  });
+});

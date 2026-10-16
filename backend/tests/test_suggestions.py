@@ -237,7 +237,61 @@ def test_headline_needs_roles_or_summary_and_no_ai_call(client, auth, writer):
     assert writer.calls == [] and quota(client, auth[0])["remaining"] == 1
 
 
-def test_summary_facts_do_not_repeat_the_summary(client, auth, writer):
-    client.patch("/api/cv", headers=auth[0], json={"content": HEADLINE_CV})
-    ask(client, auth[0], field="summary", text="Seeking a role")
-    assert "Summary:" not in writer.calls[0][2]["cv_facts"]
+# --- summary -----------------------------------------------------------------------
+
+SUMMARY_CV = {
+    **HEADLINE_CV,
+    "experience": [
+        {**HEADLINE_CV["experience"][0], "description": "• Launched UPI payments for 2M users"},
+        HEADLINE_CV["experience"][1],
+    ],
+    "projects": [{"id": "p1", "name": "Fraud model", "description": "Cut chargebacks by 30%"}],
+    "skills": ["Payments"],
+}
+
+
+def test_existing_summary_is_reworded_without_cv_facts(client, auth, writer):
+    # A summary may be a positioning statement for the next role: only its wording is improved,
+    # so the writer gets no facts it could add.
+    client.patch("/api/cv", headers=auth[0], json={"content": SUMMARY_CV})
+    r = ask(client, auth[0], field="summary", text="Seeking a product leadership role in fintech")
+    assert r.status_code == 201, r.text
+    assert "cv_facts" not in writer.calls[0][2]
+
+
+def test_empty_summary_is_written_from_roles_and_descriptions(client, auth, writer):
+    client.patch("/api/cv", headers=auth[0], json={"content": SUMMARY_CV})
+    writer.suggested = "Product manager with 9 years in payments."
+    r = ask(client, auth[0], field="summary", text="  ")
+    assert r.status_code == 201, r.text
+    assert r.json()["changed"] is True and r.json()["original"] == ""
+    facts = writer.calls[0][2]["cv_facts"]
+    assert "Role (current): Senior Product Manager, Acme Pay, 2021-04–present" in facts
+    assert "Work (Senior Product Manager, Acme Pay): • Launched UPI payments for 2M users" in facts
+    assert "Project (Fraud model): Cut chargebacks by 30%" in facts
+    assert "Skills: Payments" in facts
+    assert "Summary:" not in facts
+    assert quota(client, auth[0])["remaining"] == 0
+
+
+def test_empty_summary_needs_experience_and_no_ai_call(client, auth, writer):
+    r = ask(client, auth[0], field="summary", text="")
+    assert r.status_code == 422 and "work experience first" in r.json()["error"]["message"]
+    assert writer.calls == [] and quota(client, auth[0])["remaining"] == 1
+
+
+def test_descriptions_are_cut_before_the_other_facts():
+    cv = {**SUMMARY_CV, "experience": [{**SUMMARY_CV["experience"][0], "description": "x" * 20000}]}
+    facts = suggestion_service.cv_facts(cv, include_descriptions=True)
+    assert len(facts) == suggestion_service.MAX_FACTS_WITH_DESCRIPTIONS_CHARS
+    assert "Skills: Payments" in facts
+
+
+def test_claude_writer_without_api_key_fails_cleanly(monkeypatch):
+    import anthropic
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
+    keyless = anthropic.Anthropic(api_key=None)
+    with pytest.raises(SuggestionError):
+        suggestion_service.ClaudeSuggestionWriter(client=keyless, model="m").write("summary", "t", {})

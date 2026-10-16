@@ -222,6 +222,14 @@ def claude_client() -> anthropic.Anthropic:
     )
 
 
+def missing_credentials(client: Any) -> bool:
+    """True for a real Claude client that has no API key (e.g. .env not read by Docker)."""
+    return isinstance(client, anthropic.Anthropic) and not client.api_key and not client.auth_token
+
+
+NO_KEY_LOG = "No Claude API key configured: set ANTHROPIC_API_KEY (or CVSMITH_CLAUDE_KEY)"
+
+
 class ClaudeCvParser:
     def __init__(self, client: Optional[anthropic.Anthropic] = None, model: Optional[str] = None):
         self.client = client or claude_client()
@@ -258,6 +266,9 @@ class ClaudeCvParser:
                 yield part, _drop_empty(_to_fragment(part, output.model_dump(mode="json")))
 
     def _request(self, content: List[Dict[str, Any]], task: str, schema: type) -> BaseModel:
+        if missing_credentials(self.client):
+            logger.error(NO_KEY_LOG)
+            raise ParseError("The CV parsing service is not available right now. Please try again later.")
         try:
             response = self.client.beta.messages.parse(
                 model=self.model,

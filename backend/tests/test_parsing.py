@@ -378,6 +378,17 @@ def test_current_role_is_explicit_in_schema_and_prompt():
     assert "current to true" in EXPERIENCE_TASK
 
 
+def test_parser_without_api_key_fails_each_part_with_a_clear_log(monkeypatch, caplog):
+    import anthropic
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
+    resume, errors = collect(ClaudeCvParser(client=anthropic.Anthropic(api_key=None), model="m").parse_text("x"))
+    assert resume == {} and set(errors) == set(PARTS)
+    assert "not available right now" in str(next(iter(errors.values())))
+    assert "No Claude API key configured" in caplog.text
+
+
 def test_parser_client_uses_cvsmith_key_and_pinned_base_url(monkeypatch):
     from app.config import get_settings
 

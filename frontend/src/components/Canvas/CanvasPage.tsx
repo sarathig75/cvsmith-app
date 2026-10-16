@@ -355,6 +355,7 @@ export function CanvasPage() {
                 <SuggestButton
                   text={draft.summary}
                   label="Professional Summary"
+                  allowEmpty
                   onClick={() =>
                     suggestWithLatest({ label: 'Professional Summary', request: { field: 'summary', text: draft.summary } })
                   }

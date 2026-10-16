@@ -1,7 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-15 · Last commit on main: ad80f31 (new start page); this note sits on top of it.
-Everything is merged (session branch `claude/clever-meitner-049zyv`). Pilot not deployed yet.
+Updated: 2026-10-16 · Last commit on main: this note's commit (summary 💡 rule, missing-key errors,
+local setup guide). Everything is merged. Pilot not deployed yet.
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
@@ -17,6 +17,9 @@ Everything is merged (session branch `claude/clever-meitner-049zyv`). Pilot not 
 - Parsing keeps the candidate's wording (`claude-sonnet-5-5`). Writing rules apply to 💡 only:
   master `.claude/skills/cv-house-style/SKILL.md`, copy in `backend/app/prompts/` (test-synced).
 - 💡 on Headline, Summary, job and project descriptions; small edits = "no change" (not counted).
+- 💡 Summary: an existing summary is only reworded (it may be a positioning statement for the
+  next role; objectives too); an empty one is written from roles, education, skills and
+  job/project descriptions (decided 2026-10-16).
 - Canvas: five groups, entries move up/down; one Classic template for preview and PDF
   (`CvTemplate.{tsx,css}`, printed from `frontend/print.html` by headless Chromium).
 - Pilot: ≤25 testers in India, invited emails only (`INVITE_ONLY`; `python -m app.cli invites
@@ -28,9 +31,12 @@ Everything is merged (session branch `claude/clever-meitner-049zyv`). Pilot not 
 - Drop-off metrics in our own `events` table (`docs/FUNNEL.md`), never CV content.
 
 ## Current state
-- Backend: pytest 151/151, flake8 clean; migrations up to 0008 (SQLite + Postgres).
-- Frontend: type-check clean, vitest 94/94, build OK. CI (GitHub Actions) green on every push.
-- Open branches / PRs: none open. `claude/trusting-darwin-wwr74d` is old and fully merged.
+- Backend: pytest 156/156, flake8 clean; migrations up to 0008 (SQLite + Postgres).
+- Frontend: type-check clean, vitest 95/95, build OK. CI (GitHub Actions) runs on every push.
+- Open branches / PRs: none open; session branches `claude/clever-meitner-049zyv` and
+  `claude/serene-thompson-8hp7uo` are fully merged.
+- User now runs the app locally on a new Windows PC with Docker (`docs/LOCAL_SETUP.md`); upload
+  and parsing confirmed working there; rest of the 3.2 checklist not yet reported.
 - Production setup rehearsed without Docker (production build behind Caddy, production-mode API,
   invite-only, code over SMTP, PDF, real client IP, backup restore). The Docker production stack
   runs for the first time on the real server.
@@ -38,12 +44,15 @@ Everything is merged (session branch `claude/clever-meitner-049zyv`). Pilot not 
   `docs/PRIVACY_DRAFT.md`, with placeholders listed; a test keeps both copies equal.
 
 ## Done this session
-- Week 9 and the Weeks 1–9 gap fixes (code login, sessions, upload from canvas, delete, rate
-  limits, move up/down, 💡 Headline, CI) — e5be3c3.
-- Pilot: invite-only mode (06b95eb), `deploy/` + `docs/DEPLOY.md` (28f97a3), privacy draft (a24a076).
-- New start page (ad80f31); Google sign-in hidden there until its client ID is set.
+- `docs/LOCAL_SETUP.md`: step-by-step Windows + Docker guide (setup, testing, troubleshooting).
+- A missing Claude API key now logs "No Claude API key configured" and fails parsing/💡 cleanly
+  instead of a generic error (cause of the user's first local failure: `.env` not read).
+- 💡 Summary rule above, in `cv-house-style` (skill + backend copy) and the suggestion prompt;
+  checked against the real API (positioning kept, empty summary written from facts).
 
 ## Next steps
+0. User finishes the local checklist (`docs/LOCAL_SETUP.md` 3.2), incl. 💡 on an empty and a
+   positioning-style summary; fix what they report.
 1. User decides the domain and the privacy details (operator, contact, applicable law); Claude
    fills the placeholders (`frontend/src/pages/privacyText.ts`, then
    `cd frontend && npx vite-node scripts/privacy-md.ts`).
@@ -56,7 +65,7 @@ Everything is merged (session branch `claude/clever-meitner-049zyv`). Pilot not 
 ## Open questions for the user
 - Which domain name?
 - Privacy notice: operator name, contact email, applicable law.
-- Delete the old branch `claude/trusting-darwin-wwr74d`?
+- Re-upload the changed `cv-house-style` skill to claude.ai (zip given on 2026-10-16): confirm done.
 
 ## Setup notes
 - Backend: `cd backend && python3.11 -m venv .venv && .venv/bin/pip install -r requirements.txt`.

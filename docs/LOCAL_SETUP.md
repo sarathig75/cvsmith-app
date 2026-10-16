@@ -45,7 +45,11 @@ git --version
 
 ### 1.4 Install Docker Desktop
 1. Download from https://www.docker.com/products/docker-desktop/ (or `winget install --id Docker.DockerDesktop -e`).
-2. Run the installer. Keep **"Use WSL 2 instead of Hyper-V"** ticked.
+2. Run the installer. Choose **All users** if asked (needs admin rights) and keep
+   **"Use WSL 2 instead of Hyper-V"** ticked. Docker only works for Windows accounts in the
+   `docker-users` group; the installer adds the account that installs it. To use Docker from
+   another account, in an admin PowerShell run
+   `net localgroup docker-users "<Windows username>" /add`, then sign out and back in.
 3. Restart if asked, then start **Docker Desktop** and accept the terms. Signing in to a Docker
    account is optional (you can skip it).
 4. Wait until the bottom-left of Docker Desktop shows **"Engine running"** (green).
@@ -86,6 +90,8 @@ Notes:
 - The file must be named exactly `.env` (not `.env.txt`) and sit in the `cvsmith-app` folder,
   next to `docker-compose.yml`. `-Encoding ascii` avoids the invisible "BOM" character that stops
   Docker from reading the file.
+- Docker reads `.env` only when it creates the containers. If you create or change `.env`
+  after the app has started, run `docker compose up -d` (not `restart`).
 - `.env` is ignored by Git: it is never committed. Never paste the key into chat, code or documents.
 
 ---
@@ -178,11 +184,13 @@ run `docker compose restart`.
 
 | Problem | Fix |
 |---|---|
+| `git` is not recognised | Close all PowerShell windows and open a new one. If it still fails, `Test-Path "C:\Program Files\Git\cmd\git.exe"`: `False` = install Git (1.3); `True` = rerun the Git installer and keep "Git from the command line and also from 3rd-party software". |
 | `docker` is not recognised | Open a new PowerShell window after installing; check Docker Desktop is running. |
-| "Cannot connect to the Docker daemon" / pipe error | Start Docker Desktop and wait for "Engine running". |
+| "Cannot connect to the Docker daemon" / `failed to connect to the docker API at npipe:////./pipe/docker_engine` | Start Docker Desktop and wait for "Engine running". |
 | Docker Desktop says WSL is missing or too old | Admin PowerShell: `wsl --update`, then restart Docker Desktop. |
 | Docker Desktop won't start, virtualisation error | Enable VT-x / AMD-V in BIOS (see 1.1). |
 | Warning `ANTHROPIC_API_KEY variable is not set` | `.env` is missing, misnamed (`.env.txt`) or in the wrong folder; recreate it as in 1.6, then `docker compose up -d`. |
+| Upload fails with "Something went wrong" or "not available right now", and `docker compose logs celery` shows `Could not resolve authentication method` or `No Claude API key configured` | The containers have no API key. Check `Get-ChildItem -Force .env*` shows exactly `.env`; recreate it as in 1.6; then `docker compose up -d` (a `restart` does not re-read `.env`). Check with `docker compose exec celery sh -c 'if [ -n "$ANTHROPIC_API_KEY" ]; then echo key set; else echo key MISSING; fi'`. |
 | Upload stays on "parsing" or fails | `docker compose logs celery --tail 50`: an authentication error means the API key is wrong; check `.env`, then `docker compose up -d`. |
 | No login code in the log | Use `docker compose logs backend --tail 50` and request a new code (you can after 60 seconds). |
 | "port is already allocated" (5432, 6379, 8000 or 5173) | Another program uses that port (often a locally installed PostgreSQL). Stop it, or run `docker compose down` and try again. |

@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.models.suggestion import Suggestion
 from app.models.user import User, utcnow
-from app.services.cv_parser import claude_client
+from app.services.cv_parser import NO_KEY_LOG, claude_client, missing_credentials
 from app.utils import errors
 
 logger = logging.getLogger("cvsmith.suggestions")
@@ -39,10 +39,13 @@ TASK = """You improve one field of a CV, following the house style above.
   action verbs, outcomes made prominent, vague phrases or first person removed. Small edits
   (an added article, a synonym, punctuation) are not worth it: then return the text unchanged
   and set changed to false. Likewise if it already follows the rules.
-- A summary written as an objective (what the candidate wants, e.g. "Seeking a challenging
-  role...") is not a summary: rewrite it as a short factual professional summary of who the
-  candidate is, using only facts listed under <cv_facts>. If there are too few facts for that,
-  return the text unchanged and set changed to false.
+- An existing summary may be a positioning statement for the role the candidate is aiming
+  for rather than an account of their past: improve its wording only. Keep its content,
+  intent and claims, and do not add anything to it.
+- If the summary in <text> is empty, write a short professional summary (2-4 sentences, no
+  first person) of who the candidate is, using only the facts under <cv_facts>: roles, scope,
+  domain and main achievements. If there are too few facts for that, return the text
+  unchanged and set changed to false.
 - A headline is one line of at most 12 words, not a sentence: role identity first, then the
   main specialism or domain, e.g. "Senior Product Manager · Payments & Lending". Base it on the
   current role(s) (marked "current") and the summary under <cv_facts>; use only those facts.
@@ -85,6 +88,9 @@ class ClaudeSuggestionWriter:
         if context.get("cv_facts"):
             lines.append(f"<cv_facts>\n{context['cv_facts']}\n</cv_facts>")
         lines.append(f"<text>\n{text}\n</text>")
+        if missing_credentials(self.client):
+            logger.error(NO_KEY_LOG)
+            raise SuggestionError
         try:
             response = self.client.beta.messages.parse(
                 model=self.model,
@@ -112,12 +118,15 @@ class ClaudeSuggestionWriter:
 
 
 MAX_FACTS_CHARS = 3000
+MAX_FACTS_WITH_DESCRIPTIONS_CHARS = 8000
 
 
-def cv_facts(content: Optional[dict], include_summary: bool = False) -> str:
-    """Facts from the rest of the saved CV, so a summary can be written from them.
+def cv_facts(content: Optional[dict], include_summary: bool = False, include_descriptions: bool = False) -> str:
+    """Facts from the rest of the saved CV, so a headline or summary can be written from them.
 
-    Only titles, employers, dates, degrees, skills and certifications: no contact details.
+    Titles, employers, dates, degrees, skills and certifications, plus (include_descriptions)
+    job and project descriptions after them, so a cut at the limit only shortens those.
+    No contact details.
     """
     c = content if isinstance(content, dict) else {}
     personal = c.get("personal") if isinstance(c.get("personal"), dict) else {}
@@ -147,7 +156,20 @@ def cv_facts(content: Optional[dict], include_summary: bool = False) -> str:
     summary = c.get("summary") if isinstance(c.get("summary"), str) else ""
     if include_summary and summary.strip():
         rows.append(f"Summary: {summary.strip()}")
-    return "\n".join(r for r in rows if not r.endswith(": "))[:MAX_FACTS_CHARS]
+    if not include_descriptions:
+        return "\n".join(r for r in rows if not r.endswith(": "))[:MAX_FACTS_CHARS]
+
+    def description(e):
+        return e["description"].strip() if isinstance(e.get("description"), str) else ""
+
+    for e in entries("experience"):
+        if description(e):
+            role = ", ".join(x for x in (e.get("title"), e.get("company")) if x)
+            rows.append(f"Work ({role}): {description(e)}")
+    for e in entries("projects"):
+        if description(e):
+            rows.append(f"Project ({e.get('name') or 'untitled'}): {description(e)}")
+    return "\n".join(r for r in rows if not r.endswith(": "))[:MAX_FACTS_WITH_DESCRIPTIONS_CHARS]
 
 
 def get_writer() -> SuggestionWriter:
@@ -193,14 +215,19 @@ def suggest(
     text = text.strip()
     if field == "headline":
         text = " ".join(text.split())  # one line
-    if not text and field != "headline":  # an empty headline gets a fresh one
+    if not text and field not in ("headline", "summary"):  # an empty headline or summary gets a fresh one
         raise errors.validation_error("There is no text in this field to improve yet.")
     if len(text) > MAX_TEXT_CHARS:
         raise errors.validation_error(f"This field is too long to improve at once (over {MAX_TEXT_CHARS} characters).")
-    if field in ("summary", "headline"):
-        context = {**context, "cv_facts": cv_facts(cv_content, include_summary=field == "headline")}
-        if field == "headline" and not text and not context["cv_facts"]:
+    if field == "headline":
+        context = {**context, "cv_facts": cv_facts(cv_content, include_summary=True)}
+        if not text and not context["cv_facts"]:
             raise errors.validation_error("Add your current role or a summary first, then we can suggest a headline.")
+    elif field == "summary" and not text:
+        # Only a new summary is written from the CV; an existing one keeps its content.
+        context = {**context, "cv_facts": cv_facts(cv_content, include_descriptions=True)}
+        if not context["cv_facts"]:
+            raise errors.validation_error("Add your work experience first, then we can suggest a summary.")
     if quota(db, user)["remaining"] <= 0:
         raise errors.quota_exceeded()
     try:

@@ -37,6 +37,10 @@ order, no text inside images, graphics or tables.
   several things (e.g. "OWS", "HDR"), leave it exactly as written. Never ask the candidate.
 - **Keep meaning and scope.** "Supported the migration" must not become "Led the migration".
   If ownership is unclear, keep the weaker verb.
+- **An existing summary keeps its content.** It may be a positioning statement for the role
+  the candidate is aiming for rather than an account of their past, so improve only its
+  wording: keep its intent and claims, and add nothing. Write a new summary only when there is
+  none, from the candidate's experience in the rest of the CV.
 - **Re-ordering is allowed** as a suggestion: sections (e.g. projects before work experience
   for a fresher) or bullets (strongest outcome first).
 
