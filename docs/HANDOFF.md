@@ -66,6 +66,7 @@ Everything is merged (session branch `claude/clever-meitner-049zyv`). Pilot not 
   `/opt/pw-browsers/chromium-1194/chrome-linux/chrome`) and the frontend at `PDF_TEMPLATE_URL`.
 - API key: `CVSMITH_CLAUDE_KEY` in the Claude Code cloud environment, `ANTHROPIC_API_KEY` in the
   root `.env` for Docker. Never commit or print keys.
+- Local Docker on Windows, step by step: `docs/LOCAL_SETUP.md`.
 - Local Docker (user's Windows machine): login codes appear in `docker compose logs backend
   --tail 20`. After code changes `docker compose restart`; after Dockerfile/requirements changes
   `docker compose up -d --build`. If `.env` isn't read: save it as UTF-8 without BOM.
