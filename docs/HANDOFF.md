@@ -48,7 +48,8 @@ Everything is merged (session branch `claude/serene-thompson-8hp7uo`). Pilot not
 ## Next steps
 1. User finishes `docs/LOCAL_SETUP.md` 3.2 (incl. 💡 on an empty and a positioning summary,
    PDF, JSON export, Google sign-in with a test user); fix what they report.
-2. ATS score, before and after (design agreed 2026-10-23, not built; waiting for a go-ahead):
+2. ATS score, before and after (design agreed 2026-10-23; placement: a Canvas panel; PDF stays
+   the only export, no DOCX for now; NOT started: the user said "not yet" on 2026-10-23):
    - Two numbers, each with its list of checks, labelled as CVSmith's own checklist, not a
      real ATS's score.
    - Format score (no job needed): before = the uploaded file (text layer, columns, tables,
@@ -68,7 +69,7 @@ Everything is merged (session branch `claude/serene-thompson-8hp7uo`). Pilot not
    tabs = last write wins.
 
 ## Open questions for the user
-- Go-ahead for the ATS score (step 2), and where to show it: a Canvas panel or a separate page?
+- Go-ahead to start the ATS score (step 2). Placement and PDF-only are decided (Canvas panel).
 - Which domain name? Privacy notice: operator name, contact email, applicable law (still open).
 
 ## Setup notes
