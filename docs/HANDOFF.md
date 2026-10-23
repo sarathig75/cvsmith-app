@@ -1,7 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-17 · Last commit on main: 7f13e02 Summary suggestions keep existing content;
-clear error for a missing API key (this note sits on top). Everything is merged. Pilot not deployed.
+Updated: 2026-10-23 · Last commit on main: 05f30f2 Add local-troubleshoot skill and a diagnostic file.
+Everything is merged (this note's commit sits on top). Pilot not deployed.
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
@@ -38,6 +38,8 @@ clear error for a missing API key (this note sits on top). Everything is merged.
 - Privacy notice: DRAFT at `/privacy` and `docs/PRIVACY_DRAFT.md`, placeholders still open.
 
 ## Done this session
+- 2026-10-23: Google sign-in steps in `docs/LOCAL_SETUP.md` 1.7; the user re-uploaded `cv-house-style`
+  to claude.ai; `local-troubleshoot` skill zip sent for claude.ai.
 - `docs/LOCAL_SETUP.md`: step-by-step Windows + Docker guide (bf7371b, extended in 7f13e02).
 - Missing Claude API key → log "No Claude API key configured" and a clear parse/💡 failure
   instead of a generic error (7f13e02). Cause of the user's first local failure: `.env` not read.
@@ -47,21 +49,18 @@ clear error for a missing API key (this note sits on top). Everything is merged.
 ## Next steps
 1. User finishes `docs/LOCAL_SETUP.md` 3.2 (incl. 💡 on an empty and a positioning summary,
    PDF, JSON export, Google sign-in with a test user); fix what they report.
-2. If the user agrees: add an optional "Google sign-in" section to `docs/LOCAL_SETUP.md` (create
-   OAuth client, test users, origin, `GOOGLE_OAUTH_CLIENT_ID` in `.env`, `docker compose up -d`,
-   `invalid_client` = wrong/unactivated ID).
-3. Domain + privacy details from the user; Claude fills `frontend/src/pages/privacyText.ts`,
+2. Domain + privacy details from the user; Claude fills `frontend/src/pages/privacyText.ts`,
    then `cd frontend && npx vite-node scripts/privacy-md.ts`.
-4. Pilot go-live per `docs/DEPLOY.md`; add `https://DOMAIN` to the OAuth client's origins and
+3. Pilot go-live per `docs/DEPLOY.md`; add `https://DOMAIN` to the OAuth client's origins and
    the pilot testers as Google test users (or publish the consent screen).
+4. ATS score (before/after CV): design not decided; see open questions.
 5. Week 10: billing (Stripe checkout and webhooks, Pro upgrade, receipts, admin dashboard).
 6. Known issues: scanned-CV check; employer-wide bullets land under the latest title; two open
    tabs = last write wins.
 
 ## Open questions for the user
-- Add the Google sign-in steps to `docs/LOCAL_SETUP.md`? (asked twice, no answer yet)
-- Re-uploaded the changed `cv-house-style` skill to claude.ai?
-- Which domain name? Privacy notice: operator name, contact email, applicable law.
+- Which domain name? Privacy notice: operator name, contact email, applicable law (still open).
+- ATS % score: which checks, and how to present it (see the 2026-10-23 discussion).
 
 ## Setup notes
 - Local problems: use the `local-troubleshoot` skill (symptom table + diagnostic file,

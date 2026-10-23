@@ -96,6 +96,38 @@ Notes:
 
 ---
 
+### 1.7 Optional: Google sign-in
+The Google button on the start page appears only when `GOOGLE_OAUTH_CLIENT_ID` is in `.env`.
+Skip this section if email codes are enough.
+
+1. In Google Cloud console (https://console.cloud.google.com) choose or create a project, e.g. "CVSmith".
+   The Gemini API key is **not** this: sign-in needs an OAuth client ID.
+2. **Google Auth Platform → Get started** (or **APIs & Services → OAuth consent screen**):
+   app name `CVSmith`, support email your Gmail, audience **External**, then Create.
+3. **Audience → Test users → Add users**: add every Gmail account that should sign in.
+   While the app is in **Testing**, other accounts are blocked.
+4. **Clients → Create client → Web application**:
+   - **Authorized JavaScript origins:** `http://localhost:5173` (exactly: http, no trailing slash)
+   - Redirect URIs: leave empty
+   - Create, then copy the **Client ID** (ends in `.apps.googleusercontent.com`). Do not use the
+     client secret (starts with `GOCSPX-`).
+5. Add the ID to `.env` (keep the existing lines):
+   ```powershell
+   cd $HOME\Documents\cvsmith-app
+   Add-Content -Path .env -Value "GOOGLE_OAUTH_CLIENT_ID=<your client id>" -Encoding ascii
+   docker compose up -d
+   ```
+   Use `up -d`, not `restart`, so the containers read the new line.
+6. Reload http://localhost:5173 with **Ctrl+F5**. The Google button appears.
+
+Common errors:
+- **`Error 401: invalid_client` / "The OAuth client was not found"**: the ID in `.env` does not
+  match the console (placeholder left in, `< >` or quotes, partial copy, secret used instead).
+  Check with `docker compose exec frontend printenv VITE_GOOGLE_OAUTH_CLIENT_ID`. A brand-new
+  client can take a few minutes to start working.
+- **`origin_mismatch`**: `http://localhost:5173` is missing from the origins; add it and save.
+- **Access blocked / "has not completed the verification"**: the account is not in Test users.
+
 ## 2. Start the app
 
 ### 2.1 First start (builds the images; 5–15 minutes the first time)
