@@ -1,7 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-23 · Last commit on main: 05f30f2 Add local-troubleshoot skill and a diagnostic file.
-Everything is merged (this note's commit sits on top). Pilot not deployed.
+Updated: 2026-10-23 · Last commit on main: 65a3f5a docs: Google sign-in setup in LOCAL_SETUP; handoff update.
+Everything is merged (session branch `claude/serene-thompson-8hp7uo`). Pilot not deployed.
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
@@ -38,29 +38,38 @@ Everything is merged (this note's commit sits on top). Pilot not deployed.
 - Privacy notice: DRAFT at `/privacy` and `docs/PRIVACY_DRAFT.md`, placeholders still open.
 
 ## Done this session
-- 2026-10-23: Google sign-in steps in `docs/LOCAL_SETUP.md` 1.7; the user re-uploaded `cv-house-style`
-  to claude.ai; `local-troubleshoot` skill zip sent for claude.ai.
+- 2026-10-23: `local-troubleshoot` skill + diagnostic file (05f30f2); Google sign-in steps in
+  `docs/LOCAL_SETUP.md` 1.7 (65a3f5a). The user re-uploaded `cv-house-style` to claude.ai.
 - `docs/LOCAL_SETUP.md`: step-by-step Windows + Docker guide (bf7371b, extended in 7f13e02).
-- Missing Claude API key → log "No Claude API key configured" and a clear parse/💡 failure
-  instead of a generic error (7f13e02). Cause of the user's first local failure: `.env` not read.
+- Missing Claude API key → clear log and parse/💡 failure instead of a generic error (7f13e02).
 - 💡 Summary rule in the skill, backend copy, prompt and contract; empty summary → "Suggest"
-  button; checked against the real API (7f13e02). Skill zip sent for claude.ai re-upload.
+  button; checked against the real API (7f13e02).
 
 ## Next steps
 1. User finishes `docs/LOCAL_SETUP.md` 3.2 (incl. 💡 on an empty and a positioning summary,
    PDF, JSON export, Google sign-in with a test user); fix what they report.
-2. Domain + privacy details from the user; Claude fills `frontend/src/pages/privacyText.ts`,
+2. ATS score, before and after (design agreed 2026-10-23, not built; waiting for a go-ahead):
+   - Two numbers, each with its list of checks, labelled as CVSmith's own checklist, not a
+     real ATS's score.
+   - Format score (no job needed): before = the uploaded file (text layer, columns, tables,
+     images, headings, date format, contact at the top, file size); after = the generated PDF.
+   - Job match (optional): keywords from a pasted job description vs the CV, shown separately.
+   - Fixed checklist, not an AI rating, so results repeat. Column and table checks are
+     heuristics. The "after" CV is single-column by design, so it must also be scored on
+     completeness (sections, dates, contact) or it always looks ready.
+   - The ATS article the user shared says it is not a formal standard and cites no sources:
+     use it as practical guidance only; verify figures (e.g. file-size limits) before quoting.
+3. Domain + privacy details from the user; Claude fills `frontend/src/pages/privacyText.ts`,
    then `cd frontend && npx vite-node scripts/privacy-md.ts`.
-3. Pilot go-live per `docs/DEPLOY.md`; add `https://DOMAIN` to the OAuth client's origins and
+4. Pilot go-live per `docs/DEPLOY.md`; add `https://DOMAIN` to the OAuth client's origins and
    the pilot testers as Google test users (or publish the consent screen).
-4. ATS score (before/after CV): design not decided; see open questions.
 5. Week 10: billing (Stripe checkout and webhooks, Pro upgrade, receipts, admin dashboard).
 6. Known issues: scanned-CV check; employer-wide bullets land under the latest title; two open
    tabs = last write wins.
 
 ## Open questions for the user
+- Go-ahead for the ATS score (step 2), and where to show it: a Canvas panel or a separate page?
 - Which domain name? Privacy notice: operator name, contact email, applicable law (still open).
-- ATS % score: which checks, and how to present it (see the 2026-10-23 discussion).
 
 ## Setup notes
 - Local problems: use the `local-troubleshoot` skill (symptom table + diagnostic file,
