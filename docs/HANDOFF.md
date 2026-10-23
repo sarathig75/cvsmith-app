@@ -64,6 +64,8 @@ clear error for a missing API key (this note sits on top). Everything is merged.
 - Which domain name? Privacy notice: operator name, contact email, applicable law.
 
 ## Setup notes
+- Local problems: use the `local-troubleshoot` skill (symptom table + diagnostic file,
+  `docs/LOCAL_SETUP.md` 5.1); add each newly solved problem to both.
 - Local Docker on Windows: follow `docs/LOCAL_SETUP.md`. Root `.env` holds `ANTHROPIC_API_KEY`
   and `GOOGLE_OAUTH_CLIENT_ID`; write it with `-Encoding ascii`; after any `.env` change run
   `docker compose up -d` (restart does not re-read it). Codes: `docker compose logs backend`.

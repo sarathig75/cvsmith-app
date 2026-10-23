@@ -182,6 +182,35 @@ run `docker compose restart`.
 
 ## 5. Troubleshooting
 
+### 5.1 Collect a diagnostic file
+If something fails and the table below doesn't solve it, run this block (copy all of it) and
+send Claude the file it opens, `cvsmith-diag.txt`. It contains no secrets: only the *names* of
+the settings in `.env`, "key set" or "key MISSING", container status and the latest logs.
+
+```powershell
+cd $HOME\Documents\cvsmith-app
+& {
+  "== git";        git log --oneline -1; git status --short
+  "== .env files"; Get-ChildItem -Force -Name .env*
+  "== .env names"; Get-Content .env | ForEach-Object { ($_ -split '=', 2)[0] }
+  "== .env BOM";   if (((Get-Content .env -Encoding Byte -TotalCount 3) -join ',') -eq '239,187,191') { 'BOM present' } else { 'no BOM' }
+  "== docker";     docker version --format '{{.Server.Version}}'
+  "== containers"; docker compose ps -a
+  "== keys"
+  foreach ($s in 'backend', 'celery') {
+    "$s : " + (docker compose exec -T $s sh -c 'case ${ANTHROPIC_API_KEY:-}${CVSMITH_CLAUDE_KEY:-} in ?*) echo key set;; *) echo key MISSING;; esac')
+  }
+  "frontend google id : " + (docker compose exec -T frontend sh -c 'case ${VITE_GOOGLE_OAUTH_CLIENT_ID:-} in ?*) echo set;; *) echo not set;; esac')
+  "== health";     try { (Invoke-WebRequest -UseBasicParsing http://localhost:8000/api/health).Content } catch { "health check failed: $_" }
+  foreach ($s in 'backend', 'celery', 'frontend') { "== logs $s"; docker compose logs --tail 60 $s }
+} *>&1 | Out-File -Encoding utf8 cvsmith-diag.txt
+notepad cvsmith-diag.txt
+```
+
+A red error on one line (for example `.env BOM` in PowerShell 7) is fine: the rest still runs.
+
+### 5.2 Common problems
+
 | Problem | Fix |
 |---|---|
 | `git` is not recognised | Close all PowerShell windows and open a new one. If it still fails, `Test-Path "C:\Program Files\Git\cmd\git.exe"`: `False` = install Git (1.3); `True` = rerun the Git installer and keep "Git from the command line and also from 3rd-party software". |
@@ -190,7 +219,7 @@ run `docker compose restart`.
 | Docker Desktop says WSL is missing or too old | Admin PowerShell: `wsl --update`, then restart Docker Desktop. |
 | Docker Desktop won't start, virtualisation error | Enable VT-x / AMD-V in BIOS (see 1.1). |
 | Warning `ANTHROPIC_API_KEY variable is not set` | `.env` is missing, misnamed (`.env.txt`) or in the wrong folder; recreate it as in 1.6, then `docker compose up -d`. |
-| Upload fails with "Something went wrong" or "not available right now", and `docker compose logs celery` shows `Could not resolve authentication method` or `No Claude API key configured` | The containers have no API key. Check `Get-ChildItem -Force .env*` shows exactly `.env`; recreate it as in 1.6; then `docker compose up -d` (a `restart` does not re-read `.env`). Check with `docker compose exec celery sh -c 'if [ -n "$ANTHROPIC_API_KEY" ]; then echo key set; else echo key MISSING; fi'`. |
+| Upload fails with "Something went wrong" or "not available right now", and `docker compose logs celery` shows `Could not resolve authentication method` or `No Claude API key configured` | The containers have no API key. Check `Get-ChildItem -Force .env*` shows exactly `.env`; recreate it as in 1.6; then `docker compose up -d` (a `restart` does not re-read `.env`). Check with the `keys` lines of the diagnostic file (5.1). |
 | Upload stays on "parsing" or fails | `docker compose logs celery --tail 50`: an authentication error means the API key is wrong; check `.env`, then `docker compose up -d`. |
 | No login code in the log | Use `docker compose logs backend --tail 50` and request a new code (you can after 60 seconds). |
 | "port is already allocated" (5432, 6379, 8000 or 5173) | Another program uses that port (often a locally installed PostgreSQL). Stop it, or run `docker compose down` and try again. |
