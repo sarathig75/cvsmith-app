@@ -51,7 +51,9 @@ Everything is merged (session branch `claude/serene-thompson-8hp7uo`). Pilot not
 2. Job alignment (planned 2026-10-23, Release 1; NOT built). Decided: a one-box "Job spec" on the
    Canvas (filled = align route, empty = usual flow); changes the CV through accept/decline like 💡;
    Pro only, separate quota from 💡; spec deleted after the run; Sonnet (`claude-sonnet-5-5`).
-   Gaps are flagged missing/weak/covered; ideas are never written into the CV. Visual mockup:
+   Gaps: MISSING = action needed (the user adds it only if true, or dismisses); WEAK = addressed by
+   a suggestion (shown as "Addressed", not as a gap); COVERED = no action. Ideas are never written
+   into the CV. Visual mockup (v3):
    https://claude.ai/artifact/TDD8nQEuGeyhgcwmKvKDpZ (sample data). Waiting: mockup sign-off, then
    the contract change in `docs/API_CONTRACT.md` before any code.
 2b. ATS score, before and after (design agreed 2026-10-23; placement: a Canvas panel; PDF stays
