@@ -48,7 +48,13 @@ Everything is merged (session branch `claude/serene-thompson-8hp7uo`). Pilot not
 ## Next steps
 1. User finishes `docs/LOCAL_SETUP.md` 3.2 (incl. 💡 on an empty and a positioning summary,
    PDF, JSON export, Google sign-in with a test user); fix what they report.
-2. ATS score, before and after (design agreed 2026-10-23; placement: a Canvas panel; PDF stays
+2. Job alignment (planned 2026-10-23, Release 1; NOT built). Decided: a one-box "Job spec" on the
+   Canvas (filled = align route, empty = usual flow); changes the CV through accept/decline like 💡;
+   Pro only, separate quota from 💡; spec deleted after the run; Sonnet (`claude-sonnet-5-5`).
+   Gaps are flagged missing/weak/covered; ideas are never written into the CV. Visual mockup:
+   https://claude.ai/artifact/TDD8nQEuGeyhgcwmKvKDpZ (sample data). Waiting: mockup sign-off, then
+   the contract change in `docs/API_CONTRACT.md` before any code.
+2b. ATS score, before and after (design agreed 2026-10-23; placement: a Canvas panel; PDF stays
    the only export, no DOCX for now; NOT started: the user said "not yet" on 2026-10-23):
    - Two numbers, each with its list of checks, labelled as CVSmith's own checklist, not a
      real ATS's score.
