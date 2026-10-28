@@ -149,3 +149,78 @@ Still to decide with the user before this section is final:
 
 Until then, `checks` and `score` are returned as the framework's current draft and `framework` names
 its version, so the client never shows a number from an undecided checklist.
+
+## Suggestion effectiveness and ATS monitoring (approved 2026-10-28)
+
+Purpose: learn what suggestions and ATS rules do, without personal data leaving the database
+except as counts and reviewed terms. Nothing here is shown to users. No new public endpoints:
+reports are CLI commands for the admin (like `python -m app.cli invites`).
+
+### Data
+
+```ts
+// Migration 0009. Suggestion table: one new nullable column.
+suggestions.edited_at: timestamp | null   // first time the user changed the text after accepting
+
+// New table. No user id, no CV content.
+unmatched_terms = { id: uuid, kind: "title" | "sector" | "skill" | "verb" | "requirement",
+                    term: string (≤60 chars, lower case, single spaces),
+                    count: int, first_seen_at: timestamp, last_seen_at: timestamp,
+                    status: "open" | "ignored" | "resolved" }
+                  // unique (kind, term)
+```
+
+### Recording rules
+
+- `record_unmatched(kind, raw)`: normalise (trim, lower case, collapse spaces). Drop the term if
+  it is empty, longer than 60 characters, has more than 4 words, or contains a digit or "@".
+  Otherwise insert or increment `count` and update `last_seen_at`. Never raises: failures are
+  logged and ignored, so a user's action is never slowed or broken (same rule as funnel events).
+- Recorded only by the ATS scoring code (not built yet; step 1e). The store is built now so the
+  scoring code has somewhere to write.
+- `ignored` items are never reported again. `resolved` = added to a list.
+
+### Endpoints
+
+| Method | Path | Auth | Body | Response |
+|---|---|---|---|---|
+| POST | /api/suggestions/{id}/edited | yes | - | 204. Records `edited_at` once, the first time the user changes the text of an accepted suggestion. Idempotent. 404 `NOT_FOUND` if the suggestion is not the user's or is not accepted. No text is stored or returned |
+
+The client calls it once, when the user first edits a field whose suggestion they accepted. A
+failed call is ignored; it never blocks editing.
+
+### CLI (admin)
+
+```
+python -m app.cli suggestions report [--weeks 4]
+  per field and week: accepted, declined, unchanged, pending (ignored), edited_after_accept
+  counts only; no text, no user ids
+
+python -m app.cli unmatched report [--min-count 5]
+  open items with count ≥ min-count, grouped by kind, most seen first; prints term, count,
+  first and last seen. Nearest existing canonical names shown for skill terms (close spelling)
+
+python -m app.cli unmatched ignore "<kind>" "<term>"
+python -m app.cli unmatched resolve "<kind>" "<term>"   # after the list or alias is added
+```
+
+Cadence: `unmatched report` weekly, `suggestions report` monthly.
+
+### Evaluation set
+
+- Location: `backend/evals/`. Cases in `cases.json`: 20–30 invented CVs (no real people), across
+  software, HR, finance, sales, operations, manufacturing, automotive, pharma, FMCG and a fresher.
+  Each case: the CV content, the field to improve, and expectations.
+- Run on demand, never in pytest or CI (calls the real Claude API and costs credits):
+  `cd backend && python -m evals.run_suggestions [--case ID]`. Needs `ANTHROPIC_API_KEY` or
+  `CVSMITH_CLAUDE_KEY`.
+- Automated checks on every suggestion:
+  1. no invented numbers: every number in the suggestion appears in the field or the CV
+  2. no first person ("I", "my", "me")
+  3. no invented content for an existing summary: suggestion ≤ 1.5 × the original length
+  4. expectation: `changed` true or false as the case says (e.g. a summary already following the
+     rules must come back unchanged; an empty summary must be written)
+- Output: a summary per check, and one JSON file per run in `backend/evals/results/` (git-ignored),
+  named by date and prompt hash (`cv_house_style` + `TASK` text). Results are compared across
+  prompt versions by the same runner.
+- Pass rule: a prompt change is accepted only if no check regresses compared with the last run.
