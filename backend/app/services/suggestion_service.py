@@ -245,8 +245,7 @@ def suggest(
         raise errors.suggestion_failed()
     if field == "headline":
         suggested = " ".join(suggested.split())
-    # The model may say "changed" while returning the same text: that is not a suggestion.
-    changed = changed and bool(suggested) and suggested != text
+    changed = is_change(text, suggested)
     row = Suggestion(
         user_id=user.id,
         cv_id=cv_id,
@@ -260,6 +259,14 @@ def suggest(
     db.add(row)
     db.commit()
     return row
+
+
+def is_change(original: str, suggested: str) -> bool:
+    """A suggestion is a change when its text differs. The text decides, not the writer's flag, so a
+    rewrite is never dropped. Whitespace and letter case alone are not changes."""
+    def words(text: str) -> str:
+        return " ".join(text.lower().split())
+    return bool(suggested.strip()) and words(suggested) != words(original)
 
 
 def decide(db: Session, user: User, suggestion_id: uuid.UUID, status: str) -> Suggestion:

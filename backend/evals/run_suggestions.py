@@ -14,7 +14,7 @@ from pathlib import Path
 
 from app.services import suggestion_service
 from app.utils.errors import AppError
-from app.services.suggestion_service import ClaudeSuggestionWriter, prepare_request
+from app.services.suggestion_service import ClaudeSuggestionWriter, is_change, prepare_request
 from evals.checks import CHECK_NAMES, run_checks
 
 HERE = Path(__file__).resolve().parent
@@ -42,6 +42,7 @@ def run(only: str = None, repeats: int = 1) -> dict:
         else:
             suggested, changed = writer.write(case["field"], text, context)
             suggested = " ".join(suggested.split()) if case["field"] == "headline" else suggested.strip()
+            changed = is_change(text, suggested)  # the decision production makes
             refused = None
         checks = run_checks(case, suggested, changed, text)
         results.append({"run": attempt, "id": case["id"], "field": case["field"], "changed": changed,

@@ -219,8 +219,9 @@ Cadence: `unmatched report` weekly, `suggestions report` monthly.
   2. no first person ("I", "my", "me")
   3. no invented content for an existing summary: suggestion ≤ 1.5 × the original length
   4. expectation: `changed` true or false as the case says (`null` = not asserted)
-  5. the flag agrees with the text: if the writer says nothing changed, the text must be the same
-     (otherwise the user sees no suggestion for a rewrite the writer produced)
+  5. (retired 2026-10-28) the writer's "changed" flag. A suggestion is now a change when its text
+     differs (`is_change`: whitespace and letter case alone are not changes). The flag is ignored,
+     so a rewrite is never dropped.
 - A case the API would refuse (e.g. an empty summary with no CV facts) is run through the same
   request rules (`prepare_request`, shared with the API) and recorded as "no change", not as a crash.
 - Output: a summary per check, and one JSON file per run in `backend/evals/results/` (git-ignored),
@@ -228,6 +229,6 @@ Cadence: `unmatched report` weekly, `suggestions report` monthly.
   prompt versions by the same runner.
 - Pass rule: a prompt change is accepted only if no check regresses compared with the last run,
   measured over the same number of repeats.
-- Baseline (2026-10-28, 2 runs, prompt hash 61884741441e): no invented numbers 50/50, no first
-  person 50/50, summary not longer 48/50, expected change 40/50, flag agrees with text 42/50.
-  Consistent failures are listed in the handoff, not changed here.
+- Baseline (2026-10-28, after the text-decides fix, 2 runs, prompt hash 61884741441e): no invented
+  numbers 50/50, no first person 50/50, summary not longer 48/50, expected change 44/50.
+  28 of 50 results were changes (22 before the fix). Only 2 of the 28 were trivial edits.

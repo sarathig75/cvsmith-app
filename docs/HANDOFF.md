@@ -50,14 +50,15 @@ Everything is merged. Pilot not deployed. Nothing from the 2026-10-23/28 plans i
   (git-ignored).
 
 ## Next steps
-1. Decide on the evaluation findings (2 runs, prompt hash 61884741441e):
-   a. Flag/text mismatch (biggest, a bug): the writer returns rewritten text but says "unchanged", so the
-      user gets nothing. Options: (i) decide "changed" from the text (suggested ≠ original) and drop
-      the flag; (ii) keep the flag and fix the prompt. Recommend (i).
-   b. Summary growth: an objective-style summary grew past 1.5× (pharma case). Options: a guard that
-      rejects a summary rewrite over 1.5× (deterministic), and/or a stronger prompt rule. Recommend both.
-   c. Weak phrasing left unchanged ("Worked on…", cliché summaries). This is a prompt change. Needs
-      your sign-off on wording, then re-run the evaluation before and after.
+1. Evaluation follow-ups (prompt hash 61884741441e, 2 runs):
+   a. DONE 2026-10-28: a suggestion is a change when its text differs; the writer's flag is ignored.
+      Changes went from 22 to 28 of 50 results. Quota counts changes, so watch free-plan usage.
+   b. Summary growth past 1.5× (pharma objective case): open. Decide: a deterministic guard that
+      rejects it, and/or a stronger prompt rule.
+   c. Weak phrasing (sales "Worked on", cliché summary, auto "Helped"): a prompt change. Draft wording
+      is in the 2026-10-28 chat; it needs approval before it is applied to `SKILL.md` and the backend
+      copy, then a before-and-after evaluation. Two expectations look wrong (see the handoff notes
+      below) and need a decision.
 2. Build the ATS score (contract ATS section; lists in `docs/ATS_RULES.md`): Mode A on the dashboard,
    Mode B in job alignment; the unmatched store starts receiving terms here.
 3. Dashboard `/dashboard`, `/next`, job alignment, Canvas before/after (approved layouts:
@@ -68,8 +69,12 @@ Everything is merged. Pilot not deployed. Nothing from the 2026-10-23/28 plans i
 6. Pilot go-live per `docs/DEPLOY.md`; Week 10 billing.
 
 ## Open questions for the user
-- Evaluation findings 1a to 1c: which fixes do you approve, and do you want the prompt change (1c)
-  reviewed by you before it is run?
+- Prompt wording for weak phrasing (1c): approve the draft, which is in the 2026-10-28 chat.
+- Summary size (1b): is a size limit wanted for new summaries (proposed: 2–4 sentences, about 500
+  characters), on top of the 1.5× rule for existing summaries?
+- Eval expectations: `sales-projects-weak` ("Worked on" should stay when ownership is unclear) and
+  `auto-experience-weak` ("Helped" → "Supported" is a small change) may be wrong. Propose setting
+  both to not asserted.
 - Approve the dashboard and `/next` layouts (already shown), and the CV strength points.
 - Which domain name? Privacy notice: operator name, contact email, applicable law (still open).
 

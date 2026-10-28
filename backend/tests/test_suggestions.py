@@ -133,6 +133,7 @@ def test_decisions_are_recorded_and_private(client, auth, writer):
 
 def test_unchanged_suggestions_keep_their_status(client, auth, writer):
     writer.changed = False
+    writer.suggested = SUMMARY  # the same text (letter case and spacing aside): no change
     sid = ask(client, auth[0]).json()["id"]
     r = client.patch(f"/api/suggestions/{sid}", headers=auth[0], json={"status": "declined"})
     assert r.json()["status"] == "unchanged"
@@ -295,3 +296,20 @@ def test_claude_writer_without_api_key_fails_cleanly(monkeypatch):
     keyless = anthropic.Anthropic(api_key=None)
     with pytest.raises(SuggestionError):
         suggestion_service.ClaudeSuggestionWriter(client=keyless, model="m").write("summary", "t", {})
+
+
+def test_a_rewrite_is_a_suggestion_even_if_the_writer_says_unchanged(client, auth, writer):
+    # Before: the writer's flag decided, so this rewrite was dropped and the user saw nothing.
+    writer.changed = False
+    writer.suggested = "• Led a sales team of 12"
+    r = ask(client, auth[0])
+    assert r.status_code == 201, r.text
+    assert r.json()["changed"] is True and r.json()["status"] == "pending"
+    assert r.json()["suggested"] == "• Led a sales team of 12"
+
+
+def test_case_and_spacing_alone_are_not_a_change(client, auth, writer):
+    writer.suggested = "  " + SUMMARY.upper() + "  "
+    r = ask(client, auth[0])
+    assert r.json()["changed"] is False and r.json()["status"] == "unchanged"
+    assert quota(client, auth[0])["remaining"] == 1  # not counted against the quota

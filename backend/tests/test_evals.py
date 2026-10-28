@@ -64,11 +64,12 @@ def test_run_checks_reports_each_check_by_name():
     assert all(result.values())
 
 
-def test_flag_must_agree_with_the_text():
-    assert checks.check_flag_matches_text(True, "new", "old")
-    assert checks.check_flag_matches_text(False, "same", "same ")
-    assert not checks.check_flag_matches_text(False, "reworded", "old")
-
-
 def test_prompt_hash_is_stable_and_short():
     assert prompt_hash() == prompt_hash() and len(prompt_hash()) == 12
+
+
+def test_a_change_is_decided_by_the_text_not_the_writers_flag():
+    from app.services.suggestion_service import is_change
+    assert is_change("Old summary", "New summary")
+    assert not is_change("Old summary", "  old SUMMARY ")
+    assert not is_change("Old", "")

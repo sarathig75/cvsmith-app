@@ -37,11 +37,6 @@ def check_summary_not_longer(field: str, suggested: str, original: str) -> bool:
     return len(suggested) <= SUMMARY_GROWTH_LIMIT * len(original)
 
 
-def check_flag_matches_text(changed: bool, suggested: str, original: str) -> bool:
-    """If the writer says nothing changed, the text must be the same. Otherwise the user gets nothing."""
-    return changed or suggested.strip() == original.strip()
-
-
 def check_expected_change(expected: Optional[bool], changed: bool) -> bool:
     return True if expected is None else changed == expected
 
@@ -53,9 +48,7 @@ def run_checks(case: dict, suggested: str, changed: bool, original: str) -> dict
         "no_first_person": check_no_first_person(suggested),
         "summary_not_longer": check_summary_not_longer(case["field"], suggested, original),
         "expected_change": check_expected_change(case.get("expect_changed"), changed),
-        "flag_matches_text": check_flag_matches_text(changed, suggested, original),
     }
 
 
-CHECK_NAMES = ("no_invented_numbers", "no_first_person", "summary_not_longer", "expected_change",
-               "flag_matches_text")
+CHECK_NAMES = ("no_invented_numbers", "no_first_person", "summary_not_longer", "expected_change")
