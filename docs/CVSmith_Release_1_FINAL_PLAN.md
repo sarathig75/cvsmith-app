@@ -12,6 +12,13 @@
 ### What You're Building
 A minimal MVP that validates the core loop: candidate uploads CV → edits in live canvas → gets AI suggestions → downloads PDF + exports JSON Resume.
 
+**Scope added 2026-10-23 and 2026-10-28 (not yet built):**
+- Align CV to a job spec (Pro): one job-spec box on the dashboard; suggestions accept/decline like 💡; Sonnet; spec deleted after the run.
+- ATS format score: a fixed checklist, shown before and after on the Canvas, current score on the dashboard.
+- Dashboard as the home for logged-in users: CV strength %, ATS score, job alignment, Download PDF / JSON cards.
+- `/next` page after every download, with four cards that each open their page.
+- Journeys J1 and J2 (new and returning users): see `docs/USER_JOURNEYS.md`.
+
 ### Key Features (In Scope)
 - ✅ Google sign-in + email/password signup (Apple sign-in deferred to a later release)
 - ✅ Single-page onboarding (email, password, CV upload)
@@ -282,14 +289,14 @@ GET    /api/billing/status           → Check billing status
 ---
 
 ### Week 5–6: Live Canvas & Preview
-- [x] Dashboard layout (canvas + preview)
+- [x] Canvas layout (canvas + preview). Called "dashboard" in this week's notes; the new `/dashboard` home is separate (see scope above)
 - [x] LiveCanvas component (editable sections; five groups, agreed 2026-10-13)
 - [x] Auto-save logic (PATCH /api/cv ~2 s after the last change; "Saving… / All changes saved")
 - [x] PDF preview rendering (right panel) — live HTML preview in CV order; the real PDF is Week 9
 - [x] Merge conflict resolution (parsing + edits): parser writes `json_resume`, saves write `content`;
       parsed parts merge into empty fields only, once (`applied_parts`)
 - [x] Session persistence (restore canvas state on load)
-- [x] Frontend: Dashboard, LiveCanvas, CVPreview components
+- [x] Frontend: LiveCanvas, CVPreview components (Canvas page)
 - [x] Funnel tracking: events table + migration 0003, five steps recorded, report in `docs/FUNNEL.md`
 - [x] A new upload replaces the CV and edits only after the user confirms (agreed 2026-10-13)
 
