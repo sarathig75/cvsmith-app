@@ -14,7 +14,7 @@ from pathlib import Path
 
 from app.services import suggestion_service
 from app.utils.errors import AppError
-from app.services.suggestion_service import ClaudeSuggestionWriter, is_change, prepare_request
+from app.services.suggestion_service import ClaudeSuggestionWriter, SuggestionError, is_change, prepare_request
 from evals.checks import CHECK_NAMES, run_checks
 
 HERE = Path(__file__).resolve().parent
@@ -40,7 +40,14 @@ def run(only: str = None, repeats: int = 1) -> dict:
             # Production refuses this request (422) before any AI call: there is no suggestion.
             text, suggested, changed, refused = case["text"].strip(), "", False, exc.message
         else:
-            suggested, changed = writer.write(case["field"], text, context)
+            try:
+                suggested, changed = writer.write(case["field"], text, context)
+            except SuggestionError:
+                # The API failed (e.g. no credit): recorded, and the run carries on.
+                results.append({"run": attempt, "id": case["id"], "field": case["field"], "changed": False,
+                                "refused": "api error", "suggested": "", "checks": {}, "passed": False})
+                print(f"run {attempt} {case['id']:<30} API ERROR")
+                continue
             suggested = " ".join(suggested.split()) if case["field"] == "headline" else suggested.strip()
             changed = is_change(text, suggested)  # the decision production makes
             refused = None
@@ -51,7 +58,7 @@ def run(only: str = None, repeats: int = 1) -> dict:
         verdict = "PASS" if all(checks.values()) else "FAIL"
         failed = ", ".join(k for k, v in checks.items() if not v)
         print(f"run {attempt} {case['id']:<30} {verdict}  {failed}")
-    summary = {name: sum(1 for r in results if r["checks"][name]) for name in CHECK_NAMES}
+    summary = {name: sum(1 for r in results if r["checks"].get(name)) for name in CHECK_NAMES}
     report = {"run_at": datetime.now(timezone.utc).isoformat(), "prompt_hash": prompt_hash(),
               "model": writer.model, "repeats": repeats, "cases": len(results),
               "passed_per_check": summary, "results": results}

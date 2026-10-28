@@ -324,7 +324,7 @@
         ],
         "education": []
       },
-      "expect_changed": true
+      "expect_changed": null
     },
     {
       "id": "sales-summary-positioning",
@@ -501,7 +501,7 @@
         ],
         "education": []
       },
-      "expect_changed": true
+      "expect_changed": null
     },
     {
       "id": "auto-summary-short",

@@ -17,6 +17,8 @@ reject.
 9. Expand uncommon abbreviations on first use when the meaning is known; otherwise leave them as written.
 10. Keep sentences concise; split long sentences into separate bullet points.
 11. Never add facts that are not in the candidate's material.
+12. Replace weak phrasing when the facts show what the candidate did: "Responsible for", "helped with", "assisted with", "worked on" and "involved in" become the verb that says it. "Responsible for maintaining the payments API" becomes "Maintained the payments API". When the facts do not show it, keep the weaker verb.
+13. Remove decorative adjectives from summaries that the facts do not support, such as "highly motivated", "passionate", "results-driven" or "dynamic". If no fact is left, return the summary unchanged.
 
 For a finished document (PDF or Word), also keep it ATS-readable: real text only, one reading
 order, no text inside images, graphics or tables.

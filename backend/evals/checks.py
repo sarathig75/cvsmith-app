@@ -9,6 +9,8 @@ from typing import List, Optional
 NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
 FIRST_PERSON = re.compile(r"\b(i|my|me|myself)\b", re.IGNORECASE)
 SUMMARY_GROWTH_LIMIT = 1.5
+WORD = re.compile(r"[A-Za-z][A-Za-z0-9+#./&-]*")
+SENTENCE_BREAK = re.compile(r"[.!?;:\n•]+")
 
 
 def numbers_in(text: str) -> List[str]:
@@ -30,6 +32,24 @@ def check_no_first_person(suggested: str) -> bool:
     return FIRST_PERSON.search(suggested) is None
 
 
+def unlisted_capitalised(suggested: str, original: str, cv: Optional[dict]) -> List[str]:
+    """Capitalised words in the suggestion that the candidate never wrote: a skill, employer or name we
+    would be inventing. The first word of each sentence or bullet is skipped (it is capitalised anyway)."""
+    corpus = " ".join([original or "", json.dumps(cv or {}, ensure_ascii=False)]).lower()
+    known = set(WORD.findall(corpus))
+    unlisted = []
+    for segment in SENTENCE_BREAK.split(suggested):
+        words = WORD.findall(segment)
+        for word in words[1:]:
+            if word[0].isupper() and len(word) > 1 and word.lower() not in known and word not in unlisted:
+                unlisted.append(word)
+    return unlisted
+
+
+def check_no_unlisted_skills_or_employers(suggested: str, original: str, cv: Optional[dict]) -> bool:
+    return not unlisted_capitalised(suggested, original, cv)
+
+
 def check_summary_not_longer(field: str, suggested: str, original: str) -> bool:
     """An existing summary is reworded, not extended: at most 1.5 times its length."""
     if field != "summary" or not original.strip():
@@ -47,8 +67,10 @@ def run_checks(case: dict, suggested: str, changed: bool, original: str) -> dict
         "no_invented_numbers": check_no_invented_numbers(suggested, original, case.get("cv")),
         "no_first_person": check_no_first_person(suggested),
         "summary_not_longer": check_summary_not_longer(case["field"], suggested, original),
+        "no_unlisted_skills_or_employers": check_no_unlisted_skills_or_employers(suggested, original, case.get("cv")),
         "expected_change": check_expected_change(case.get("expect_changed"), changed),
     }
 
 
-CHECK_NAMES = ("no_invented_numbers", "no_first_person", "summary_not_longer", "expected_change")
+CHECK_NAMES = ("no_invented_numbers", "no_first_person", "summary_not_longer", "expected_change",
+               "no_unlisted_skills_or_employers")

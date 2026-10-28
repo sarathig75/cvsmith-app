@@ -64,6 +64,21 @@ def test_run_checks_reports_each_check_by_name():
     assert all(result.values())
 
 
+def test_capitalised_words_must_come_from_the_cv():
+    cv = {"experience": [{"description": "Built reports in Power BI for Northwind Logistics"}]}
+    assert checks.unlisted_capitalised("Built reports in Power BI", "", cv) == []
+    assert checks.unlisted_capitalised("Used Tableau for Northwind Logistics", "", cv) == ["Tableau"]
+    assert checks.unlisted_capitalised("Joined Contoso Ltd in 2019", "", cv) == ["Contoso", "Ltd"]
+
+
+def test_sentence_and_bullet_starts_are_not_flagged():
+    assert checks.unlisted_capitalised("Led the team. Delivered results. • Managed budgets", "", None) == []
+
+
+def test_original_text_counts_as_listed():
+    assert checks.unlisted_capitalised("Worked with Tableau", "I used Tableau daily", None) == []
+
+
 def test_prompt_hash_is_stable_and_short():
     assert prompt_hash() == prompt_hash() and len(prompt_hash()) == 12
 
