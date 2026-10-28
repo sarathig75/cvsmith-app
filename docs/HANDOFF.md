@@ -38,6 +38,9 @@ Everything is merged. Pilot not deployed. Nothing from the 2026-10-23/28 plans i
 - Privacy notice: DRAFT at `/privacy` and `docs/PRIVACY_DRAFT.md`, placeholders still open.
 
 ## Done this session
+- 2026-10-28: ATS framework agreed (two modes, 100 points each); fixed lists approved, incl.
+  automotive, pharma, FMCG (`docs/ATS_RULES.md`). Unmatched items: not scored, not shown, stored
+  with text for review at ≥5 sightings.
 - 2026-10-28: `docs/USER_JOURNEYS.md` (J1 new user, J2 returning user, dashboard, `/next`).
   Release plan scope updated (dashboard, `/next`, ATS, job alignment) and its "Dashboard" items
   corrected: they described the Canvas page.
@@ -50,30 +53,32 @@ Everything is merged. Pilot not deployed. Nothing from the 2026-10-23/28 plans i
 - 💡 Summary rule: an existing summary is only reworded; an empty one is written from the CV (7f13e02).
 
 ## Next steps
-1. User checks the local checklist (`docs/LOCAL_SETUP.md` 3.2) and reports what fails.
-2. Build the agreed plan, in this order, with the contract (`docs/API_CONTRACT.md`) first:
-   a. Dashboard `/dashboard` (home for logged-in users) and login routing (CV → dashboard;
-      no CV → dashboard with upload prompt). Shows CV strength %, ATS current score, job-alignment
-      panel, and the Download PDF / JSON cards. Source of truth: `docs/USER_JOURNEYS.md`.
-   b. CV strength %: points per section (table in `docs/USER_JOURNEYS.md`; user must confirm).
-   c. `/next` page after every download (four cards that open their page; never blocks a download).
-   d. ATS format score: a fixed checklist; Canvas shows before (saved when the CV is parsed; the
-      upload is deleted, so only the numbers and check names are kept) and after; dashboard shows
-      current only. Heuristic checks (columns, tables) must be labelled as such.
-   e. Job alignment (Pro, Sonnet, separate quota; sample result for Free users; spec deleted after).
-   Gaps: MISSING = action; WEAK = "Addressed" by a suggestion; COVERED = none.
-3. Phone mockups are reviewed (above). Approve the desktop and phone layouts before (a) starts.
-4. Domain + privacy details from the user; Claude fills `frontend/src/pages/privacyText.ts`,
-   then `cd frontend && npx vite-node scripts/privacy-md.ts`.
-5. Pilot go-live per `docs/DEPLOY.md`; add `https://DOMAIN` to the OAuth client's origins and
+1. ATS score (approved framework: `docs/API_CONTRACT.md` ATS section; fixed lists approved:
+   `docs/ATS_RULES.md`). Build order, contract first:
+   a. Unmatched-item store (item text, kind, count, first/last seen; no user id) and a weekly
+      report (items seen ≥ 5 times). Contract first.
+   b. Suggestion counts: accepted / declined / unchanged / pending per field and week; plus an
+      "edited after accepting" count (no text).
+   c. Evaluation set: 20–30 invented CVs (incl. manufacturing, automotive, pharma, FMCG, fresher)
+      with checks: no invented numbers or employers, no first person, expected ATS result. Runs on
+      demand against the real API; results recorded per prompt version. Costs API credits.
+   d. Dashboard `/dashboard` and `/next` (approved layouts: `https://claude.ai/artifact/4CzxsdYGX3LX2KAUooUS8K`).
+      Source of truth: `docs/USER_JOURNEYS.md`. CV strength points to confirm there.
+   e. ATS score (Mode A on dashboard, Mode B in job alignment) and the Canvas before/after.
+   f. Job alignment (Pro, Sonnet, separate quota; spec deleted after the run).
+2. User checks the local checklist (`docs/LOCAL_SETUP.md` 3.2) and reports what fails.
+3. Domain + privacy details from the user; Claude fills `frontend/src/pages/privacyText.ts`,
+   then `cd frontend && npx vite-node scripts/privacy-md.ts`. The privacy notice must cover the
+   unmatched-item store and suggestion counts before pilot users are added.
+4. Pilot go-live per `docs/DEPLOY.md`; add `https://DOMAIN` to the OAuth client's origins and
    the pilot testers as Google test users (or publish the consent screen).
-6. Week 10: billing (Stripe checkout and webhooks, Pro upgrade, receipts, admin dashboard).
-7. Known issues: scanned-CV check; employer-wide bullets land under the latest title; two open
+5. Week 10: billing (Stripe checkout and webhooks, Pro upgrade, receipts, admin dashboard).
+6. Known issues: scanned-CV check; employer-wide bullets land under the latest title; two open
    tabs = last write wins.
 
 ## Open questions for the user
-- Approve the dashboard and `/next` layouts (desktop + phone), and the sample numbers (64%, 78).
-- CV strength points (`docs/USER_JOURNEYS.md`): confirm or change.
+- Go-ahead to write the contract and build step 1a–1c (ATS store, counts, evaluation set).
+- Approve the dashboard and `/next` layouts already shown, and the CV strength points.
 - Which domain name? Privacy notice: operator name, contact email, applicable law (still open).
 
 ## Setup notes

@@ -1,6 +1,6 @@
 # ATS score: fixed lists (DRAFT for review)
 
-Status: draft written 2026-10-28 for review. Not used by the app yet. The framework is in the
+Status: approved 2026-10-28. Not used by the app yet. The framework is in the
 ATS section of `docs/API_CONTRACT.md` (to update) and was agreed on 2026-10-28: Mode A (CV only,
 100 points) and Mode B (with a job spec, 60 + 40 points).
 
@@ -171,9 +171,10 @@ at least 5 times. Items seen fewer times are kept but ignored.
 
 ---
 
-## Questions for you
+## Decisions (2026-10-28)
 
-1. Are the automotive, pharma and FMCG families and terms right, or do you want more?
-2. Is a minimum of 5 sightings a good threshold before an item is reviewed?
-3. The unmatched-item table stores the term text (for example, a job title). Is that acceptable
-   with no user link, or should we store only counts?
+- Families and sectors: automotive, pharma and FMCG added; the lists are approved as drafted.
+- Unmatched items: not scored, not shown to the user, recorded for review (section 7).
+- Unmatched-item storage: the item text is stored, with kind, count and dates, and no user link.
+- Review threshold: an item is reviewed once it has been seen at least 5 times.
+- Aliases: alias list is approved for now; new aliases only through review.
