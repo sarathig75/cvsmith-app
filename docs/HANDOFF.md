@@ -48,7 +48,9 @@ Everything is merged (session branch `claude/serene-thompson-8hp7uo`). Pilot not
 ## Next steps
 1. User finishes `docs/LOCAL_SETUP.md` 3.2 (incl. 💡 on an empty and a positioning summary,
    PDF, JSON export, Google sign-in with a test user); fix what they report.
-2. Job alignment (planned 2026-10-23, Release 1; NOT built). Decided: a one-box "Job spec" on the
+2. User journeys agreed 2026-10-28: `docs/USER_JOURNEYS.md` (J1/J2, dashboard, `/next` page after
+   every download; no Done button). Next: dashboard + `/next` mockups for review; no code yet.
+2a. Job alignment (planned 2026-10-23, Release 1; NOT built). Decided: a one-box "Job spec" on the
    Canvas (filled = align route, empty = usual flow); changes the CV through accept/decline like 💡;
    Pro only, separate quota from 💡; spec deleted after the run; Sonnet (`claude-sonnet-5-5`).
    Gaps: MISSING = action needed (the user adds it only if true, or dismisses); WEAK = addressed by
