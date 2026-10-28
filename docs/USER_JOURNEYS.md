@@ -34,8 +34,8 @@ pending review. Not built yet. Screens and events are described here; the API is
 1. **Login (email code):** the user enters the code.
 2. **Has a CV (any state other than none):** lands on the **dashboard**. A CV still parsing, or
    one that needs manual entry, shows that status on the dashboard.
-3. **No CV yet:** the dashboard shows an **upload prompt** instead of a score. The landing screen
-   for this case is still to be confirmed (see open points).
+3. **No CV yet:** lands on the **dashboard**, which shows the **upload prompt** instead of scores.
+   Agreed 2026-10-28.
 4. The user continues from the dashboard (edit on the Canvas, or align to a job).
 
 ## Dashboard (home for logged-in users)
@@ -49,6 +49,9 @@ pending review. Not built yet. Screens and events are described here; the API is
   result** (invented data, labelled). Accepting a suggestion changes the saved CV.
 - **Links:** Canvas, Download PDF, Export JSON (Pro).
 - **No CV:** the upload prompt replaces all scores.
+- **Cards:** CV strength, ATS format score, and "Update CV or start a new CV" each open their page
+  (Canvas). "Download PDF and JSON" holds the two downloads. No "Fix on Canvas" buttons: the
+  whole card is the action.
 
 ## Points for CV strength (proposal, to confirm)
 | Section | Points | Complete when |
@@ -70,7 +73,6 @@ pending review. Not built yet. Screens and events are described here; the API is
   content, names, emails or file names (see `docs/FUNNEL.md`).
 
 ## Open points
-- J2c: the agreed answer to "no CV" is the upload prompt on the dashboard. Should a user with no
-  CV land on the dashboard (with the prompt), or on the Canvas (with an upload banner)?
 - Job alignment and ATS stay separate from CV strength (agreed).
-- Dashboard mockup and `/next` mockup: pending review.
+- Dashboard and `/next` mockups: approved in layout; phone versions pending.
+- `/next` cards open their page (no buttons), same rule as the dashboard.
