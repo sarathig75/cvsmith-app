@@ -97,3 +97,55 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
 - CORS origins from env `CORS_ORIGINS`; `Content-Disposition` is exposed so the browser can read download names.
 - Downloads use the last saved `content`: the client saves pending edits first.
 - No Apple sign-in in Release 1.
+
+## Dashboard (planned 2026-10-28; not built yet)
+
+Home for logged-in users (see `docs/USER_JOURNEYS.md`). Scores are computed on each read from
+the saved CV (`content`); nothing is stored. The "before" ATS score is the one exception: it is
+saved once when the CV is parsed (the uploaded file is deleted, so only numbers and check names
+are kept). See the ATS section below for what is still open.
+
+```ts
+CvStrength = { percent: number,                 // 0-100, sum of section points
+               sections: { key: "contact" | "summary" | "experience" | "education" | "skills"
+                                 | "projects" | "others",
+                           label: string, points: number, max: number, complete: boolean }[],
+               next_step: { section: string, text: string, points: number } | null }
+            // next_step: the lowest-scoring section that adds the most points; null at 100%
+
+AtsScore = { score: number,                      // 0-100, format checklist (see open decision)
+             checks: { id: string, label: string, passed: boolean,
+                       points: number, fix: string | null }[],
+             first_fix: { check_id: string, text: string, points: number } | null,
+             framework: string }                // version of the checklist, e.g. "ats-format-v1"
+
+Dashboard = { state: "no_cv" | "parsing" | "ready" | "needs_details",
+              cv_strength: CvStrength | null,   // null when state is "no_cv"
+              ats: AtsScore | null,             // current score; null when state is "no_cv"
+              plan: "free" | "pro" }
+```
+
+| Method | Path | Auth | Body | Response |
+|---|---|---|---|---|
+| GET | /api/dashboard | yes | - | 200 `Dashboard`. `state` is "no_cv" when the user has no CV (404 is not used here); "parsing" while `parsing_status` is pending or in_progress; "needs_details" when parsing failed; "ready" otherwise |
+
+Rules:
+- Points for CV strength, per section (proposal, to confirm before build):
+  contact and headline 15 (name, email, headline); summary 10 (not empty); work experience 30
+  (at least one role with title, employer and dates); education 10; skills 15 (at least 5);
+  projects 10; certifications and others 10. The total is 100.
+- `next_step.text` names the section and the points it adds, e.g. "Add two roles with dates to
+  reach 90%". It never says "compliant" or promises a job outcome.
+- The dashboard never shows a 0% score for "no_cv"; it shows the upload prompt instead.
+- Job alignment is not part of this response. It gets its own endpoints when built.
+
+### ATS format score: open decision
+
+Still to decide with the user before this section is final:
+- the checklist and its points (proposal in the handoff: single column, text layer, standard
+  headings, contact at top, simple bullets, consistent dates, no tables or images, file size);
+- how completeness is scored, so the single-column export does not always look ready;
+- which checks are heuristics (columns, tables) and how they are labelled.
+
+Until then, `checks` and `score` are returned as the framework's current draft and `framework` names
+its version, so the client never shows a number from an undecided checklist.
