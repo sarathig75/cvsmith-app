@@ -1,7 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-23 · Last commit on main: 65a3f5a docs: Google sign-in setup in LOCAL_SETUP; handoff update.
-Everything is merged (session branch `claude/serene-thompson-8hp7uo`). Pilot not deployed.
+Updated: 2026-10-28 · Last commit on main: see `git log -1` (plan + journey docs, 2026-10-28).
+Everything is merged. Pilot not deployed. Nothing from the 2026-10-23/28 plans is built yet.
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
@@ -38,48 +38,42 @@ Everything is merged (session branch `claude/serene-thompson-8hp7uo`). Pilot not
 - Privacy notice: DRAFT at `/privacy` and `docs/PRIVACY_DRAFT.md`, placeholders still open.
 
 ## Done this session
+- 2026-10-28: `docs/USER_JOURNEYS.md` (J1 new user, J2 returning user, dashboard, `/next`).
+  Release plan scope updated (dashboard, `/next`, ATS, job alignment) and its "Dashboard" items
+  corrected: they described the Canvas page.
+- Mockups for review (sample data, not code): Canvas with job alignment, desktop + phone, v3:
+  https://claude.ai/artifact/TDD8nQEuGeyhgcwmKvKDpZ
+  Dashboard + `/next`, desktop + phone: https://claude.ai/artifact/4CzxsdYGX3LX2KAUooUS8K
 - 2026-10-23: `local-troubleshoot` skill + diagnostic file (05f30f2); Google sign-in steps in
   `docs/LOCAL_SETUP.md` 1.7 (65a3f5a). The user re-uploaded `cv-house-style` to claude.ai.
-- `docs/LOCAL_SETUP.md`: step-by-step Windows + Docker guide (bf7371b, extended in 7f13e02).
-- Missing Claude API key → clear log and parse/💡 failure instead of a generic error (7f13e02).
-- 💡 Summary rule in the skill, backend copy, prompt and contract; empty summary → "Suggest"
-  button; checked against the real API (7f13e02).
+- Missing Claude API key → clear log and parse/💡 failure (7f13e02).
+- 💡 Summary rule: an existing summary is only reworded; an empty one is written from the CV (7f13e02).
 
 ## Next steps
-1. User finishes `docs/LOCAL_SETUP.md` 3.2 (incl. 💡 on an empty and a positioning summary,
-   PDF, JSON export, Google sign-in with a test user); fix what they report.
-2. User journeys agreed 2026-10-28: `docs/USER_JOURNEYS.md` (J1/J2, dashboard, `/next` page after
-   every download; no Done button). Next: dashboard + `/next` mockups for review; no code yet.
-2a. Job alignment (planned 2026-10-23, Release 1; NOT built). Decided: a one-box "Job spec" on the
-   Canvas (filled = align route, empty = usual flow); changes the CV through accept/decline like 💡;
-   Pro only, separate quota from 💡; spec deleted after the run; Sonnet (`claude-sonnet-5-5`).
-   Gaps: MISSING = action needed (the user adds it only if true, or dismisses); WEAK = addressed by
-   a suggestion (shown as "Addressed", not as a gap); COVERED = no action. Ideas are never written
-   into the CV. Visual mockup (v3):
-   https://claude.ai/artifact/TDD8nQEuGeyhgcwmKvKDpZ (sample data). Waiting: mockup sign-off, then
-   the contract change in `docs/API_CONTRACT.md` before any code.
-2b. ATS score, before and after (design agreed 2026-10-23; placement: a Canvas panel; PDF stays
-   the only export, no DOCX for now; NOT started: the user said "not yet" on 2026-10-23):
-   - Two numbers, each with its list of checks, labelled as CVSmith's own checklist, not a
-     real ATS's score.
-   - Format score (no job needed): before = the uploaded file (text layer, columns, tables,
-     images, headings, date format, contact at the top, file size); after = the generated PDF.
-   - Job match (optional): keywords from a pasted job description vs the CV, shown separately.
-   - Fixed checklist, not an AI rating, so results repeat. Column and table checks are
-     heuristics. The "after" CV is single-column by design, so it must also be scored on
-     completeness (sections, dates, contact) or it always looks ready.
-   - The ATS article the user shared says it is not a formal standard and cites no sources:
-     use it as practical guidance only; verify figures (e.g. file-size limits) before quoting.
-3. Domain + privacy details from the user; Claude fills `frontend/src/pages/privacyText.ts`,
+1. User checks the local checklist (`docs/LOCAL_SETUP.md` 3.2) and reports what fails.
+2. Build the agreed plan, in this order, with the contract (`docs/API_CONTRACT.md`) first:
+   a. Dashboard `/dashboard` (home for logged-in users) and login routing (CV → dashboard;
+      no CV → dashboard with upload prompt). Shows CV strength %, ATS current score, job-alignment
+      panel, and the Download PDF / JSON cards. Source of truth: `docs/USER_JOURNEYS.md`.
+   b. CV strength %: points per section (table in `docs/USER_JOURNEYS.md`; user must confirm).
+   c. `/next` page after every download (four cards that open their page; never blocks a download).
+   d. ATS format score: a fixed checklist; Canvas shows before (saved when the CV is parsed; the
+      upload is deleted, so only the numbers and check names are kept) and after; dashboard shows
+      current only. Heuristic checks (columns, tables) must be labelled as such.
+   e. Job alignment (Pro, Sonnet, separate quota; sample result for Free users; spec deleted after).
+   Gaps: MISSING = action; WEAK = "Addressed" by a suggestion; COVERED = none.
+3. Phone mockups are reviewed (above). Approve the desktop and phone layouts before (a) starts.
+4. Domain + privacy details from the user; Claude fills `frontend/src/pages/privacyText.ts`,
    then `cd frontend && npx vite-node scripts/privacy-md.ts`.
-4. Pilot go-live per `docs/DEPLOY.md`; add `https://DOMAIN` to the OAuth client's origins and
+5. Pilot go-live per `docs/DEPLOY.md`; add `https://DOMAIN` to the OAuth client's origins and
    the pilot testers as Google test users (or publish the consent screen).
-5. Week 10: billing (Stripe checkout and webhooks, Pro upgrade, receipts, admin dashboard).
-6. Known issues: scanned-CV check; employer-wide bullets land under the latest title; two open
+6. Week 10: billing (Stripe checkout and webhooks, Pro upgrade, receipts, admin dashboard).
+7. Known issues: scanned-CV check; employer-wide bullets land under the latest title; two open
    tabs = last write wins.
 
 ## Open questions for the user
-- Go-ahead to start the ATS score (step 2). Placement and PDF-only are decided (Canvas panel).
+- Approve the dashboard and `/next` layouts (desktop + phone), and the sample numbers (64%, 78).
+- CV strength points (`docs/USER_JOURNEYS.md`): confirm or change.
 - Which domain name? Privacy notice: operator name, contact email, applicable law (still open).
 
 ## Setup notes
