@@ -234,6 +234,10 @@ Cadence: `unmatched report` weekly, `suggestions report` monthly.
 - Prompt version 2 (2026-10-28, hash e182839854e6): weak-phrasing rules 12 and 13 added to the house
   style. No baseline yet: the Anthropic credit balance ran out, so the run could not be done. The
   `sales-projects-weak` and `auto-experience-weak` expectations are now not asserted.
+  Result (2 runs, 50 results, hash e182839854e6): no invented numbers 50/50, no first person 49/50,
+  summary not longer 48/50, expected change 47/50, no unlisted skills or employers 50/50. 29 of 50 were
+  changes. Still failing: the objective summary (kept unchanged, with "I"), the fluff summary (rule 13
+  not followed), and the pharma summary growth. The acronym expansion (rule 9) is allowed by the check.
 - Baseline for prompt version 1 (2026-10-28, after the text-decides fix, 2 runs, prompt hash 61884741441e): no invented
   numbers 50/50, no first person 50/50, summary not longer 48/50, expected change 44/50.
   28 of 50 results were changes (22 before the fix). Only 2 of the 28 were trivial edits.

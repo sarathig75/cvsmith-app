@@ -50,10 +50,10 @@ Everything is merged. Pilot not deployed. Nothing from the 2026-10-23/28 plans i
   (git-ignored).
 
 ## Next steps
-0. BLOCKED: the Anthropic credit balance is empty (Plans & Billing). Top up, then run
-   `cd backend && python -m evals.run_suggestions --repeats 2` for prompt version 2 and compare it with
-   the version 1 baseline in `docs/API_CONTRACT.md`. Accept the new prompt only if no check regresses.
-   Also remaining: summary growth past 1.5× (pharma case) needs a decision (guard or prompt rule).
+0. Prompt version 2 evaluated (2 runs; results in `docs/API_CONTRACT.md`). Expected change improved
+   (44 → 47 of 50) but first person slipped 50 → 49 (objective summary), so it does not pass the
+   no-regression rule as is. Still failing: fluff summary (rule 13 not followed), pharma summary growth
+   past 1.5×. Decisions needed: an objective-summary rule (first person and "Seeking"), and the growth guard.
 1. Evaluation follow-ups (prompt hash 61884741441e, 2 runs):
    a. DONE 2026-10-28: a suggestion is a change when its text differs; the writer's flag is ignored.
       Changes went from 22 to 28 of 50 results. Quota counts changes, so watch free-plan usage.

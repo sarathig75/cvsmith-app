@@ -88,3 +88,17 @@ def test_a_change_is_decided_by_the_text_not_the_writers_flag():
     assert is_change("Old summary", "New summary")
     assert not is_change("Old summary", "  old SUMMARY ")
     assert not is_change("Old", "")
+
+
+def test_an_expansion_of_an_acronym_the_cv_uses_is_not_new():
+    cv = {"experience": [{"description": "Prepared PPAP documents"}]}
+    assert checks.unlisted_capitalised(
+        "Prepared Production Part Approval Process (PPAP) documents", "", cv) == []
+    assert checks.unlisted_capitalised(
+        "Prepared Production Part Approval Process (SPC) documents", "", cv) != []
+
+
+def test_an_acronym_spelled_out_after_it_is_not_new_either():
+    cv = {"experience": [{"description": "Prepared PPAP documents"}]}
+    assert checks.unlisted_capitalised(
+        "Prepared PPAP (Production Part Approval Process) documents", "", cv) == []
