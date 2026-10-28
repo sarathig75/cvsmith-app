@@ -7,7 +7,7 @@ import { onSessionEnd, parseApiError } from '../../services/api';
 import { clearUnsavedDraft, keepUnsavedDraft, takeUnsavedDraft } from '../../utils/unsavedDraft';
 import type { UnsavedDraft } from '../../utils/unsavedDraft';
 import { downloadPdf, exportJson, setPrivacy as savePrivacy } from '../../services/cvService';
-import { getQuota } from '../../services/suggestionService';
+import { getQuota, markSuggestionEdited } from '../../services/suggestionService';
 import type { CV, ParsePart, Quota, SuggestionRequest } from '../../types';
 import { draftFromSaved, emptyDraft } from '../../types/cvDraft';
 import type { CvDraft, Entry } from '../../types/cvDraft';
@@ -70,8 +70,13 @@ export function CanvasPage() {
       },
     });
   // An accepted suggestion is a user edit like typing: it replaces the field and is auto-saved.
-  const acceptSuggestion = (request: SuggestionRequest, text: string) => {
+  // Accepted suggestions whose text the user has not changed yet (key: the field). Once the user edits
+  // the field, the first edit is counted (no text sent) and the entry is dropped.
+  const pendingEdits = useRef(new Map<string, { id: string; text: string; field: SuggestionRequest['field']; entryId?: string }>());
+  const acceptSuggestion = (request: SuggestionRequest, text: string, suggestionId: string) => {
     userEdited.current = true;
+    const key = request.entry_id ? `${request.field}:${request.entry_id}` : request.field;
+    pendingEdits.current.set(key, { id: suggestionId, text, field: request.field, entryId: request.entry_id ?? undefined });
     setDraft((d) => {
       if (request.field === 'summary') return { ...d, summary: text };
       if (request.field === 'headline') return { ...d, personal: { ...d.personal, headline: text } };
@@ -80,6 +85,18 @@ export function CanvasPage() {
       return request.field === 'experience' ? { ...d, experience: next } : { ...d, projects: next };
     });
   };
+
+  // Count the first user edit of each accepted suggestion (no text is sent). Failures are ignored.
+  useEffect(() => {
+    pendingEdits.current.forEach((pending, key) => {
+      const current = pending.field === 'summary' ? draft.summary
+        : pending.field === 'headline' ? draft.personal.headline
+        : (pending.field === 'experience' ? draft.experience : draft.projects).find((e) => e.id === pending.entryId)?.description;
+      if ((current ?? '') === pending.text) return;
+      pendingEdits.current.delete(key);
+      markSuggestionEdited(pending.id).catch(() => undefined);
+    });
+  }, [draft]);
 
   // The saved canvas is restored before editing starts, so nothing typed can be lost and an
   // empty canvas never overwrites a saved one. If loading fails, editing works but is not saved.
@@ -461,7 +478,7 @@ export function CanvasPage() {
         <SuggestionModal
           request={suggesting.request}
           label={suggesting.label}
-          onAccept={(text) => acceptSuggestion(suggesting.request, text)}
+          onAccept={(text, id) => acceptSuggestion(suggesting.request, text, id)}
           onUsed={refreshQuota}
           onClose={() => setSuggesting(null)}
         />

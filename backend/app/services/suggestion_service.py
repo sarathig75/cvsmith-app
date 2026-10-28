@@ -196,22 +196,11 @@ def quota(db: Session, user: User, now: Optional[datetime] = None) -> dict:
     return {"plan": user.plan, "limit": limit, "used": used, "remaining": max(limit - used, 0), "resets_at": next_start}
 
 
-def suggest(
-    db: Session,
-    user: User,
-    writer: SuggestionWriter,
-    field: str,
-    entry_id: Optional[str],
-    text: str,
-    context: Dict[str, str],
-    cv_id: Optional[uuid.UUID] = None,
-    cv_content: Optional[dict] = None,
-) -> Suggestion:
-    """Write one suggestion. Raises QUOTA_EXCEEDED before any AI call when none are left.
-
-    Two clicks at the same moment can both pass the quota check (a free user could get a
-    second suggestion); accepted for Release 1 rather than locking.
-    """
+def prepare_request(
+    field: str, text: str, context: Dict[str, str], cv_content: Optional[dict] = None
+) -> Tuple[str, Dict[str, str]]:
+    """The text and context the writer gets, after the checks. Shared by the API and the evaluation
+    runner, so an evaluation sees exactly what a user's request would. Raises validation errors."""
     text = text.strip()
     if field == "headline":
         text = " ".join(text.split())  # one line
@@ -228,6 +217,26 @@ def suggest(
         context = {**context, "cv_facts": cv_facts(cv_content, include_descriptions=True)}
         if not context["cv_facts"]:
             raise errors.validation_error("Add your work experience first, then we can suggest a summary.")
+    return text, context
+
+
+def suggest(
+    db: Session,
+    user: User,
+    writer: SuggestionWriter,
+    field: str,
+    entry_id: Optional[str],
+    text: str,
+    context: Dict[str, str],
+    cv_id: Optional[uuid.UUID] = None,
+    cv_content: Optional[dict] = None,
+) -> Suggestion:
+    """Write one suggestion. Raises QUOTA_EXCEEDED before any AI call when none are left.
+
+    Two clicks at the same moment can both pass the quota check (a free user could get a
+    second suggestion); accepted for Release 1 rather than locking.
+    """
+    text, context = prepare_request(field, text, context, cv_content)
     if quota(db, user)["remaining"] <= 0:
         raise errors.quota_exceeded()
     try:

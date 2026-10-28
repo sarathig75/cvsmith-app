@@ -7,7 +7,7 @@ from app.database import get_db
 from app.models.user import User
 from app.routes.deps import get_current_user
 from app.schemas.suggestion import DecisionIn, QuotaOut, SuggestionIn, SuggestionOut
-from app.services import cv_service, event_service, suggestion_service
+from app.services import cv_service, event_service, learning_service, suggestion_service
 from app.services.suggestion_service import SuggestionWriter, get_writer
 from app.utils.errors import AppError
 
@@ -49,3 +49,12 @@ def decide_suggestion(
     db: Session = Depends(get_db),
 ):
     return suggestion_service.decide(db, user, suggestion_id, body.status)
+
+
+@router.post("/{suggestion_id}/edited", status_code=status.HTTP_204_NO_CONTENT)
+def mark_suggestion_edited(
+    suggestion_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    learning_service.mark_edited(db, user, suggestion_id)

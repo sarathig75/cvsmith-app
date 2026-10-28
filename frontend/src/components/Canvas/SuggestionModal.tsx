@@ -21,7 +21,7 @@ type Props = {
   /** What is being improved, e.g. "Professional Summary". */
   label: string;
   /** Replaces the field's text in the canvas (then auto-save saves it). */
-  onAccept: (text: string) => void;
+  onAccept: (text: string, suggestionId: string) => void;
   /** Called after every finished request, so the quota shown on the canvas is refreshed. */
   onUsed: () => void;
   onClose: () => void;
@@ -60,7 +60,7 @@ export function SuggestionModal({ request, label, onAccept, onUsed, onClose }: P
   // Recording the decision is for metrics only: a failure must not block the user.
   const decide = (s: Suggestion, status: 'accepted' | 'declined') => decideSuggestion(s.id, status).catch(() => undefined);
   const accept = (s: Suggestion) => {
-    onAccept(s.suggested);
+    onAccept(s.suggested, s.id);
     void decide(s, 'accepted');
     onClose();
   };

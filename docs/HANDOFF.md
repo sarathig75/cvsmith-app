@@ -41,44 +41,36 @@ Everything is merged. Pilot not deployed. Nothing from the 2026-10-23/28 plans i
 - 2026-10-28: ATS framework agreed (two modes, 100 points each); fixed lists approved, incl.
   automotive, pharma, FMCG (`docs/ATS_RULES.md`). Unmatched items: not scored, not shown, stored
   with text for review at ≥5 sightings.
-- 2026-10-28: `docs/USER_JOURNEYS.md` (J1 new user, J2 returning user, dashboard, `/next`).
-  Release plan scope updated (dashboard, `/next`, ATS, job alignment) and its "Dashboard" items
-  corrected: they described the Canvas page.
-- Mockups for review (sample data, not code): Canvas with job alignment, desktop + phone, v3:
-  https://claude.ai/artifact/TDD8nQEuGeyhgcwmKvKDpZ
-  Dashboard + `/next`, desktop + phone: https://claude.ai/artifact/4CzxsdYGX3LX2KAUooUS8K
-- 2026-10-23: `local-troubleshoot` skill + diagnostic file (05f30f2); Google sign-in steps in
-  `docs/LOCAL_SETUP.md` 1.7 (65a3f5a). The user re-uploaded `cv-house-style` to claude.ai.
-- Missing Claude API key → clear log and parse/💡 failure (7f13e02).
-- 💡 Summary rule: an existing summary is only reworded; an empty one is written from the CV (7f13e02).
+- 2026-10-28: learning store and counts built (contract: `docs/API_CONTRACT.md`, "Suggestion
+  effectiveness"): migration 0009, `unmatched_terms` table, `suggestions.edited_at`, edit endpoint,
+  CLI `suggestions report` and `unmatched report|ignore|resolve`. Frontend counts the first edit of
+  an accepted suggestion (no text). Backend 185 tests, frontend 96 tests.
+- 2026-10-28: evaluation set built: 25 invented cases (`backend/evals/cases.json`), checks, runner
+  `python -m evals.run_suggestions --repeats 2`. Baseline is in the contract. Results are local
+  (git-ignored).
 
 ## Next steps
-1. ATS score (approved framework: `docs/API_CONTRACT.md` ATS section; fixed lists approved:
-   `docs/ATS_RULES.md`). Build order, contract first:
-   a. Unmatched-item store (item text, kind, count, first/last seen; no user id) and a weekly
-      report (items seen ≥ 5 times). Contract first.
-   b. Suggestion counts: accepted / declined / unchanged / pending per field and week; plus an
-      "edited after accepting" count (no text).
-   c. Evaluation set: 20–30 invented CVs (incl. manufacturing, automotive, pharma, FMCG, fresher)
-      with checks: no invented numbers or employers, no first person, expected ATS result. Runs on
-      demand against the real API; results recorded per prompt version. Costs API credits.
-   d. Dashboard `/dashboard` and `/next` (approved layouts: `https://claude.ai/artifact/4CzxsdYGX3LX2KAUooUS8K`).
-      Source of truth: `docs/USER_JOURNEYS.md`. CV strength points to confirm there.
-   e. ATS score (Mode A on dashboard, Mode B in job alignment) and the Canvas before/after.
-   f. Job alignment (Pro, Sonnet, separate quota; spec deleted after the run).
-2. User checks the local checklist (`docs/LOCAL_SETUP.md` 3.2) and reports what fails.
-3. Domain + privacy details from the user; Claude fills `frontend/src/pages/privacyText.ts`,
-   then `cd frontend && npx vite-node scripts/privacy-md.ts`. The privacy notice must cover the
-   unmatched-item store and suggestion counts before pilot users are added.
-4. Pilot go-live per `docs/DEPLOY.md`; add `https://DOMAIN` to the OAuth client's origins and
-   the pilot testers as Google test users (or publish the consent screen).
-5. Week 10: billing (Stripe checkout and webhooks, Pro upgrade, receipts, admin dashboard).
-6. Known issues: scanned-CV check; employer-wide bullets land under the latest title; two open
-   tabs = last write wins.
+1. Decide on the evaluation findings (2 runs, prompt hash 61884741441e):
+   a. Flag/text mismatch (biggest, a bug): the writer returns rewritten text but says "unchanged", so the
+      user gets nothing. Options: (i) decide "changed" from the text (suggested ≠ original) and drop
+      the flag; (ii) keep the flag and fix the prompt. Recommend (i).
+   b. Summary growth: an objective-style summary grew past 1.5× (pharma case). Options: a guard that
+      rejects a summary rewrite over 1.5× (deterministic), and/or a stronger prompt rule. Recommend both.
+   c. Weak phrasing left unchanged ("Worked on…", cliché summaries). This is a prompt change. Needs
+      your sign-off on wording, then re-run the evaluation before and after.
+2. Build the ATS score (contract ATS section; lists in `docs/ATS_RULES.md`): Mode A on the dashboard,
+   Mode B in job alignment; the unmatched store starts receiving terms here.
+3. Dashboard `/dashboard`, `/next`, job alignment, Canvas before/after (approved layouts:
+   `https://claude.ai/artifact/4CzxsdYGX3LX2KAUooUS8K`; `docs/USER_JOURNEYS.md`).
+4. User checks the local checklist (`docs/LOCAL_SETUP.md` 3.2) and reports what fails.
+5. Privacy notice must cover the unmatched-term store and suggestion counts before pilot users join.
+   Domain and operator details are still open.
+6. Pilot go-live per `docs/DEPLOY.md`; Week 10 billing.
 
 ## Open questions for the user
-- Go-ahead to write the contract and build step 1a–1c (ATS store, counts, evaluation set).
-- Approve the dashboard and `/next` layouts already shown, and the CV strength points.
+- Evaluation findings 1a to 1c: which fixes do you approve, and do you want the prompt change (1c)
+  reviewed by you before it is run?
+- Approve the dashboard and `/next` layouts (already shown), and the CV strength points.
 - Which domain name? Privacy notice: operator name, contact email, applicable law (still open).
 
 ## Setup notes

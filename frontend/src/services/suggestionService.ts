@@ -10,3 +10,8 @@ export const requestSuggestion = async (body: SuggestionRequest) =>
 
 export const decideSuggestion = async (id: string, status: 'accepted' | 'declined') =>
   (await api.patch<Suggestion>(`/api/suggestions/${id}`, { status })).data;
+
+/** Counts the first edit of an accepted suggestion. Metrics only: a failure is ignored by the caller. */
+export const markSuggestionEdited = async (id: string) => {
+  await api.post(`/api/suggestions/${id}/edited`);
+};

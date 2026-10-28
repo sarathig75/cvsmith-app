@@ -17,3 +17,6 @@ deploy/backups/
 
 # Local diagnostic output (docs/LOCAL_SETUP.md 5.1)
 cvsmith-diag.txt
+
+# Evaluation runs (backend/evals): local results, not committed
+backend/evals/results/

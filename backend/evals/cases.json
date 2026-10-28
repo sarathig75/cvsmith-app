@@ -1,0 +1,745 @@
+{
+  "version": 1,
+  "note": "Invented CVs and job details only. No real people.",
+  "cases": [
+    {
+      "id": "hr-summary-objective",
+      "sector": "human resources",
+      "field": "summary",
+      "text": "Seeking a challenging HR role where I can grow my skills in a reputed organisation.",
+      "context": {},
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "HR Business Partner",
+            "company": "Northwind Retail",
+            "start": "2018",
+            "description": "• Hired 40 store staff in one quarter, cutting vacancy days from 45 to 28\n• Ran performance reviews for 3 regional teams of 120 staff",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "Talent acquisition",
+          "Performance management",
+          "Employee relations"
+        ],
+        "education": [
+          {
+            "degree": "MBA (HR)",
+            "school": "Pune University",
+            "end": "2016"
+          }
+        ]
+      },
+      "expect_changed": true
+    },
+    {
+      "id": "hr-summary-empty",
+      "sector": "human resources",
+      "field": "summary",
+      "text": "",
+      "context": {},
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "HR Business Partner",
+            "company": "Northwind Retail",
+            "start": "2018",
+            "description": "• Hired 40 store staff in one quarter, cutting vacancy days from 45 to 28\n• Ran performance reviews for 3 regional teams of 120 staff",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "Talent acquisition",
+          "Performance management",
+          "Employee relations"
+        ],
+        "education": [
+          {
+            "degree": "MBA (HR)",
+            "school": "Pune University",
+            "end": "2016"
+          }
+        ]
+      },
+      "expect_changed": true
+    },
+    {
+      "id": "hr-summary-no-facts",
+      "sector": "human resources",
+      "field": "summary",
+      "text": "",
+      "context": {},
+      "cv": {
+        "summary": "",
+        "experience": [],
+        "projects": [],
+        "skills": [],
+        "education": []
+      },
+      "expect_changed": false
+    },
+    {
+      "id": "hr-headline-empty",
+      "sector": "human resources",
+      "field": "headline",
+      "text": "",
+      "context": {},
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "HR Business Partner",
+            "company": "Northwind Retail",
+            "start": "2018",
+            "description": "• Hired 40 store staff in one quarter, cutting vacancy days from 45 to 28\n• Ran performance reviews for 3 regional teams of 120 staff",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "Talent acquisition",
+          "Performance management",
+          "Employee relations"
+        ],
+        "education": [
+          {
+            "degree": "MBA (HR)",
+            "school": "Pune University",
+            "end": "2016"
+          }
+        ]
+      },
+      "expect_changed": true
+    },
+    {
+      "id": "soft-experience-weak",
+      "sector": "software",
+      "field": "experience",
+      "text": "Responsible for maintaining the payments API and helping the team with releases.",
+      "context": {
+        "title": "Backend Engineer",
+        "company": "Velocity Payments"
+      },
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Backend Engineer",
+            "company": "Velocity Payments",
+            "start": "2020",
+            "description": "• Cut payment API p95 latency from 800 ms to 240 ms\n• Moved reporting to a read replica for 2 million monthly users",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "Python",
+          "PostgreSQL",
+          "AWS"
+        ],
+        "education": []
+      },
+      "expect_changed": true
+    },
+    {
+      "id": "soft-experience-strong",
+      "sector": "software",
+      "field": "experience",
+      "text": "• Cut payment API p95 latency from 800 ms to 240 ms\n• Moved reporting to a read replica",
+      "context": {
+        "title": "Backend Engineer",
+        "company": "Velocity Payments"
+      },
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Backend Engineer",
+            "company": "Velocity Payments",
+            "start": "2020",
+            "description": "• Cut payment API p95 latency from 800 ms to 240 ms\n• Moved reporting to a read replica for 2 million monthly users",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "Python",
+          "PostgreSQL",
+          "AWS"
+        ],
+        "education": []
+      },
+      "expect_changed": null
+    },
+    {
+      "id": "soft-summary-fluff",
+      "sector": "software",
+      "field": "summary",
+      "text": "Highly motivated and passionate developer looking for an opportunity to contribute.",
+      "context": {},
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Backend Engineer",
+            "company": "Velocity Payments",
+            "start": "2020",
+            "description": "• Cut payment API p95 latency from 800 ms to 240 ms\n• Moved reporting to a read replica for 2 million monthly users",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "Python",
+          "PostgreSQL",
+          "AWS"
+        ],
+        "education": []
+      },
+      "expect_changed": true
+    },
+    {
+      "id": "soft-headline-text",
+      "sector": "software",
+      "field": "headline",
+      "text": "Software person",
+      "context": {},
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Backend Engineer",
+            "company": "Velocity Payments",
+            "start": "2020",
+            "description": "• Cut payment API p95 latency from 800 ms to 240 ms\n• Moved reporting to a read replica for 2 million monthly users",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "Python",
+          "PostgreSQL",
+          "AWS"
+        ],
+        "education": []
+      },
+      "expect_changed": true
+    },
+    {
+      "id": "fin-experience-weak",
+      "sector": "finance",
+      "field": "experience",
+      "text": "Was in charge of month-end close and assisted with budget variance reports.",
+      "context": {
+        "title": "Finance Executive",
+        "company": "Helix Industries"
+      },
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Finance Executive",
+            "company": "Helix Industries",
+            "start": "2017",
+            "description": "• Closed the month-end ledger in 4 working days, down from 7\n• Reduced reconciliation errors by 30% with a new checklist",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "SAP FI",
+          "Excel",
+          "Variance analysis"
+        ],
+        "education": []
+      },
+      "expect_changed": true
+    },
+    {
+      "id": "fin-summary-empty",
+      "sector": "finance",
+      "field": "summary",
+      "text": "",
+      "context": {},
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Finance Executive",
+            "company": "Helix Industries",
+            "start": "2017",
+            "description": "• Closed the month-end ledger in 4 working days, down from 7\n• Reduced reconciliation errors by 30% with a new checklist",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "SAP FI",
+          "Excel",
+          "Variance analysis"
+        ],
+        "education": []
+      },
+      "expect_changed": true
+    },
+    {
+      "id": "sales-projects-weak",
+      "sector": "sales",
+      "field": "projects",
+      "text": "Worked on a pilot to sell the new SME plan.",
+      "context": {
+        "title": "SME pilot"
+      },
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Sales Manager",
+            "company": "Crescent Software",
+            "start": "2019",
+            "description": "• Grew SME revenue by 22% across 60 accounts in 12 months\n• Trained 8 account executives on the new pricing plan",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "B2B sales",
+          "CRM",
+          "Negotiation"
+        ],
+        "education": []
+      },
+      "expect_changed": true
+    },
+    {
+      "id": "sales-summary-positioning",
+      "sector": "sales",
+      "field": "summary",
+      "text": "Aiming to move into a Regional Sales Manager role, bringing five years of B2B account growth.",
+      "context": {},
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Sales Manager",
+            "company": "Crescent Software",
+            "start": "2019",
+            "description": "• Grew SME revenue by 22% across 60 accounts in 12 months\n• Trained 8 account executives on the new pricing plan",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "B2B sales",
+          "CRM",
+          "Negotiation"
+        ],
+        "education": []
+      },
+      "expect_changed": null
+    },
+    {
+      "id": "ops-experience-vague",
+      "sector": "operations",
+      "field": "experience",
+      "text": "Improved warehouse processes.",
+      "context": {
+        "title": "Operations Manager",
+        "company": "Northwind Logistics"
+      },
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Operations Manager",
+            "company": "Northwind Logistics",
+            "start": "2016",
+            "description": "• Ran 3 warehouses with 140 staff and 99.2% on-time dispatch\n• Redesigned pick routes, cutting walking time by 18%",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "Inventory control",
+          "Lean",
+          "Vendor management"
+        ],
+        "education": []
+      },
+      "expect_changed": false
+    },
+    {
+      "id": "ops-headline-empty",
+      "sector": "operations",
+      "field": "headline",
+      "text": "",
+      "context": {},
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Operations Manager",
+            "company": "Northwind Logistics",
+            "start": "2016",
+            "description": "• Ran 3 warehouses with 140 staff and 99.2% on-time dispatch\n• Redesigned pick routes, cutting walking time by 18%",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "Inventory control",
+          "Lean",
+          "Vendor management"
+        ],
+        "education": []
+      },
+      "expect_changed": true
+    },
+    {
+      "id": "manuf-experience-weak",
+      "sector": "manufacturing",
+      "field": "experience",
+      "text": "Responsible for the shop floor and maintaining the production line for the plant.",
+      "context": {
+        "title": "Production Engineer",
+        "company": "Apex Components"
+      },
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Production Engineer",
+            "company": "Apex Components",
+            "start": "2017",
+            "description": "• Raised line OEE from 61% to 74% by fixing changeover delays\n• Led root cause analysis on 12 scrap issues, cutting scrap by 25%",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "Lean manufacturing",
+          "Six Sigma",
+          "Root cause analysis"
+        ],
+        "education": []
+      },
+      "expect_changed": true
+    },
+    {
+      "id": "manuf-summary-empty",
+      "sector": "manufacturing",
+      "field": "summary",
+      "text": "",
+      "context": {},
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Production Engineer",
+            "company": "Apex Components",
+            "start": "2017",
+            "description": "• Raised line OEE from 61% to 74% by fixing changeover delays\n• Led root cause analysis on 12 scrap issues, cutting scrap by 25%",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "Lean manufacturing",
+          "Six Sigma",
+          "Root cause analysis"
+        ],
+        "education": []
+      },
+      "expect_changed": true
+    },
+    {
+      "id": "auto-experience-weak",
+      "sector": "automotive",
+      "field": "experience",
+      "text": "Helped the design team with PPAP documents for the new hatchback.",
+      "context": {
+        "title": "Design Engineer",
+        "company": "Velocity Motors"
+      },
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Design Engineer",
+            "company": "Velocity Motors",
+            "start": "2018",
+            "description": "• Prepared PPAP packs for 4 new body-in-white parts\n• Led FMEA reviews with 3 tier-1 suppliers",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "CATIA",
+          "APQP",
+          "FMEA"
+        ],
+        "education": []
+      },
+      "expect_changed": true
+    },
+    {
+      "id": "auto-summary-short",
+      "sector": "automotive",
+      "field": "summary",
+      "text": "Engineer with experience in automotive parts.",
+      "context": {},
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Design Engineer",
+            "company": "Velocity Motors",
+            "start": "2018",
+            "description": "• Prepared PPAP packs for 4 new body-in-white parts\n• Led FMEA reviews with 3 tier-1 suppliers",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "CATIA",
+          "APQP",
+          "FMEA"
+        ],
+        "education": []
+      },
+      "expect_changed": null
+    },
+    {
+      "id": "pharma-experience-weak",
+      "sector": "pharma",
+      "field": "experience",
+      "text": "Assisted QA with GMP batch record reviews and deviation reports.",
+      "context": {
+        "title": "QA Officer",
+        "company": "Helix Pharma Ltd"
+      },
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "QA Officer",
+            "company": "Helix Pharma Ltd",
+            "start": "2019",
+            "description": "• Reviewed 300 batch records a month against GMP requirements\n• Closed 18 deviation reports within 30 days",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "GMP",
+          "Batch record review",
+          "Deviation management"
+        ],
+        "education": []
+      },
+      "expect_changed": null
+    },
+    {
+      "id": "pharma-summary-objective",
+      "sector": "pharma",
+      "field": "summary",
+      "text": "Looking for a QA role in a pharma company to use my GMP knowledge.",
+      "context": {},
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "QA Officer",
+            "company": "Helix Pharma Ltd",
+            "start": "2019",
+            "description": "• Reviewed 300 batch records a month against GMP requirements\n• Closed 18 deviation reports within 30 days",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "GMP",
+          "Batch record review",
+          "Deviation management"
+        ],
+        "education": []
+      },
+      "expect_changed": true
+    },
+    {
+      "id": "fmcg-experience-weak",
+      "sector": "fmcg",
+      "field": "experience",
+      "text": "Worked on distribution in general trade across Pune and Nashik.",
+      "context": {
+        "title": "Area Sales Manager",
+        "company": "Saffron Foods"
+      },
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Area Sales Manager",
+            "company": "Saffron Foods",
+            "start": "2020",
+            "description": "• Grew general trade distribution by 15% across Pune and Nashik\n• Improved shelf availability to 92% in 140 outlets",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "Distribution",
+          "Route to market",
+          "Trade marketing"
+        ],
+        "education": []
+      },
+      "expect_changed": null
+    },
+    {
+      "id": "fmcg-summary-empty",
+      "sector": "fmcg",
+      "field": "summary",
+      "text": "",
+      "context": {},
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Area Sales Manager",
+            "company": "Saffron Foods",
+            "start": "2020",
+            "description": "• Grew general trade distribution by 15% across Pune and Nashik\n• Improved shelf availability to 92% in 140 outlets",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "Distribution",
+          "Route to market",
+          "Trade marketing"
+        ],
+        "education": []
+      },
+      "expect_changed": true
+    },
+    {
+      "id": "fresh-summary-empty",
+      "sector": "fresher",
+      "field": "summary",
+      "text": "",
+      "context": {},
+      "cv": {
+        "summary": "",
+        "experience": [],
+        "projects": [
+          {
+            "id": "p1",
+            "name": "College club website",
+            "description": "Built the club's website in React with an event sign-up form used by 200 students."
+          }
+        ],
+        "skills": [
+          "React",
+          "JavaScript",
+          "Git"
+        ],
+        "education": [
+          {
+            "degree": "BSc Computer Science",
+            "school": "Pune University",
+            "end": "2025"
+          }
+        ]
+      },
+      "expect_changed": null
+    },
+    {
+      "id": "fresh-projects-plain",
+      "sector": "fresher",
+      "field": "projects",
+      "text": "Made a website for my college club using React.",
+      "context": {
+        "title": "College club website"
+      },
+      "cv": {
+        "summary": "",
+        "experience": [],
+        "projects": [
+          {
+            "id": "p1",
+            "name": "College club website",
+            "description": "Built the club's website in React with an event sign-up form used by 200 students."
+          }
+        ],
+        "skills": [
+          "React",
+          "JavaScript",
+          "Git"
+        ],
+        "education": [
+          {
+            "degree": "BSc Computer Science",
+            "school": "Pune University",
+            "end": "2025"
+          }
+        ]
+      },
+      "expect_changed": null
+    },
+    {
+      "id": "soft-summary-already-good",
+      "sector": "software",
+      "field": "summary",
+      "text": "Backend engineer who cut API latency by 70% and runs reliable payment systems for 2 million users.",
+      "context": {},
+      "cv": {
+        "summary": "",
+        "experience": [
+          {
+            "id": "e1",
+            "title": "Backend Engineer",
+            "company": "Velocity Payments",
+            "start": "2020",
+            "description": "• Cut payment API p95 latency from 800 ms to 240 ms\n• Moved reporting to a read replica for 2 million monthly users",
+            "current": "true"
+          }
+        ],
+        "projects": [],
+        "skills": [
+          "Python",
+          "PostgreSQL",
+          "AWS"
+        ],
+        "education": []
+      },
+      "expect_changed": null
+    }
+  ]
+}

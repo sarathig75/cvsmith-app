@@ -205,3 +205,22 @@ describe('💡 summary', () => {
     expect(screen.getByLabelText('Professional Summary')).toHaveValue('Sales lead with 8 years in enterprise accounts.');
   });
 });
+
+describe('💡 edit after accept', () => {
+  it('counts the first edit of an accepted suggestion, and sends no text', async () => {
+    const calls = setup(() => ({
+      status: 201,
+      data: suggestion({ field: 'summary', entry_id: null, original: 'Old summary', suggested: 'New summary' }),
+    }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.click(await screen.findByRole('button', { name: 'Improve Professional Summary' }));
+    await user.click(await screen.findByRole('button', { name: 'Use suggestion' }));
+    const edited = () => calls.filter((c) => c.method === 'post' && c.url === '/api/suggestions/s1/edited');
+    expect(edited()).toHaveLength(0); // accepting is not an edit
+    await user.type(screen.getByLabelText('Professional Summary'), '!');
+    expect(edited()).toHaveLength(1);
+    expect(edited()[0].data).toBeUndefined();
+    await user.type(screen.getByLabelText('Professional Summary'), '?');
+    expect(edited()).toHaveLength(1); // only the first edit is counted
+  });
+});
