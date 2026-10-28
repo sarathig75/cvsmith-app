@@ -58,6 +58,13 @@ Each row is one skill. Any listed form counts as a match.
 | OEE | overall equipment effectiveness |
 | ISO 9001 | ISO9001 |
 | Preventive maintenance | PM schedule, planned maintenance |
+| GMP | Good Manufacturing Practice |
+| FMEA | failure mode and effects analysis |
+| PPAP | production part approval process |
+| IATF 16949 | IATF16949 |
+| USFDA | US FDA, FDA |
+| General trade | GT |
+| Modern trade | MT |
 
 Open for review: the list is short on purpose. We add a row only when a real CV or job spec shows
 a miss.
@@ -81,6 +88,14 @@ related family is worth 3 points. Anything else is 0.
 | Manufacturing production | Production associate → Production supervisor → Production engineer → Senior production engineer → Plant manager → Plant head / Director of manufacturing |
 | Manufacturing quality | QA inspector → Quality engineer → Senior quality engineer → Quality manager → Head of quality |
 | Maintenance and reliability | Maintenance technician → Maintenance engineer → Senior maintenance engineer → Maintenance manager → Head of maintenance |
+| Automotive engineering | Graduate engineer → Design engineer → Senior engineer → Chief engineer / Engineering manager |
+| Automotive aftersales | Service advisor → Service manager → Aftersales manager → Head of aftersales |
+| Pharma quality | QC analyst → QA officer → QA manager → Head of quality |
+| Pharma regulatory | Regulatory affairs associate → Regulatory affairs manager → Head of regulatory affairs |
+| Pharma production | Production officer → Production executive → Production manager → Plant head |
+| FMCG sales | Sales executive → Area sales manager → Regional sales manager → National sales head |
+| FMCG brand and marketing | Brand executive → Assistant brand manager → Brand manager → Senior brand manager → Marketing director |
+| FMCG supply chain | Supply chain executive → Demand planner → Supply chain manager → Head of supply chain |
 
 Related families (3 points): for example HR business partner and Operations manager, or Data
 analyst and Finance manager. Each pair must be listed explicitly; no guessing.
@@ -102,6 +117,9 @@ use them.
 | Sales | pipeline, quota, account management, negotiation, revenue, CRM, prospecting, retention, forecasting |
 | Operations | supply chain, logistics, process improvement, inventory, vendor management, KPIs, lean, quality |
 | Manufacturing | lean manufacturing, Six Sigma, OEE, production planning, quality control, ISO 9001, root cause analysis, 5S, kaizen, preventive maintenance, shop floor, EHS compliance, bill of materials, CAPA |
+| Automotive | APQP, PPAP, FMEA, IATF 16949, OEM, tier-1 supplier, homologation, vehicle validation, powertrain, lean manufacturing |
+| Pharma | GMP, cGMP, GLP, process validation, regulatory submissions, CDSCO, USFDA, pharmacovigilance, batch records, deviation management, stability studies |
+| FMCG | route to market, distribution, general trade, modern trade, trade marketing, shelf availability, category management, brand equity, demand planning, retail execution |
 | Marketing | campaigns, brand, digital marketing, SEO, content, analytics, lead generation, social media |
 
 Sectors not listed here score B7 as "not applicable" until a list is added (see section 6).
@@ -110,27 +128,52 @@ Sectors not listed here score B7 as "not applicable" until a list is added (see 
 
 ## 6. When nothing matches
 
-Rule: an unmatched item is never silently scored as zero. It is either left out of the score
-(not applicable) or flagged to the user and counted for our review.
+Rule: an unmatched item is never scored as zero. It is left out of the score (not applicable),
+and the user is not told. The item is counted for our review (section 7), so the lists can grow.
 
-| Situation | What happens | Shown to user |
+| Situation | Scoring | Recorded for review |
 |---|---|---|
-| Job title is not on any ladder (B5) | Check not applicable; points removed from the total | "We couldn't match the job title, so this check was not scored." |
-| CV title is not on any ladder (B5) | Check not applicable; the unmatched title is counted for review | "We couldn't match your title, so this check was not scored." |
-| Job spec's sector has no list (B7) | Check not applicable | "No sector list for this job yet, so this check was not scored." |
-| Skill has no alias row (B1, B2) | Exact match only (after lower-casing); no alias needed for a plain match | Nothing extra |
-| Action verb not on the list (A6) | Bullet is not counted as strong, and the first word is counted for review | Nothing extra; the list grows from counts |
-| Years or management not in job spec (B4, B6) | Check not applicable | "The job spec didn't ask for this, so it was not scored." |
+| Job title not on any ladder (B5) | Check left out; points removed from the total | The job title |
+| CV title not on any ladder (B5) | Check left out | The CV title |
+| Job spec's sector has no term list (B7) | Check left out | The sector name |
+| Skill has no alias (B1, B2) | Exact match only | The skill term |
+| Action verb not on the list (A6) | Bullet not counted as strong | The verb |
+| Job spec doesn't ask for years or management (B4, B6) | Check left out | "years" or "management" |
 
-Why these choices: a zero for something we don't recognise would punish the candidate for our gap,
-and would make results look worse for less common job families. Counting unmatched items shows us
-which lists need to grow.
+Trade-off to note: a user can't see why a check is missing from their score. We accept this because
+showing it would ask them to fix our gap, not theirs.
+
+---
+
+## 7. Monitoring unmatched items and expanding the lists
+
+**What is recorded.** Each unmatched item is saved as one row: the item (normalised: lower case,
+spaces collapsed, at most 60 characters), its kind (title, sector, skill, verb or requirement), and a
+count and first and last seen dates. **No user id, no CV text, no email or phone.** Rows containing
+digits, "@" or more than 4 words are dropped, so names and contact details are never stored.
+
+**How often.** Once a week, we review the top unmatched items by count, once an item has been seen
+at least 5 times. Items seen fewer times are kept but ignored.
+
+**What we do with each item:**
+1. **Same as an existing skill or title:** add an alias row (section 3) or a title ladder entry
+   (section 4). Example: "reactjs" → React.
+2. **A new skill, sector term or family:** add it to the list, with a test that it matches.
+3. **Noise or not a skill:** mark it ignored, so it stops appearing in the review.
+
+**Rules:**
+- Aliases are added by a person, never automatically. A wrong alias changes scores for everyone
+  (for example, "R" could be the language or a letter).
+- Each change has a test: the new alias matches, and no existing alias now matches a different skill.
+- The reviewer sees near-matches to speed up review: for example, "reactjs" is shown next to
+  "react" because the spelling is close.
+- Changes are recorded in this file, with the date and the item.
 
 ---
 
 ## Questions for you
 
-1. Are the manufacturing families and terms right, or do you want more (e.g. automotive,
-   pharma, FMCG)?
-2. Confirm the fallback rules in section 6, in particular "not applicable" for unmatched titles.
-3. Is the alias list short enough for now?
+1. Are the automotive, pharma and FMCG families and terms right, or do you want more?
+2. Is a minimum of 5 sightings a good threshold before an item is reviewed?
+3. The unmatched-item table stores the term text (for example, a job title). Is that acceptable
+   with no user link, or should we store only counts?
