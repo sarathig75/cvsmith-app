@@ -49,6 +49,7 @@ def test_existing_summary_may_not_grow_past_one_and_a_half_times():
     assert not checks.check_summary_not_longer("summary", "x" * 16, "x" * 10)
     assert checks.check_summary_not_longer("experience", "x" * 100, "x" * 10)  # rule is for summaries
     assert checks.check_summary_not_longer("summary", "x" * 100, "")  # nothing to grow from
+    assert checks.check_summary_not_longer("summary", "x" * 100, "x" * 10, "objective")  # replaced, not extended
 
 
 def test_expected_change_is_only_checked_when_the_case_says_so():

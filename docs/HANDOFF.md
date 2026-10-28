@@ -50,7 +50,11 @@ Everything is merged. Pilot not deployed. Nothing from the 2026-10-23/28 plans i
   (git-ignored).
 
 ## Next steps
-0. Prompt version 2 evaluated (2 runs; results in `docs/API_CONTRACT.md`). Expected change improved
+0. Prompt version 3 (rule 14, objectives replaced from CV facts) passes 4 of 5 checks in 2 runs; the
+   one miss is a positioning statement that grew once (sales case). Prompt caching is on (suggestions and
+   parser). Decision pending: the summary guard for unlisted employers/skills (approved as "prompt the user
+   to add the missing details, do not reject"). Contract first, then code.
+(Earlier) Prompt version 2 evaluated (2 runs; results in `docs/API_CONTRACT.md`). Expected change improved
    (44 → 47 of 50) but first person slipped 50 → 49 (objective summary), so it does not pass the
    no-regression rule as is. Still failing: fluff summary (rule 13 not followed), pharma summary growth
    past 1.5×. Decisions needed: an objective-summary rule (first person and "Seeking"), and the growth guard.

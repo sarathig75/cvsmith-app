@@ -330,7 +330,9 @@ def test_claude_parser_request_and_result():
         assert kw["model"] == "claude-sonnet-5-5"
         assert kw["fallbacks"] == "default" and kw["betas"] == ["server-side-fallback-2026-07-01"]
         assert "Jane Doe CV" in kw["messages"][0]["content"][0]["text"]
-        assert "Never invent" in kw["system"]
+        assert "Never invent" in kw["system"][0]["text"]
+        assert kw["system"][0]["cache_control"] == {"type": "ephemeral"}
+        assert "cache_control" not in kw["system"][1]  # the part's own task is not cached
 
 
 def test_claude_parser_sends_scanned_pdf_as_document():

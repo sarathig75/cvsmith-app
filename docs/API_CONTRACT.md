@@ -229,6 +229,14 @@ Cadence: `unmatched report` weekly, `suggestions report` monthly.
 - Output: a summary per check, and one JSON file per run in `backend/evals/results/` (git-ignored),
   named by date and prompt hash (`cv_house_style` + `TASK` text). Results are compared across
   prompt versions by the same runner.
+- Prompt version 3 (2026-10-28, approved): house-style rule 14 (an objective is replaced by a factual
+  statement from the CV, or left unchanged if there are no facts). The task text had contradicted it
+  and was aligned; the CV facts are now sent with every summary, so the writer has facts to replace
+  an objective with. Results (2 runs, hash 09292fc3f0a0): no invented numbers 50/50, no first person
+  50/50, expected change 50/50, no unlisted skills or employers 50/50, summary not longer 49/50 (the
+  1.5× limit now applies to positioning statements only; an objective is replaced, so it may grow).
+  Prompt caching is on for suggestions and for the CV parser: about 123,000 input tokens were read from
+  the cache in one 50-result run, against none written in the second run.
 - Pass rule: a prompt change is accepted only if no check regresses compared with the last run,
   measured over the same number of repeats.
 - Prompt version 2 (2026-10-28, hash e182839854e6): weak-phrasing rules 12 and 13 added to the house

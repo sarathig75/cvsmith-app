@@ -34,7 +34,8 @@
           }
         ]
       },
-      "expect_changed": true
+      "expect_changed": true,
+      "summary_kind": "objective"
     },
     {
       "id": "hr-summary-empty",
@@ -207,7 +208,8 @@
         ],
         "education": []
       },
-      "expect_changed": true
+      "expect_changed": true,
+      "summary_kind": "objective"
     },
     {
       "id": "soft-headline-text",
@@ -352,7 +354,8 @@
         ],
         "education": []
       },
-      "expect_changed": null
+      "expect_changed": null,
+      "summary_kind": "positioning"
     },
     {
       "id": "ops-experience-vague",
@@ -588,7 +591,8 @@
         ],
         "education": []
       },
-      "expect_changed": true
+      "expect_changed": true,
+      "summary_kind": "objective"
     },
     {
       "id": "fmcg-experience-weak",
@@ -739,7 +743,8 @@
         ],
         "education": []
       },
-      "expect_changed": null
+      "expect_changed": null,
+      "summary_kind": "positioning"
     }
   ]
 }

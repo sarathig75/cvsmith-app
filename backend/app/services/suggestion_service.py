@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.models.suggestion import Suggestion
 from app.models.user import User, utcnow
-from app.services.cv_parser import NO_KEY_LOG, claude_client, missing_credentials
+from app.services.cv_parser import NO_KEY_LOG, cache_system, claude_client, missing_credentials
 from app.utils import errors
 
 logger = logging.getLogger("cvsmith.suggestions")
@@ -39,9 +39,11 @@ TASK = """You improve one field of a CV, following the house style above.
   action verbs, outcomes made prominent, vague phrases or first person removed. Small edits
   (an added article, a synonym, punctuation) are not worth it: then return the text unchanged
   and set changed to false. Likewise if it already follows the rules.
-- An existing summary may be a positioning statement for the role the candidate is aiming
-  for rather than an account of their past: improve its wording only. Keep its content,
-  intent and claims, and do not add anything to it.
+- A positioning statement (it says where the candidate is heading and states facts about their
+  experience) keeps its content and claims: improve its wording only, and add nothing to it.
+- An objective (it says what the candidate wants, e.g. "Seeking a role...", "Looking for...") is
+  replaced by a factual statement from <cv_facts>, as house-style rule 14 says. If there are no
+  facts, return it unchanged.
 - If the summary in <text> is empty, write a short professional summary (2-4 sentences, no
   first person) of who the candidate is, using only the facts under <cv_facts>: roles, scope,
   domain and main achievements. If there are too few facts for that, return the text
@@ -78,6 +80,7 @@ class ClaudeSuggestionWriter:
     def __init__(self, client: Optional[anthropic.Anthropic] = None, model: Optional[str] = None):
         self.client = client or claude_client()
         self.model = model or get_settings().SUGGESTION_MODEL
+        self.last_usage = None  # token counts of the last request (for the evaluation runner)
 
     def write(self, field: str, text: str, context: Dict[str, str]) -> Tuple[str, bool]:
         lines = [f"Field: {FIELD_LABELS[field]}"]
@@ -96,7 +99,8 @@ class ClaudeSuggestionWriter:
                 model=self.model,
                 # Room for the model's thinking plus a rewrite of a 5,000-character field.
                 max_tokens=16000,
-                system=f"{HOUSE_STYLE}\n\n{TASK}",
+                # The house style and task are the same on every call: cache them (see cache_system).
+                system=cache_system(f"{HOUSE_STYLE}\n\n{TASK}"),
                 messages=[{"role": "user", "content": "\n".join(lines)}],
                 output_format=Rewrite,
                 # If a safety classifier declines, retry on a suitable fallback model server-side.
@@ -110,6 +114,7 @@ class ClaudeSuggestionWriter:
             # The SDK validates the JSON itself; output cut off at max_tokens fails here.
             logger.error("Suggestion output does not match the schema (%s errors)", exc.error_count())
             raise SuggestionError from exc
+        self.last_usage = getattr(response, "usage", None)
         if response.stop_reason in ("refusal", "max_tokens") or response.parsed_output is None:
             logger.error("Unusable suggestion response: stop_reason=%s", response.stop_reason)
             raise SuggestionError
@@ -212,10 +217,12 @@ def prepare_request(
         context = {**context, "cv_facts": cv_facts(cv_content, include_summary=True)}
         if not text and not context["cv_facts"]:
             raise errors.validation_error("Add your current role or a summary first, then we can suggest a headline.")
-    elif field == "summary" and not text:
-        # Only a new summary is written from the CV; an existing one keeps its content.
+    elif field == "summary":
+        # An objective is replaced by a statement from the CV's facts (house-style rule 14), so the
+        # facts are sent with every summary. A positioning statement keeps its content (the prompt
+        # and the checks keep it from growing or taking on new claims).
         context = {**context, "cv_facts": cv_facts(cv_content, include_descriptions=True)}
-        if not context["cv_facts"]:
+        if not text and not context["cv_facts"]:
             raise errors.validation_error("Add your work experience first, then we can suggest a summary.")
     return text, context
 

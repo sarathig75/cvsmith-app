@@ -251,13 +251,14 @@ SUMMARY_CV = {
 }
 
 
-def test_existing_summary_is_reworded_without_cv_facts(client, auth, writer):
-    # A summary may be a positioning statement for the next role: only its wording is improved,
-    # so the writer gets no facts it could add.
+def test_existing_summary_gets_facts_so_an_objective_can_be_replaced(client, auth, writer):
+    # House-style rule 14: an objective is replaced by a statement from the CV's facts. The writer
+    # gets the facts; the prompt and the checks keep a positioning statement from gaining claims.
     client.patch("/api/cv", headers=auth[0], json={"content": SUMMARY_CV})
     r = ask(client, auth[0], field="summary", text="Seeking a product leadership role in fintech")
     assert r.status_code == 201, r.text
-    assert "cv_facts" not in writer.calls[0][2]
+    assert "Role (current): Senior Product Manager, Acme Pay" in writer.calls[0][2]["cv_facts"]
+    assert "Summary:" not in writer.calls[0][2]["cv_facts"]  # the summary itself is not a fact
 
 
 def test_empty_summary_is_written_from_roles_and_descriptions(client, auth, writer):

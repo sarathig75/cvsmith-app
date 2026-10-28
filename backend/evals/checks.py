@@ -62,9 +62,10 @@ def check_no_unlisted_skills_or_employers(suggested: str, original: str, cv: Opt
     return not unlisted_capitalised(suggested, original, cv)
 
 
-def check_summary_not_longer(field: str, suggested: str, original: str) -> bool:
-    """An existing summary is reworded, not extended: at most 1.5 times its length."""
-    if field != "summary" or not original.strip():
+def check_summary_not_longer(field: str, suggested: str, original: str, kind: Optional[str] = None) -> bool:
+    """A positioning statement is reworded, not extended: at most 1.5 times its length. An objective is
+    replaced by a factual statement (house-style rule 14), so the limit does not apply to it."""
+    if field != "summary" or not original.strip() or kind == "objective":
         return True
     return len(suggested) <= SUMMARY_GROWTH_LIMIT * len(original)
 
@@ -78,7 +79,7 @@ def run_checks(case: dict, suggested: str, changed: bool, original: str) -> dict
     return {
         "no_invented_numbers": check_no_invented_numbers(suggested, original, case.get("cv")),
         "no_first_person": check_no_first_person(suggested),
-        "summary_not_longer": check_summary_not_longer(case["field"], suggested, original),
+        "summary_not_longer": check_summary_not_longer(case["field"], suggested, original, case.get("summary_kind")),
         "no_unlisted_skills_or_employers": check_no_unlisted_skills_or_employers(suggested, original, case.get("cv")),
         "expected_change": check_expected_change(case.get("expect_changed"), changed),
     }

@@ -27,6 +27,14 @@ def prompt_hash() -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:12]
 
 
+def usage_dict(usage) -> dict:
+    """Token counts of one request, including how many were read from the prompt cache."""
+    if usage is None:
+        return {}
+    keys = ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
+    return {k: getattr(usage, k, None) for k in keys}
+
+
 def run(only: str = None, repeats: int = 1) -> dict:
     data = json.loads(CASES.read_text(encoding="utf-8"))
     writer = ClaudeSuggestionWriter()
@@ -39,9 +47,11 @@ def run(only: str = None, repeats: int = 1) -> dict:
         except AppError as exc:
             # Production refuses this request (422) before any AI call: there is no suggestion.
             text, suggested, changed, refused = case["text"].strip(), "", False, exc.message
+            usage = None
         else:
             try:
                 suggested, changed = writer.write(case["field"], text, context)
+                usage = writer.last_usage
             except SuggestionError:
                 # The API failed (e.g. no credit): recorded, and the run carries on.
                 results.append({"run": attempt, "id": case["id"], "field": case["field"], "changed": False,
@@ -54,6 +64,7 @@ def run(only: str = None, repeats: int = 1) -> dict:
         checks = run_checks(case, suggested, changed, text)
         results.append({"run": attempt, "id": case["id"], "field": case["field"], "changed": changed,
                         "refused": refused, "suggested": suggested, "checks": checks,
+                        "usage": usage_dict(usage),
                         "passed": all(checks.values())})
         verdict = "PASS" if all(checks.values()) else "FAIL"
         failed = ", ".join(k for k, v in checks.items() if not v)

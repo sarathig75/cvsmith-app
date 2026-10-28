@@ -213,6 +213,13 @@ class CvParser(Protocol):
     def parse_pdf(self, data: bytes) -> Iterator[PartResult]: ...
 
 
+def cache_system(text: str) -> list:
+    """The system prompt as a cacheable block: the same text on every request is read from the cache
+    (about a tenth of the input price) instead of being processed again. Text too short for the API
+    to cache is simply not cached."""
+    return [{"type": "text", "text": text, "cache_control": {"type": "ephemeral"}}]
+
+
 def claude_client() -> anthropic.Anthropic:
     """The app's Claude API client (also used for suggestions)."""
     settings = get_settings()
@@ -273,7 +280,8 @@ class ClaudeCvParser:
             response = self.client.beta.messages.parse(
                 model=self.model,
                 max_tokens=16000,
-                system=f"{SYSTEM_PROMPT}\n\n{task}",
+                # The shared instructions come first and are cached, so the three parts can reuse them.
+                system=[*cache_system(SYSTEM_PROMPT), {"type": "text", "text": task}],
                 messages=[{"role": "user", "content": content}],
                 output_format=schema,
                 # If a safety classifier declines, retry on a suitable fallback model server-side.
