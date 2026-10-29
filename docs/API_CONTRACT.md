@@ -113,11 +113,11 @@ CvStrength = { percent: number,                 // 0-100, sum of section points
                next_step: { section: string, text: string, points: number } | null }
             // next_step: the lowest-scoring section that adds the most points; null at 100%
 
-AtsScore = { score: number,                      // 0-100, format checklist (see open decision)
+AtsScore = { score: number,                      // 0-100, Mode A (docs/ATS_FRAMEWORK.md)
              checks: { id: string, label: string, passed: boolean,
                        points: number, fix: string | null }[],
              first_fix: { check_id: string, text: string, points: number } | null,
-             framework: string }                // version of the checklist, e.g. "ats-format-v1"
+             framework: string }                // e.g. "ats-framework-v1"
 
 Dashboard = { state: "no_cv" | "parsing" | "ready" | "needs_details",
               cv_strength: CvStrength | null,   // null when state is "no_cv"
@@ -139,16 +139,11 @@ Rules:
 - The dashboard never shows a 0% score for "no_cv"; it shows the upload prompt instead.
 - Job alignment is not part of this response. It gets its own endpoints when built.
 
-### ATS format score: open decision
+### ATS format score
 
-Still to decide with the user before this section is final:
-- the checklist and its points (proposal in the handoff: single column, text layer, standard
-  headings, contact at top, simple bullets, consistent dates, no tables or images, file size);
-- how completeness is scored, so the single-column export does not always look ready;
-- which checks are heuristics (columns, tables) and how they are labelled.
-
-Until then, `checks` and `score` are returned as the framework's current draft and `framework` names
-its version, so the client never shows a number from an undecided checklist.
+Framework and points: `docs/ATS_FRAMEWORK.md` (id `ats-framework-v1`). Mode A (CV only) is the dashboard
+score; Mode B (with a job spec) is shown in job alignment. Word lists: `docs/ATS_RULES.md`.
+Not built yet.
 
 ## Suggestion effectiveness and ATS monitoring (approved 2026-10-28)
 
