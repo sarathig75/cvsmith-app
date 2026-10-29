@@ -20,3 +20,6 @@ cvsmith-diag.txt
 
 # Evaluation runs (backend/evals): local results, not committed
 backend/evals/results/
+
+# Real people's CVs used for local testing: never commit them
+/CV/
