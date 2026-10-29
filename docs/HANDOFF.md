@@ -1,8 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-28 · Last commit on main: a8e02d1 Prompt caching; objective summaries replaced from CV facts (rule 14).
-Includes the suggestion guard for names not in the CV (committed 2026-10-29, to test).
-Everything else is merged. Pilot not deployed.
+Updated: 2026-10-29 · Last commit on main: a6b2a40 Summary: note when a name is not in the rest of the CV.
+Everything is committed and pushed; the session branch was merged into main (1222d23). Pilot not deployed.
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
@@ -27,10 +26,10 @@ Everything else is merged. Pilot not deployed.
 - Drop-off metrics in our own `events` table (`docs/FUNNEL.md`), never CV content.
 
 ## Current state
-- Backend: pytest 156/156, flake8 clean (run 2026-10-17); migrations up to 0008.
-- Frontend: type-check clean, vitest 95/95, build OK (run 2026-10-17).
-- Open branches / PRs: none; `claude/serene-thompson-8hp7uo` and `claude/clever-meitner-049zyv`
-  are fully merged.
+- Backend: pytest 195/195, flake8 clean (run 2026-10-29); migrations up to 0009.
+- Frontend: type-check clean, vitest 104/104, build OK (run 2026-10-29).
+- Open branches / PRs: none. `claude/serene-thompson-8hp7uo` was merged into `main` on 2026-10-29.
+  `claude/clever-meitner-049zyv` is fully merged.
 - User's new Windows PC runs the full Docker stack (`docs/LOCAL_SETUP.md`): email-code login,
   upload + parsing and Google sign-in confirmed working. Rest of checklist 3.2 not yet reported.
 - Google sign-in: the user created an OAuth client (Web application) in Google Cloud on
@@ -39,7 +38,11 @@ Everything else is merged. Pilot not deployed.
 - Privacy notice: DRAFT at `/privacy` and `docs/PRIVACY_DRAFT.md`, placeholders still open.
 
 ## Done this session
-- 2026-10-28 (committed 2026-10-29, to test): suggestion guard. A suggestion that names a skill, employer or person
+- 2026-10-29 (`a6b2a40`): a note under the Professional Summary when the user leaves the field with a
+  name the rest of the CV does not contain (hint only; same rule as the AI guard, ported to
+  `frontend/src/utils/unlistedNames.ts`). Confirmed working by the user.
+- 2026-10-29 (`1222d23`): session branch merged into `main`.
+- 2026-10-28 (`9cdd6c9`): suggestion guard. A suggestion that names a skill, employer or person
   not in the CV is not rejected. The create response carries `missing_details`, the modal asks the user to
   add the detail first, and accepting is still allowed. Contract: `docs/API_CONTRACT.md` ("Suggestion
   guard"). Rule lives in `backend/app/services/suggestion_guard.py`; the evaluation runner uses it too.
@@ -59,15 +62,12 @@ Everything else is merged. Pilot not deployed.
   (git-ignored).
 
 ## Next steps
-0. TEST (user): suggestion guard (committed 2026-10-29). Also UNCOMMITTED on 2026-10-29: a note under the
-   Professional Summary when the user leaves the field with a name not in the rest of the CV (approved;
-   client-side, `frontend/src/utils/unlistedNames.ts`). Test it, then approve the commit.
-   a. Open a CV, click 💡 on the summary, and check a suggestion that names an employer not in the CV: a
-      note appears; "Use suggestion" still works; the suggestion counts toward quota.
+0. TEST (user): suggestion guard (`9cdd6c9`). The summary note (`a6b2a40`) is confirmed working.
+   a. 💡 on the summary with a suggestion that names an employer not in the CV: the note appears;
+      "Use suggestion" still works; the suggestion counts toward quota.
    b. A suggestion with only names already in the CV: no note.
    c. Summary 💡 with an objective ("Seeking a role…"): replaced by a statement from the CV.
    d. Upload, edit and download still work (PDF, JSON).
-   Decide: should accepting be blocked until the detail is added to the CV? (Contract assumes no.)
 1. Evaluation: re-run `python -m evals.run_suggestions --repeats 2` after any prompt change. Open:
    summary growth for positioning statements (1 of 2 in the last run, sales case).
 2. ATS score (contract ATS section; lists in `docs/ATS_RULES.md`): Mode A on the dashboard, Mode B in job
@@ -79,7 +79,7 @@ Everything else is merged. Pilot not deployed.
 5. Pilot go-live per `docs/DEPLOY.md`; Week 10 billing.
 
 ## Open questions for the user
-- Test the suggestion guard and report any problems.
+- Results of the suggestion guard test (step 0)?
 - Should accepting a suggestion with missing details be blocked until the detail is added to the CV?
 - Summary growth for positioning statements: keep the 1.5× limit as it is?
 - Which domain name? Privacy notice: operator name, contact email, applicable law (still open).
