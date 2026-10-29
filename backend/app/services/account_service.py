@@ -4,6 +4,7 @@ import logging
 from sqlalchemy import delete, update
 from sqlalchemy.orm import Session
 
+from app.models.alignment import AlignmentRun
 from app.models.cv import CV
 from app.models.event import Event
 from app.models.login_code import LoginCode
@@ -32,6 +33,7 @@ def delete_cv(db: Session, storage: StorageService, user: User) -> None:
         raise errors.not_found("There is no CV to delete.")
     key = cv.raw_upload_path
     db.execute(update(Suggestion).where(Suggestion.cv_id == cv.id).values(cv_id=None))
+    db.execute(update(AlignmentRun).where(AlignmentRun.cv_id == cv.id).values(cv_id=None))
     db.delete(cv)
     db.commit()
     _delete_file(storage, key)
@@ -46,6 +48,7 @@ def delete_account(db: Session, storage: StorageService, user: User) -> None:
     key = cv.raw_upload_path if cv else None
     user_id, email = user.id, user.email
     db.execute(delete(Suggestion).where(Suggestion.user_id == user_id))
+    db.execute(delete(AlignmentRun).where(AlignmentRun.user_id == user_id))
     db.execute(delete(CV).where(CV.user_id == user_id))
     db.execute(delete(LoginCode).where(LoginCode.email == email))
     db.execute(update(Event).where(Event.user_id == user_id).values(user_id=None))

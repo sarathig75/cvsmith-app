@@ -193,6 +193,53 @@ employer and dates (10 of 30).
 parsing completes, cleared by a new upload. `cvs.ats_layout_after` (JSON, nullable): `{hash, layout}` of the PDF
 made from `content`. `layout` = `{text, headings, tables, textboxes, icons, pages}`: numbers only.
 
+## Job alignment (approved 2026-10-29; mocks in the design file, boards "Align to job")
+
+Pro feature. The user pastes a job spec on `/align`; the result is on `/align/{id}`. A run shows the Mode B
+score (docs/ATS_FRAMEWORK.md), a proposed headline (positioning), gaps, and ideas to consider. The user then
+either updates the saved CV with the changes they ticked, or downloads a PDF with the same changes for this
+job only. The saved CV is never changed by a run or by a download.
+
+```ts
+JobRequirements = { job_title: string, core_skills: string[], secondary_skills: string[],
+                    years_required: number | null, needs_management: boolean,
+                    sector: string | null }      // sector: a name from docs/ATS_RULES.md section 5, or null
+Gap = { skill: string, importance: "core" | "secondary",
+        status: "covered" | "missing",
+        by_headline: boolean }                    // missing, but the proposed headline contains it
+Alignment = { id: string, created_at: string,
+              requirements: JobRequirements,      // what we read from the spec; the spec itself is not kept
+              positioning: { current: string, proposed: string } | null,  // null: no headline that stays true to the CV
+              gaps: Gap[],
+              consider: string[],                 // ideas only, never added to the CV (at most 3)
+              score: AtsScore }                   // Mode B of the saved CV; checks include B1-B7 that apply
+Selection = { use_headline: boolean, skills: string[] }   // skills: names of missing gaps to add
+```
+
+| Method | Path | Auth | Body | Response |
+|---|---|---|---|---|
+| POST | /api/alignment | yes | `{ job_spec: string }` (80-20000 chars) | 201 `Alignment`. 402 `PRO_REQUIRED` for Free; 402 `QUOTA_EXCEEDED` when the month's 50 are used; 404 `NOT_FOUND` if the user has no saved CV (`content` is null: open the Canvas first); 503 `ALIGNMENT_FAILED` if the AI step failed (nothing stored or counted) |
+| GET | /api/alignment/{id} | yes | - | 200 `Alignment` (404 if not the user's) |
+| POST | /api/alignment/{id}/preview | yes | `Selection` | 200 `AtsScore`: Mode B of the saved CV with the selection applied, recomputed by the rules (no AI). Used live while the user ticks |
+| POST | /api/alignment/{id}/apply | yes | `Selection` | 200 `CV`: the selection is applied to the saved CV (headline replaced; skills appended if not there already). The client then opens the Canvas |
+| POST | /api/alignment/{id}/download | yes | `Selection` | 200 PDF of the saved CV with the selection applied, named "Jane Doe CV - Job title.pdf". Nothing is stored. PDF only: JSON export stays with the base CV |
+
+Rules:
+- One run = one suggestion of the monthly quota (`GET /api/suggestions/quota` counts both). Only runs that
+  produced a result count. Pro only; a Free user gets `PRO_REQUIRED`.
+- The job spec text is read once by the AI and not stored, logged or sent anywhere else. The run keeps the
+  requirements (shown on the result) and the result.
+- The AI reads the spec into `requirements`; everything scored afterwards is the fixed rules (Mode B). A second
+  AI call writes the proposed headline and the ideas from the requirements and the CV's facts (not the spec),
+  in the house style. The headline is dropped (`positioning: null`) if it names a skill, employer or person the
+  CV does not contain (same guard as suggestions). Ideas never claim anything about the user's history.
+- `skills` in a Selection must be names of `missing` gaps of that run; anything else is a 422.
+- Nothing is added to the CV unless the user ticked it. "Dismiss" is only on the screen (not stored).
+- Mode B unmatched terms (skill, title, sector, requirement kinds) are recorded for review once per run.
+- Funnel events: `alignment_run` (step only); a job PDF records `pdf_downloaded` with `{"job_version": true}`.
+- Data (migration 0011): table `alignment_runs` (id, user_id, cv_id, requirements, result, created_at), deleted
+  with the user; `cv_id` is set to null when the CV is deleted (the run still counts toward the quota).
+
 ## Suggestion effectiveness and ATS monitoring (approved 2026-10-28)
 
 Purpose: learn what suggestions and ATS rules do, without personal data leaving the database

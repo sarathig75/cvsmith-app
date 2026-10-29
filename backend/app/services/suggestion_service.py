@@ -15,6 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
+from app.models.alignment import AlignmentRun
 from app.models.suggestion import Suggestion
 from app.models.user import User, utcnow
 from app.services.cv_parser import NO_KEY_LOG, cache_system, claude_client, missing_credentials
@@ -188,7 +189,7 @@ def _month(now: datetime) -> Tuple[datetime, datetime]:
 
 
 def quota(db: Session, user: User, now: Optional[datetime] = None) -> dict:
-    """Suggestions left this calendar month (UTC). Only changed suggestions count."""
+    """Suggestions left this calendar month (UTC). Only changed suggestions count, and each job alignment."""
     start, next_start = _month(now or utcnow())
     used = db.scalar(
         select(func.count()).select_from(Suggestion).where(
@@ -196,6 +197,14 @@ def quota(db: Session, user: User, now: Optional[datetime] = None) -> dict:
             Suggestion.changed.is_(True),
             Suggestion.created_at >= start,
             Suggestion.created_at < next_start,
+        )
+    ) or 0
+    # A job alignment counts as one suggestion (docs/API_CONTRACT.md, "Job alignment").
+    used += db.scalar(
+        select(func.count()).select_from(AlignmentRun).where(
+            AlignmentRun.user_id == user.id,
+            AlignmentRun.created_at >= start,
+            AlignmentRun.created_at < next_start,
         )
     ) or 0
     limit = PLAN_LIMITS.get(user.plan, PLAN_LIMITS["free"])

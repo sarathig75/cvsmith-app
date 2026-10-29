@@ -92,3 +92,30 @@ def pdf_failed() -> AppError:
 
 def google_auth_failed() -> AppError:
     return AppError("GOOGLE_AUTH_FAILED", "Google authentication failed.", 401)
+
+
+def alignment_pro_required() -> AppError:
+    return AppError(
+        "PRO_REQUIRED",
+        "Align to a job is part of Pro. Upgrade to Pro to align your CV to a job and download a version for it "
+        "($9.99/month).",
+        402,
+    )
+
+
+def alignment_quota_exceeded() -> AppError:
+    return AppError(
+        "QUOTA_EXCEEDED",
+        "You've used all 50 suggestions for this month. Aligning to a job counts as one. They reset at the start "
+        "of next month.",
+        402,
+    )
+
+
+def alignment_failed() -> AppError:
+    return AppError(
+        "ALIGNMENT_FAILED",
+        "We couldn't align your CV to this job right now. Please try again in a moment. "
+        "This did not use one of your suggestions.",
+        503,
+    )
