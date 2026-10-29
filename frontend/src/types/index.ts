@@ -93,6 +93,9 @@ export type Suggestion = {
   changed: boolean;
   status: 'pending' | 'accepted' | 'declined' | 'unchanged';
   created_at: string;
+  /** Names in the suggestion that the CV does not contain (only on the create response). Not rejected:
+   * the user is asked to add them to the CV first. */
+  missing_details?: string[];
 };
 
 export type SuggestionRequest = {

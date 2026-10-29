@@ -18,6 +18,7 @@ from app.config import get_settings
 from app.models.suggestion import Suggestion
 from app.models.user import User, utcnow
 from app.services.cv_parser import NO_KEY_LOG, cache_system, claude_client, missing_credentials
+from app.services.suggestion_guard import unlisted_capitalised
 from app.utils import errors
 
 logger = logging.getLogger("cvsmith.suggestions")
@@ -265,6 +266,8 @@ def suggest(
     )
     db.add(row)
     db.commit()
+    # Not stored: the user is asked to add these to the CV first; the suggestion is not rejected.
+    row.missing_details = unlisted_capitalised(suggested, text, cv_content) if changed else []
     return row
 
 

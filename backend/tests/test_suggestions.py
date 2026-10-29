@@ -314,3 +314,32 @@ def test_case_and_spacing_alone_are_not_a_change(client, auth, writer):
     r = ask(client, auth[0])
     assert r.json()["changed"] is False and r.json()["status"] == "unchanged"
     assert quota(client, auth[0])["remaining"] == 1  # not counted against the quota
+
+
+# --- guard: names not in the CV --------------------------------------------------------
+
+def test_a_name_missing_from_the_cv_is_flagged_but_not_rejected(client, auth, writer):
+    client.patch("/api/cv", headers=auth[0], json={"content": HEADLINE_CV})
+    writer.suggested = "Led integration at Contoso Ltd across 3 regions"
+    r = ask(client, auth[0], field="experience", entry_id="e1", text="Led integration across 3 regions",
+            context={"title": "Senior Product Manager", "company": "Acme Pay"})
+    assert r.status_code == 201, r.text
+    body = r.json()
+    assert body["status"] == "pending" and body["changed"] is True  # not rejected, still counts
+    assert body["missing_details"] == ["Contoso", "Ltd"]
+    assert quota(client, auth[0])["remaining"] == 0
+
+
+def test_names_in_the_cv_are_not_flagged(client, auth, writer):
+    client.patch("/api/cv", headers=auth[0], json={"content": HEADLINE_CV})
+    writer.suggested = "Led integration at Acme Pay across 3 regions"
+    r = ask(client, auth[0], field="experience", entry_id="e1", text="Led integration across 3 regions")
+    assert r.json()["missing_details"] == []
+
+
+def test_stored_suggestions_do_not_carry_missing_details(client, auth, writer):
+    client.patch("/api/cv", headers=auth[0], json={"content": HEADLINE_CV})
+    writer.suggested = "Led integration at Contoso Ltd"
+    sid = ask(client, auth[0], field="experience", entry_id="e1", text="Led integration").json()["id"]
+    r = client.patch(f"/api/suggestions/{sid}", headers=auth[0], json={"status": "declined"})
+    assert r.json()["missing_details"] == []

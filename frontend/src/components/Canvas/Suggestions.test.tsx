@@ -224,3 +224,20 @@ describe('💡 edit after accept', () => {
     expect(edited()).toHaveLength(1); // only the first edit is counted
   });
 });
+
+describe('💡 guard: names not in the CV', () => {
+  it('asks the user to add a missing employer first, and still offers the suggestion', async () => {
+    setup(() => ({
+      status: 201,
+      data: suggestion({
+        field: 'summary', entry_id: null, original: 'Old summary', suggested: 'Led sales at Contoso Ltd',
+        missing_details: ['Contoso', 'Ltd'],
+      }),
+    }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await user.click(await screen.findByRole('button', { name: 'Improve Professional Summary' }));
+    const note = await screen.findByRole('note');
+    expect(note).toHaveTextContent('This suggestion mentions Contoso, Ltd, which is not in your CV yet.');
+    expect(screen.getByRole('button', { name: 'Use suggestion' })).toBeEnabled(); // not rejected
+  });
+});

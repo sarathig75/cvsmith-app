@@ -1,7 +1,8 @@
 # CVSmith handoff
 
-Updated: 2026-10-28 · Last commit on main: see `git log -1` (plan + journey docs, 2026-10-28).
-Everything is merged. Pilot not deployed. Nothing from the 2026-10-23/28 plans is built yet.
+Updated: 2026-10-28 · Last commit on main: a8e02d1 Prompt caching; objective summaries replaced from CV facts (rule 14).
+Includes the suggestion guard for names not in the CV (committed 2026-10-29, to test).
+Everything else is merged. Pilot not deployed.
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
@@ -38,6 +39,14 @@ Everything is merged. Pilot not deployed. Nothing from the 2026-10-23/28 plans i
 - Privacy notice: DRAFT at `/privacy` and `docs/PRIVACY_DRAFT.md`, placeholders still open.
 
 ## Done this session
+- 2026-10-28 (committed 2026-10-29, to test): suggestion guard. A suggestion that names a skill, employer or person
+  not in the CV is not rejected. The create response carries `missing_details`, the modal asks the user to
+  add the detail first, and accepting is still allowed. Contract: `docs/API_CONTRACT.md` ("Suggestion
+  guard"). Rule lives in `backend/app/services/suggestion_guard.py`; the evaluation runner uses it too.
+  Backend 195 tests, frontend 97 tests, build OK.
+- 2026-10-28: prompt caching on suggestions and the CV parser (a8e02d1, committed).
+- 2026-10-28: house-style rules 12–14 (weak phrasing, decorative summaries, objectives replaced from CV
+  facts). Evaluation: prompt version 3 passes 4 of 5 checks in 2 runs (contract has the numbers).
 - 2026-10-28: ATS framework agreed (two modes, 100 points each); fixed lists approved, incl.
   automotive, pharma, FMCG (`docs/ATS_RULES.md`). Unmatched items: not scored, not shown, stored
   with text for review at ≥5 sightings.
@@ -50,40 +59,27 @@ Everything is merged. Pilot not deployed. Nothing from the 2026-10-23/28 plans i
   (git-ignored).
 
 ## Next steps
-0. Prompt version 3 (rule 14, objectives replaced from CV facts) passes 4 of 5 checks in 2 runs; the
-   one miss is a positioning statement that grew once (sales case). Prompt caching is on (suggestions and
-   parser). Decision pending: the summary guard for unlisted employers/skills (approved as "prompt the user
-   to add the missing details, do not reject"). Contract first, then code.
-(Earlier) Prompt version 2 evaluated (2 runs; results in `docs/API_CONTRACT.md`). Expected change improved
-   (44 → 47 of 50) but first person slipped 50 → 49 (objective summary), so it does not pass the
-   no-regression rule as is. Still failing: fluff summary (rule 13 not followed), pharma summary growth
-   past 1.5×. Decisions needed: an objective-summary rule (first person and "Seeking"), and the growth guard.
-1. Evaluation follow-ups (prompt hash 61884741441e, 2 runs):
-   a. DONE 2026-10-28: a suggestion is a change when its text differs; the writer's flag is ignored.
-      Changes went from 22 to 28 of 50 results. Quota counts changes, so watch free-plan usage.
-   b. Summary growth past 1.5× (pharma objective case): open. Decide: a deterministic guard that
-      rejects it, and/or a stronger prompt rule.
-   c. Weak phrasing (sales "Worked on", cliché summary, auto "Helped"): a prompt change. Draft wording
-      is in the 2026-10-28 chat; it needs approval before it is applied to `SKILL.md` and the backend
-      copy, then a before-and-after evaluation. Two expectations look wrong (see the handoff notes
-      below) and need a decision.
-2. Build the ATS score (contract ATS section; lists in `docs/ATS_RULES.md`): Mode A on the dashboard,
-   Mode B in job alignment; the unmatched store starts receiving terms here.
+0. TEST (user): suggestion guard (committed 2026-10-29).
+   a. Open a CV, click 💡 on the summary, and check a suggestion that names an employer not in the CV: a
+      note appears; "Use suggestion" still works; the suggestion counts toward quota.
+   b. A suggestion with only names already in the CV: no note.
+   c. Summary 💡 with an objective ("Seeking a role…"): replaced by a statement from the CV.
+   d. Upload, edit and download still work (PDF, JSON).
+   Decide: should accepting be blocked until the detail is added to the CV? (Contract assumes no.)
+1. Evaluation: re-run `python -m evals.run_suggestions --repeats 2` after any prompt change. Open:
+   summary growth for positioning statements (1 of 2 in the last run, sales case).
+2. ATS score (contract ATS section; lists in `docs/ATS_RULES.md`): Mode A on the dashboard, Mode B in job
+   alignment; the unmatched store starts receiving terms here.
 3. Dashboard `/dashboard`, `/next`, job alignment, Canvas before/after (approved layouts:
    `https://claude.ai/artifact/4CzxsdYGX3LX2KAUooUS8K`; `docs/USER_JOURNEYS.md`).
-4. User checks the local checklist (`docs/LOCAL_SETUP.md` 3.2) and reports what fails.
-5. Privacy notice must cover the unmatched-term store and suggestion counts before pilot users join.
+4. Privacy notice must cover the unmatched-term store and suggestion counts before pilot users join.
    Domain and operator details are still open.
-6. Pilot go-live per `docs/DEPLOY.md`; Week 10 billing.
+5. Pilot go-live per `docs/DEPLOY.md`; Week 10 billing.
 
 ## Open questions for the user
-- Prompt wording for weak phrasing (1c): approve the draft, which is in the 2026-10-28 chat.
-- Summary size (1b): is a size limit wanted for new summaries (proposed: 2–4 sentences, about 500
-  characters), on top of the 1.5× rule for existing summaries?
-- Eval expectations: `sales-projects-weak` ("Worked on" should stay when ownership is unclear) and
-  `auto-experience-weak` ("Helped" → "Supported" is a small change) may be wrong. Propose setting
-  both to not asserted.
-- Approve the dashboard and `/next` layouts (already shown), and the CV strength points.
+- Test the suggestion guard and report any problems.
+- Should accepting a suggestion with missing details be blocked until the detail is added to the CV?
+- Summary growth for positioning statements: keep the 1.5× limit as it is?
 - Which domain name? Privacy notice: operator name, contact email, applicable law (still open).
 
 ## Setup notes

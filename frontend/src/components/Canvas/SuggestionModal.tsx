@@ -103,6 +103,12 @@ export function SuggestionModal({ request, label, onAccept, onUsed, onClose }: P
             <TextBox title="Current" text={state.suggestion.original || '(empty)'} />
             <TextBox title="Suggested" text={state.suggestion.suggested} highlight />
           </div>
+          {state.suggestion.missing_details && state.suggestion.missing_details.length > 0 && (
+            <p role="note" className="mt-4 rounded-sm bg-warning-bg p-3 text-sm text-warning-text">
+              This suggestion mentions {state.suggestion.missing_details.join(', ')}, which is not in your CV yet.
+              Add it to your experience first, or use the suggestion as it is.
+            </p>
+          )}
           <div className="mt-6 flex flex-wrap gap-3">
             <Button onClick={() => accept(state.suggestion)}>Use suggestion</Button>
             <Button variant="secondary" onClick={() => keep(state.suggestion)}>

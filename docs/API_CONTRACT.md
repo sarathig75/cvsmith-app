@@ -249,3 +249,21 @@ Cadence: `unmatched report` weekly, `suggestions report` monthly.
 - Baseline for prompt version 1 (2026-10-28, after the text-decides fix, 2 runs, prompt hash 61884741441e): no invented
   numbers 50/50, no first person 50/50, summary not longer 48/50, expected change 44/50.
   28 of 50 results were changes (22 before the fix). Only 2 of the 28 were trivial edits.
+
+## Suggestion guard: missing details (approved 2026-10-28; built after this contract)
+
+A suggestion can name a skill, employer or person that the CV does not contain. It is not rejected.
+Instead the user is asked to add that detail to the CV first.
+
+- `SuggestionOut` gains `missing_details: string[]`: the capitalised terms in `suggested_text` that
+  do not appear in the field or the CV (the same rule as the evaluation check; the first word of a
+  sentence or bullet and the spelled-out form of an acronym the CV uses are not counted). Empty when
+  nothing is missing. Returned on the create response only; not stored.
+- The suggestion keeps its status (`pending`), and the user can still accept it. The client shows a
+  notice: "This suggestion mentions X, which is not in your CV yet. Add it to your experience first,
+  or use the suggestion as it is."
+- No change to quota: a suggestion with missing details is still a change and still counts.
+- The check runs on the same request rules as the API (`prepare_request`); the rule lives in
+  `app/services/suggestion_guard.py`, and the evaluation runner imports it, so both use one definition.
+- Assumption to confirm: accepting is still allowed (the user decides). If you want it blocked until
+  the details are added, say so.

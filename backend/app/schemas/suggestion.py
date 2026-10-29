@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
@@ -37,6 +37,9 @@ class SuggestionOut(BaseModel):
     changed: bool
     status: Literal["pending", "accepted", "declined", "unchanged"]
     created_at: datetime
+    # Names in the suggestion that the CV does not contain: the user is asked to add them first. Only on
+    # the create response; not stored.
+    missing_details: List[str] = []
 
     @field_serializer("created_at")
     def _ser_created(self, v: datetime) -> str:
