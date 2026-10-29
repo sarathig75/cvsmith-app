@@ -71,6 +71,11 @@ This session's work is on `claude/youthful-darwin-uv0663` (pushed, not merged, n
 
 ## Resume on the laptop (user travelling Pune to Chennai, 2026-10-29)
 - `git fetch origin && git checkout claude/youthful-darwin-uv0663 && git pull`, then `docs/LOCAL_SETUP.md` 3.2.
+- Pune PC build result: `pip install` now passes (cached); `playwright install --with-deps chromium` was
+  killed (exit 137, "cannot allocate memory"): Docker/WSL ran out of RAM. Fix on that PC: `.wslconfig`
+  with `[wsl2] memory=6GB swap=6GB` (less if the PC has 8 GB), `wsl --shutdown`, restart Docker Desktop,
+  `docker compose build backend`. The apt download (99.5 MB) restarts on each retry; an apt cache mount in
+  `backend/Dockerfile` would help on the slow link (offered, not done). Check the laptop's RAM first.
 - On the Pune PC the old uncommitted copies of the summary-note work were stashed (`git stash list`; safe to
   drop); `CV/` (real CVs) is git-ignored; the Docker build there was still running when the user left.
 
