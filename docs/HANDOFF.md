@@ -69,6 +69,11 @@ This session's work is on `claude/youthful-darwin-uv0663` (pushed, not merged, n
   capitalised words); Dismiss is on screen only and lasts until the page is left.
 - Earlier: suggestion guard `9cdd6c9`, summary name note `a6b2a40`, prompt caching `a8e02d1`, evaluation set, learning store.
 
+## Resume on the laptop (user travelling Pune to Chennai, 2026-10-29)
+- `git fetch origin && git checkout claude/youthful-darwin-uv0663 && git pull`, then `docs/LOCAL_SETUP.md` 3.2.
+- On the Pune PC the old uncommitted copies of the summary-note work were stashed (`git stash list`; safe to
+  drop); `CV/` (real CVs) is git-ignored; the Docker build there was still running when the user left.
+
 ## Next steps
 0. User tests the branch locally (checklist 3.2, incl. job alignment), then merge to `main`.
 1. Phone layouts of the dashboard, `/next` and the Align to job screens (no mocks wanted; check at phone width).
