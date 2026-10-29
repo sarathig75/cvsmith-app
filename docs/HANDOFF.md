@@ -86,6 +86,8 @@ This session's work is on `claude/youthful-darwin-uv0663` (pushed, not merged, n
 ## Setup notes
 - Slow first Docker build (pip + Chromium downloads): let it finish; build `backend` before `celery`
   (`docker compose build backend`) so they do not share the bandwidth; later builds use the cache.
+  `backend/Dockerfile` now has longer pip timeouts/retries and a pip cache mount (added after a pip exit 2 on
+  the slow link; not tested here, no Docker daemon in the cloud container).
 - Local problems: use the `local-troubleshoot` skill (symptom table + diagnostic file,
   `docs/LOCAL_SETUP.md` 5.1); add each newly solved problem to both.
 - Local Docker on Windows: follow `docs/LOCAL_SETUP.md`. Root `.env` holds `ANTHROPIC_API_KEY`
