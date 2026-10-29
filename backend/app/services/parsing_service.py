@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.models.cv import AI_PARTS, CV, pending_parts
 from app.services import event_service
+from app.services.ats import service as ats_service
 from app.services.contact_patterns import find_contact
 from app.services.cv_parser import CvParser, ParseError, PartResult, merge_fragment
 from app.services.storage_service import StorageService
@@ -62,7 +63,15 @@ def run_parsing(
         logger.exception("Unexpected error parsing CV %s", cv_id)
         first_error = GENERIC_FAILURE
     if _finish(db, cv_id, upload_key, first_error):
+        _score_upload(db, storage, cv_id, upload_key)
         _delete_upload(storage, cv_id, upload_key)
+
+
+def _score_upload(db: Session, storage: StorageService, cv_id: uuid.UUID, upload_key: str) -> None:
+    """Keep the ATS score of the uploaded file ("before") while the file still exists."""
+    cv = _current_cv(db, cv_id, upload_key)
+    if cv is not None and cv.parsing_status == "complete":
+        ats_service.save_before_score(db, storage, cv, upload_key)
 
 
 def _delete_upload(storage: StorageService, cv_id: uuid.UUID, upload_key: str) -> None:

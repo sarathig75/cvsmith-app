@@ -83,6 +83,8 @@ def save_upload(
         cv.content = None
         cv.applied_parts = []
         cv.content_updated_at = None
+        cv.ats_before = None
+        cv.ats_layout_after = None
     try:
         db.commit()
     except Exception:

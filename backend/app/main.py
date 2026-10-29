@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.config import get_settings
-from app.routes import auth, cv, suggestions, user
+from app.routes import auth, cv, dashboard, suggestions, user
 from app.utils.errors import AppError, error_body
 
 logger = logging.getLogger("cvsmith")
@@ -84,6 +84,7 @@ def create_app() -> FastAPI:
     app.include_router(user.router)
     app.include_router(cv.router)
     app.include_router(suggestions.router)
+    app.include_router(dashboard.router)
     return app
 
 

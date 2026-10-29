@@ -3,6 +3,7 @@
     python -m app.cli invites add a@example.com b@example.com --note "pilot"
     python -m app.cli invites remove a@example.com
     python -m app.cli invites list
+    python -m app.cli users set-plan a@example.com pro      (free|pro; until billing exists, for testing)
     python -m app.cli suggestions report [--weeks 4]
     python -m app.cli unmatched report [--min-count 5]
     python -m app.cli unmatched ignore <kind> "<term>"
@@ -15,6 +16,9 @@ import sys
 from typing import List, Optional
 
 from app.database import SessionLocal
+from sqlalchemy import select
+
+from app.models.user import User
 from app.services import invite_service, learning_service
 from app.models.unmatched import UNMATCHED_KINDS
 
@@ -45,6 +49,18 @@ def _unmatched(args) -> int:
     return 0
 
 
+def _set_plan(email: str, plan: str) -> int:
+    with SessionLocal() as db:
+        user = db.scalar(select(User).where(User.email == email.strip().lower()))
+        if user is None:
+            print(f"not found: {email}")
+            return 1
+        user.plan = plan
+        db.commit()
+        print(f"{user.email}: plan is now {plan}")
+    return 0
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(prog="python -m app.cli")
     sub = parser.add_subparsers(dest="group", required=True)
@@ -56,6 +72,12 @@ def main(argv: Optional[List[str]] = None) -> int:
     rm = actions.add_parser("remove")
     rm.add_argument("emails", nargs="+")
     actions.add_parser("list")
+
+    users = sub.add_parser("users", help="account settings for testing")
+    users_actions = users.add_subparsers(dest="action", required=True)
+    set_plan = users_actions.add_parser("set-plan")
+    set_plan.add_argument("email")
+    set_plan.add_argument("plan", choices=["free", "pro"])
 
     suggestions = sub.add_parser("suggestions", help="counts of what users did with suggestions")
     suggestions.add_argument("action", choices=["report"])
@@ -71,6 +93,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         term_action.add_argument("term")
     args = parser.parse_args(argv)
 
+    if args.group == "users":
+        return _set_plan(args.email, args.plan)
     if args.group == "suggestions":
         return _suggestions_report(args.weeks)
     if args.group == "unmatched":
