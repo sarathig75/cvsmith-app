@@ -26,10 +26,11 @@ Work of this session is on branch `claude/youthful-darwin-uv0663` (pushed, not m
 - Drop-off metrics in our own `events` table (`docs/FUNNEL.md`), never CV content.
 
 ## Current state
-- Backend: pytest 250/250, flake8 clean (run 2026-10-29); migrations up to 0010.
-- Frontend: type-check clean, vitest 120/120, build OK (run 2026-10-29).
+- Backend: pytest 271/271, flake8 clean (run 2026-10-29); migrations up to 0011.
+- Frontend: type-check clean, vitest 138/138, build OK (run 2026-10-29).
 - Open branches / PRs: `claude/youthful-darwin-uv0663` (pushed, not merged; no PR): ATS Mode A, dashboard,
-  `/next`, Canvas before/after score, privacy text. For the user to test locally (`docs/LOCAL_SETUP.md` 3.2).
+  `/next`, Canvas before/after score, job alignment, privacy text. For the user to test locally
+  (`docs/LOCAL_SETUP.md` 3.2).
 - Real Chromium check in the cloud container: the Classic PDF gives layout facts `text ok, 3 headings,
   0 tables, 1 page`; not yet seen by the user in the browser.
 - User's new Windows PC runs the full Docker stack (`docs/LOCAL_SETUP.md`): email-code login,
@@ -49,24 +50,31 @@ Work of this session is on branch `claude/youthful-darwin-uv0663` (pushed, not m
 - 2026-10-29: frontend `/dashboard`, `/next`, Canvas ATS card; logged-in users go to the dashboard (to the
   Canvas right after sign-up/login with a CV chosen); every download lands on `/next`; Dashboard in header.
 - 2026-10-29: CLI `users set-plan <email> free|pro`; privacy text updated.
-- 2026-10-29: user paused **job alignment** ("Align to a job" box, Mode B endpoint, positioning text):
-  not built. User wants changes first (not yet described).
+- 2026-10-29: **Job alignment** (contract "Job alignment"; mocks approved in the design file, boards "Align to
+  job"). Pro only, shares the 50/month suggestion quota, migration 0011 (`alignment_runs`, no job spec text).
+  `POST /api/alignment` (2 AI steps: spec to requirements, then headline + ideas), `GET /{id}`, `/preview`
+  (live Mode B score as items are ticked, no AI), `/apply` (updates the saved CV, then the Canvas opens),
+  `/download` (job-only PDF, nothing stored, no JSON). Frontend: small dashboard card, `/align`, `/align/:id`,
+  "Align to job" tab only on those screens, card 1 on `/next`. Checked end to end in the cloud container with
+  the real Claude API and Chromium (screens and a job PDF); not yet by the user.
+- 2026-10-29: **Decisions made without asking** (reverse if wrong): a job PDF download stays on the result page
+  (no `/next`); `/align` and its API need a saved CV (`content`), else "Open your CV on the Canvas first";
+  a proposed headline naming something not in the CV is dropped (same guard as suggestions, which only checks
+  capitalised words); Dismiss is on screen only and lasts until the page is left.
 - Earlier: suggestion guard `9cdd6c9`, summary name note `a6b2a40`, prompt caching `a8e02d1`, evaluation
   set and learning store (see git log).
 
 ## Next steps
-0. User tests the branch locally (checklist 3.2), then merge to `main`.
-1. Job alignment, after the user describes the changes. Already decided: option B result (Mode B score,
-   Gaps, AI positioning line and "Consider" ideas); shares the suggestion quota (Pro 50/month); Free sees
-   the sample result; the job spec text is not stored. Mode B scoring code exists in `ats/score.py`.
-2. Evaluation: re-run `python -m evals.run_suggestions --repeats 2` after any prompt change.
-3. Phone versions of the dashboard and `/next` mockups (design file, "pending"); check layouts at phone width.
-4. Fill the privacy placeholders; domain; pilot go-live per `docs/DEPLOY.md`; Week 10 billing.
+0. User tests the branch locally (checklist 3.2, incl. job alignment), then merge to `main`.
+1. Phone layouts of the dashboard, `/next` and the Align to job screens (no mocks wanted; check at phone width).
+2. Evaluation: re-run `python -m evals.run_suggestions --repeats 2` after any prompt change; consider a small
+   evaluation for the alignment headline (does it invent anything?).
+3. Fill the privacy placeholders; domain; pilot go-live per `docs/DEPLOY.md`; Week 10 billing.
 
 ## Open questions for the user
 - Decided 2026-10-29: accepting a suggestion is never blocked; a missing-detail note is only a suggestion.
 - Summary growth for positioning statements: keep the 1.5× limit as it is?
-- Job alignment: which changes does the user want before it is built?
+- A free user can open `/align` but is told to upgrade on submit: should Free see a sample result instead?
 - Related job families for B5 (3 points): only HR/Operations and Data/Finance are listed; add more pairs?
 - Which domain name? Privacy notice: operator name, contact email, applicable law (still open).
 

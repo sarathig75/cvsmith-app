@@ -66,5 +66,5 @@ Total: 60 + 40 = 100.
 ## Build status
 Built 2026-10-29: the word lists (`backend/app/services/ats/lists.py`), Mode A and Mode B scoring
 (`backend/app/services/ats/`), the dashboard and the Canvas before/after score (Mode A). Mode B has no
-endpoint or screen yet: job alignment is paused. How each check is measured in code:
+endpoint of its own, but job alignment (2026-10-29) uses it. How each check is measured in code:
 `docs/API_CONTRACT.md`, "ATS format score".

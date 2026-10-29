@@ -131,6 +131,37 @@ export type Dashboard = {
   plan: 'free' | 'pro';
 };
 
+/** Job alignment (docs/API_CONTRACT.md, "Job alignment"). The job spec itself is never kept. */
+export type JobRequirements = {
+  job_title: string;
+  core_skills: string[];
+  secondary_skills: string[];
+  years_required: number | null;
+  needs_management: boolean;
+  sector: string | null;
+};
+export type Gap = {
+  skill: string;
+  importance: 'core' | 'secondary';
+  status: 'covered' | 'missing';
+  /** Missing, but the proposed headline contains it. */
+  by_headline: boolean;
+};
+export type Alignment = {
+  id: string;
+  created_at: string;
+  requirements: JobRequirements;
+  /** null: no headline that stays true to the CV. */
+  positioning: { current: string; proposed: string } | null;
+  gaps: Gap[];
+  /** Ideas only; never added to the CV. */
+  consider: string[];
+  /** Mode B score of the saved CV. */
+  score: AtsScore;
+};
+/** What the user ticked: the proposed headline, and missing skills to add. */
+export type Selection = { use_headline: boolean; skills: string[] };
+
 export type ApiErrorCode =
   | 'VALIDATION_ERROR'
   | 'EMAIL_EXISTS'
@@ -145,6 +176,7 @@ export type ApiErrorCode =
   | 'SUGGESTION_FAILED'
   | 'PRO_REQUIRED'
   | 'PDF_FAILED'
+  | 'ALIGNMENT_FAILED'
   | 'INVALID_CODE'
   | 'RATE_LIMITED'
   | 'EMAIL_FAILED'

@@ -3,6 +3,8 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { startSessionKeepAlive } from './services/session';
 import { useAuthStore } from './store/authStore';
 import { OnboardingScreen } from './components/Auth/OnboardingScreen';
+import { AlignResultPage } from './components/Align/AlignResultPage';
+import { AlignStartPage } from './components/Align/AlignStartPage';
 import { CanvasPage } from './components/Canvas/CanvasPage';
 import { DashboardPage } from './components/Dashboard/DashboardPage';
 import { NextPage } from './components/Dashboard/NextPage';
@@ -22,6 +24,8 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/next" element={<NextPage />} />
+        <Route path="/align" element={<AlignStartPage />} />
+        <Route path="/align/:id" element={<AlignResultPage />} />
         <Route path="/canvas" element={<CanvasPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/settings" element={<SettingsPage />} />

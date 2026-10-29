@@ -184,6 +184,11 @@ If the backend isn't up yet, wait 20 seconds and reload; to see why, run `docker
       (your saved CV); "Check again" saves your edits first, then scores again (takes a few seconds).
 - [ ] Download PDF works and then opens the **What next** page (CV strength and ATS cards, Dashboard).
 - [ ] Export JSON (Pro only; see 3.3).
+- [ ] **Job alignment** (Pro, see 3.3): Dashboard → "Align to a job" card → paste a job description →
+      "Align CV to this job" (about 10-20 seconds). The tab "Align to job" appears only on these screens.
+      Result: score now vs after (updates as you tick), headline, gaps (tick "I have this" or Dismiss),
+      ideas. "Update my CV" opens the Canvas with the changes; "Download PDF for this job" leaves your CV
+      as it is. Each run uses one of your suggestions.
 - [ ] Settings: plan and usage show; log out and log back in with a new code.
 - [ ] "Upload new CV" warns before replacing the current one.
 

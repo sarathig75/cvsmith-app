@@ -1,7 +1,7 @@
 # CVSmith user journeys (Release 1)
 
 Status: agreed in discussion on 2026-10-28. Dashboard, `/next` and the Canvas before/after ATS score are
-built (2026-10-29). "Align to a job" is paused: the dashboard has no such box and `/next` has no card 1 yet. Screens and events are described here; the API is in
+built (2026-10-29). Job alignment is built (2026-10-29): a small "Align to a job" card on the dashboard opens `/align` (paste box), then `/align/{id}` (result). The "Align to job" tab shows only on those screens. Contract: `docs/API_CONTRACT.md`, "Job alignment". Screens and events are described here; the API is in
 `docs/API_CONTRACT.md` (to be updated before code).
 
 ## Terms

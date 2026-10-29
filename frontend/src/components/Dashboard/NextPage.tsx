@@ -45,10 +45,13 @@ export function NextPage() {
         <p className="mt-1.5 text-slate-600">Your file is ready. These steps can make it stronger. You can skip any of them.</p>
       </div>
       <div className="flex flex-col gap-3.5">
+        <Card to="/align" kicker="1 · Align to a job" title="Align your CV to a job spec">
+          Paste a job description and see how to position this CV for it.
+        </Card>
         {strength && (
           <Card
             to="/canvas"
-            kicker={`1 · CV strength: ${strength.percent}%`}
+            kicker={`2 · CV strength: ${strength.percent}%`}
             title={strength.next_step ? strength.next_step.text : 'Your CV is complete'}
           >
             {strength.next_step
@@ -59,7 +62,7 @@ export function NextPage() {
         {ats && (
           <Card
             to="/canvas"
-            kicker={`${strength ? 2 : 1} · ATS format score: ${ats.score}`}
+            kicker={`${strength ? 3 : 2} · ATS format score: ${ats.score}`}
             title={ats.first_fix ? ats.first_fix.text : 'Every ATS check passes'}
           >
             {ats.first_fix
@@ -67,7 +70,7 @@ export function NextPage() {
               : 'Nothing to fix right now.'}
           </Card>
         )}
-        <Card to="/dashboard" kicker="Dashboard" title="Go to your dashboard">
+        <Card to="/dashboard" kicker={`${2 + (strength ? 1 : 0) + (ats ? 1 : 0)} · Dashboard`} title="Go to your dashboard">
           See your CV strength and ATS score in one place.
         </Card>
       </div>

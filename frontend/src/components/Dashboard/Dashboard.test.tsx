@@ -58,6 +58,13 @@ describe('dashboard', () => {
     expect(screen.queryByText(/compliant|compliance/i)).not.toBeInTheDocument();
   });
 
+  it('offers Align to a job as a small card that opens its own screen', async () => {
+    setup(() => ({ status: 200, data: ready }));
+    const card = await screen.findByRole('link', { name: /Align to a job.*Pro/s });
+    expect(card).toHaveAttribute('href', '/align');
+    expect(screen.queryByPlaceholderText(/Paste the job description/)).not.toBeInTheDocument(); // the paste box is on its own screen
+  });
+
   it('shows the upload prompt, not a 0% score, when there is no CV', async () => {
     setup(() => ({ status: 200, data: { state: 'no_cv', plan: 'free', cv_strength: null, ats: null } }));
     expect(await screen.findByRole('heading', { name: 'Start with your CV' })).toBeInTheDocument();
@@ -103,11 +110,12 @@ describe('dashboard', () => {
 describe('what next', () => {
   it('names the real section and check that are not complete, and every card opens a page', async () => {
     setup(() => ({ status: 200, data: ready }), '/next');
-    expect(await screen.findByText('1 · CV strength: 64%')).toBeInTheDocument();
+    expect(await screen.findByText('2 · CV strength: 64%')).toBeInTheDocument();
     expect(screen.getByText(/Work experience adds 20 points\./)).toBeInTheDocument();
-    expect(screen.getByText('2 · ATS format score: 78')).toBeInTheDocument();
+    expect(screen.getByText('3 · ATS format score: 78')).toBeInTheDocument();
     expect(screen.getByText(/The check "Contact details complete" is not passed yet \(\+4\)\./)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Go to your dashboard/ })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: /Align your CV to a job spec/ })).toHaveAttribute('href', '/align');
     expect(screen.queryByRole('button')).not.toBeInTheDocument(); // cards are the action; no buttons
   });
 

@@ -22,6 +22,7 @@ export const PRIVACY_SECTIONS: PrivacySection[] = [
       'Your email address, to log you in with a one-time code.',
       'Your CV: the file you upload and everything we read from it or you type in (for example contact details, work history, education, skills).',
       'The suggestions you ask for, whether you used them, and whether you changed the text afterwards (we count the change; we do not keep the changed text).',
+      'On Pro, the job descriptions you paste to align your CV to a job. We keep only what we read from them (job title, skills asked for, years, sector) and the result (proposed headline, gaps, ideas), never the pasted text itself.',
       'Your CV scores (CV strength and ATS format score). They are worked out from your CV when you open the dashboard or the editor. For the file you upload, we keep its score (numbers and the names of the checks only) after the file itself is deleted.',
       'Words from your CV that our checks do not recognise, such as an unusual skill, job title or action verb. We store only the word and how often we have seen it, so we can improve the checks. A stored word has no link to you: never your name, contact details or the CV it came from. Anything with a digit or an @ sign, or longer than four words, is never stored.',
       'Which steps you have reached (for example signed up, uploaded a CV, downloaded a PDF), to see where the product needs work. These records never contain your CV content.',
@@ -32,7 +33,7 @@ export const PRIVACY_SECTIONS: PrivacySection[] = [
     title: 'How we use it',
     bullets: [
       'To read your CV and fill in the editor for you.',
-      'To write the suggestions you ask for.',
+      'To write the suggestions you ask for, and the job alignments you run.',
       'To work out your CV strength and ATS format score, and to suggest what to fix first.',
       'To create your PDF and, on Pro, your JSON export.',
       'To send you login codes.',
@@ -44,7 +45,7 @@ export const PRIVACY_SECTIONS: PrivacySection[] = [
     title: 'Service providers',
     intro: ['We use a few providers to run CVSmith. They handle your data only to provide their service to us:'],
     bullets: [
-      'Anthropic (Claude API): receives the text of your CV to read it and to write suggestions. Their privacy policy: [ANTHROPIC PRIVACY LINK].',
+      'Anthropic (Claude API): receives the text of your CV to read it and to write suggestions, and the job descriptions you paste to align your CV. Their privacy policy: [ANTHROPIC PRIVACY LINK].',
       'Resend: sends login emails, so it receives your email address. Their privacy policy: [RESEND PRIVACY LINK].',
       'Google: only if you choose "Sign in with Google". Their privacy policy: [GOOGLE PRIVACY LINK].',
       '[HOSTING PROVIDER, REGION]: the servers where CVSmith and its database run. Their privacy policy: [HOSTING PRIVACY LINK].',
@@ -55,7 +56,7 @@ export const PRIVACY_SECTIONS: PrivacySection[] = [
     bullets: [
       'The file you upload is deleted as soon as we have read it.',
       'Your CV and its scores stay until you replace it or delete it.',
-      'Settings → Delete my CV removes your CV straight away. Settings → Delete my account removes your account, CV, scores and suggestions straight away.',
+      'Settings → Delete my CV removes your CV straight away. Settings → Delete my account removes your account, CV, scores, suggestions and job alignments straight away.',
       'Database backups are kept for 14 days, so deleted data also disappears from backups within 14 days.',
       'Step records and unrecognised words are kept after you delete your account, but without any link to you.',
     ],

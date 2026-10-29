@@ -180,6 +180,26 @@ export function DashboardPage() {
           </div>
         </div>
       )}
+      {data?.state === 'ready' && (
+        <Link
+          to="/align"
+          className="mt-4 flex flex-col gap-4 rounded-md border border-slate-200 bg-white p-5 hover:border-brand hover:shadow-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand md:flex-row md:items-center md:gap-6"
+        >
+          <span className="flex grow flex-col gap-1.5">
+            <span className="flex items-center gap-2.5">
+              <span className="text-base font-semibold">Align to a job</span>
+              <span className="rounded-full bg-brand-light px-2 py-0.5 text-[11px] font-semibold text-brand-dark">Pro</span>
+            </span>
+            <span className="text-sm text-slate-600">
+              Paste a job spec. We suggest how to position your CV for it, which gaps to close and what to consider adding.
+              Download a PDF for that job without changing your base CV.
+            </span>
+          </span>
+          <span className="inline-flex min-h-[40px] shrink-0 items-center whitespace-nowrap rounded-sm bg-brand px-4 text-sm font-semibold text-white">
+            Align to a job
+          </span>
+        </Link>
+      )}
       {uploadOpen && <ReplaceCvModal hasCv={false} onUpload={upload} onClose={() => setUploadOpen(false)} />}
       {upgradeMessage && <UpgradeModal message={upgradeMessage} onClose={() => setUpgradeMessage(null)} />}
       {user && <span className="sr-only">Signed in as {user.email}</span>}

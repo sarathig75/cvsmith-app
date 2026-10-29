@@ -98,7 +98,7 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
 - Downloads use the last saved `content`: the client saves pending edits first.
 - No Apple sign-in in Release 1.
 
-## Dashboard (built 2026-10-29; job alignment not built yet)
+## Dashboard (built 2026-10-29)
 
 Home for logged-in users (see `docs/USER_JOURNEYS.md`). Scores are computed on each read from
 the saved CV (`content`); nothing is stored. The "before" ATS score is the one exception: it is
@@ -142,7 +142,7 @@ Rules:
 - `next_step.text` names the section and the points it adds, e.g. "Add two roles with dates to
   reach 90%". It never says "compliant" or promises a job outcome.
 - The dashboard never shows a 0% score for "no_cv"; it shows the upload prompt instead.
-- Job alignment is not part of this response. It gets its own endpoints when built.
+- Job alignment is not part of this response. It has its own endpoints ("Job alignment" below).
 
 ### ATS format score
 
@@ -151,7 +151,7 @@ score; Mode B (with a job spec) is shown in job alignment. Word lists: `docs/ATS
 (code: `backend/app/services/ats/lists.py`).
 
 Built 2026-10-29: Mode A and the dashboard/Canvas display. The Mode B scoring rules are in the code
-(`ats/score.py`) and tested, but no endpoint or screen uses them yet (job alignment is paused).
+(`ats/score.py`) and are used by job alignment (below).
 
 How each check is measured (decisions the framework left open; change them here first):
 - **Where facts come from.** Layout facts (A1, A2, A4, A11) are read from a file: the upload when it is
