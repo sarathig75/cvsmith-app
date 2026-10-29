@@ -30,7 +30,9 @@ Questions about your data, or requests to see or delete it: [CONTACT EMAIL].
 
 - Your email address, to log you in with a one-time code.
 - Your CV: the file you upload and everything we read from it or you type in (for example contact details, work history, education, skills).
-- The suggestions you ask for, and whether you used them.
+- The suggestions you ask for, whether you used them, and whether you changed the text afterwards (we count the change; we do not keep the changed text).
+- Your CV scores (CV strength and ATS format score). They are worked out from your CV when you open the dashboard or the editor. For the file you upload, we keep its score (numbers and the names of the checks only) after the file itself is deleted.
+- Words from your CV that our checks do not recognise, such as an unusual skill, job title or action verb. We store only the word and how often we have seen it, so we can improve the checks. A stored word has no link to you: never your name, contact details or the CV it came from. Anything with a digit or an @ sign, or longer than four words, is never stored.
 - Which steps you have reached (for example signed up, uploaded a CV, downloaded a PDF), to see where the product needs work. These records never contain your CV content.
 - Basic technical logs kept by our server (for example the time of a request and your IP address), to keep the service running and secure.
 
@@ -38,9 +40,10 @@ Questions about your data, or requests to see or delete it: [CONTACT EMAIL].
 
 - To read your CV and fill in the editor for you.
 - To write the suggestions you ask for.
+- To work out your CV strength and ATS format score, and to suggest what to fix first.
 - To create your PDF and, on Pro, your JSON export.
 - To send you login codes.
-- To improve CVSmith, using the step records described above.
+- To improve CVSmith, using the step records and the unrecognised words described above.
 
 We do not sell your data and we do not use it for advertising.
 
@@ -56,10 +59,10 @@ We use a few providers to run CVSmith. They handle your data only to provide the
 ## How long we keep it
 
 - The file you upload is deleted as soon as we have read it.
-- Your CV stays until you replace it or delete it.
-- Settings → Delete my CV removes your CV straight away. Settings → Delete my account removes your account, CV and suggestions straight away.
+- Your CV and its scores stay until you replace it or delete it.
+- Settings → Delete my CV removes your CV straight away. Settings → Delete my account removes your account, CV, scores and suggestions straight away.
 - Database backups are kept for 14 days, so deleted data also disappears from backups within 14 days.
-- Step records are kept after you delete your account, but without any link to you.
+- Step records and unrecognised words are kept after you delete your account, but without any link to you.
 
 ## Who can see your CV
 

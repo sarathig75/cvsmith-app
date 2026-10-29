@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useUploadStore } from '../../store/uploadStore';
 import { discardPendingFile, uploadPendingFile } from '../../utils/postAuth';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { onSessionEnd, parseApiError } from '../../services/api';
 import { clearUnsavedDraft, keepUnsavedDraft, takeUnsavedDraft } from '../../utils/unsavedDraft';
@@ -14,6 +14,7 @@ import type { CvDraft, Entry } from '../../types/cvDraft';
 import { mergeParsedIntoDraft, PART_SECTIONS, resumeToDraft } from '../../utils/resumeToDraft';
 import { Button } from '../Common/Button';
 import { unlistedNames } from '../../utils/unlistedNames';
+import { AtsScoreCard } from './AtsScoreCard';
 import { CanvasGroup } from './CanvasGroup';
 import type { PreviewTarget } from './CanvasGroup';
 import { CvStatus } from './CvStatus';
@@ -32,6 +33,7 @@ import { useAutosave } from './useAutosave';
 import type { SaveState } from './useAutosave';
 
 export function CanvasPage() {
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const [privacy, setPrivacy] = useState<CV['privacy']>('public');
   const [draft, setDraft] = useState<CvDraft>(() => emptyDraft(user?.email ?? ''));
@@ -167,24 +169,18 @@ export function CanvasPage() {
   // Download PDF (everyone) and Export JSON (Pro): both use the saved CV, so save first.
   const [busy, setBusy] = useState<'pdf' | 'json' | null>(null);
   const [actionError, setActionError] = useState('');
-  const [downloaded, setDownloaded] = useState('');
-  useEffect(() => {
-    if (!downloaded) return;
-    const t = setTimeout(() => setDownloaded(''), 8000);
-    return () => clearTimeout(t);
-  }, [downloaded]);
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
   const runDownload = async (kind: 'pdf' | 'json') => {
     setBusy(kind);
     setActionError('');
-    setDownloaded('');
     try {
       if (!(await flush())) {
         setActionError("We couldn't save your latest changes, so they can't be included yet. Please try again.");
         return;
       }
-      const name = await (kind === 'pdf' ? downloadPdf() : exportJson());
-      setDownloaded(`Downloaded "${name}". You can download it again any time; it always uses your latest changes.`);
+      await (kind === 'pdf' ? downloadPdf() : exportJson());
+      // After every download the user sees what they can do next (the download is never blocked).
+      navigate('/next');
     } catch (err) {
       const e = parseApiError(err);
       if (e.code === 'PRO_REQUIRED') setUpgradeMessage(e.message);
@@ -286,17 +282,14 @@ export function CanvasPage() {
             Settings
           </Link>
         </div>
-        {downloaded && (
-          <p role="status" className="rounded-sm bg-success-bg p-3 text-sm text-success-text md:basis-full">
-            {downloaded}
-          </p>
-        )}
         {actionError && (
           <p role="alert" className="rounded-sm bg-warning-bg p-3 text-sm text-warning-text md:basis-full">
             {actionError}
           </p>
         )}
       </div>
+
+      <AtsScoreCard ready={load === 'ok' && !!cv && cv.parsing_status !== 'pending' && cv.parsing_status !== 'in_progress'} flush={flush} />
 
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="card lg:col-span-3" onFocus={onFormFocus}>

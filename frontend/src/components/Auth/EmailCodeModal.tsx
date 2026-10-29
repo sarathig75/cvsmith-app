@@ -74,7 +74,7 @@ export function EmailCodeModal({ mode, onClose }: Props) {
     setLoading(true);
     try {
       const token = await verifyCode(email.trim(), code.trim());
-      await completeAuth(token); // the route guard then moves the user to /canvas
+      await completeAuth(token); // the route guard then moves the user to the dashboard, or the Canvas if a CV was chosen
     } catch (err) {
       const e = parseApiError(err);
       if (e.code === 'INVALID_CODE') setFieldError(e.message);

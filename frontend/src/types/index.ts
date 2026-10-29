@@ -108,6 +108,29 @@ export type SuggestionRequest = {
 /** Suggestions per calendar month (UTC): free 1, pro 50. */
 export type Quota = { plan: 'free' | 'pro'; limit: number; used: number; remaining: number; resets_at: string };
 
+/** ATS format score (docs/ATS_FRAMEWORK.md). A check that does not apply is left out. */
+export type AtsCheck = { id: string; label: string; passed: boolean; points: number; max: number; fix: string | null };
+export type AtsScore = {
+  score: number;
+  checks: AtsCheck[];
+  first_fix: { check_id: string; text: string; points: number } | null;
+  framework: string;
+};
+/** before: the uploaded file; after: the saved CV as the Classic PDF. Either can be null. */
+export type AtsPair = { before: AtsScore | null; after: AtsScore | null };
+
+export type CvStrength = {
+  percent: number;
+  sections: { key: string; label: string; points: number; max: number; complete: boolean }[];
+  next_step: { section: string; text: string; points: number } | null;
+};
+export type Dashboard = {
+  state: 'no_cv' | 'parsing' | 'ready' | 'needs_details';
+  cv_strength: CvStrength | null;
+  ats: AtsScore | null;
+  plan: 'free' | 'pro';
+};
+
 export type ApiErrorCode =
   | 'VALIDATION_ERROR'
   | 'EMAIL_EXISTS'

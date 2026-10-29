@@ -334,3 +334,11 @@ def test_cli_sets_a_users_plan_for_testing(client, auth, monkeypatch):
     assert cli.main(["users", "set-plan", "USER@example.com", "pro"]) == 0
     assert client.get("/api/dashboard", headers=auth[0]).json()["plan"] == "pro"
     assert cli.main(["users", "set-plan", "nobody@example.com", "pro"]) == 1
+
+
+def test_a_blank_job_entry_is_ignored():
+    content = cv_content()
+    content["experience"].append({"id": "e2", "title": "", "company": "", "start": "", "end": "", "description": ""})
+    result = score.score_mode_a(facts_mod.from_content(content), GOOD_LAYOUT, TODAY)
+    assert check(result, "A5")["points"] == 9
+    assert len(facts_mod.from_content(content).roles) == 1

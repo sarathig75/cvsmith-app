@@ -64,6 +64,7 @@ Job-match checks:
 Total: 60 + 40 = 100.
 
 ## Build status
-Not built yet. The evaluation set (`backend/evals/`) and the word lists exist. The scoring code, the
-dashboard and job alignment still need to be built, in that order, with the API contract updated first
-(`docs/API_CONTRACT.md`, "Dashboard" and "ATS format score").
+Built 2026-10-29: the word lists (`backend/app/services/ats/lists.py`), Mode A and Mode B scoring
+(`backend/app/services/ats/`), the dashboard and the Canvas before/after score (Mode A). Mode B has no
+endpoint or screen yet: job alignment is paused. How each check is measured in code:
+`docs/API_CONTRACT.md`, "ATS format score".

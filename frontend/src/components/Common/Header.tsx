@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { logOut } from '../../utils/logOut';
 
 const links = [
+  { to: '/dashboard', label: 'Dashboard' },
   { to: '/canvas', label: 'Canvas' },
   { to: '/pricing', label: 'Pricing' },
   { to: '/settings', label: 'Settings' },

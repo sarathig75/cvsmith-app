@@ -20,6 +20,7 @@ const cv: CV = {
 
 function setup(handler: Handler) {
   const calls = mockHttp((req) => {
+    if (req.url === '/api/ats') return { status: 200, data: { before: null, after: null } };
     if (req.url === '/api/suggestions/quota') return { status: 200, data: { plan: 'free', limit: 1, used: 0, remaining: 1, resets_at: '' } };
     const reply = handler(req);
     return reply.status ? reply : { status: 200, data: cv };
@@ -29,6 +30,7 @@ function setup(handler: Handler) {
       <Routes>
         <Route path="/" element={<CanvasPage />} />
         <Route path="/pricing" element={<h1>Pricing page</h1>} />
+        <Route path="/next" element={<h1>What next page</h1>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -66,7 +68,8 @@ describe('Download PDF, Export JSON and visibility', () => {
     expect(order).toEqual(['/api/cv', '/api/cv/download']); // the edit is saved before the PDF is made
     expect((calls.find((c) => c.method === 'patch')?.data as { content: { personal: { name: string } } }).content.personal.name).toBe('Jane Doe Smith');
     expect(saved[0]).toEqual({ name: 'CV.pdf', href: 'blob:cv' });
-    expect(await screen.findByText(/Downloaded "CV.pdf"/)).toBeInTheDocument();
+    // After every download the user lands on the "what next" page.
+    expect(await screen.findByRole('heading', { name: 'What next page' })).toBeInTheDocument();
   });
 
   it('shows the error when the PDF cannot be made', async () => {

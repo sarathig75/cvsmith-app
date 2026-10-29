@@ -120,6 +120,8 @@ def from_content(content: Optional[Dict[str, Any]]) -> Facts:
         links=_s(p.get("linkedin")) or _s(p.get("portfolio")), summary=_s(c.get("summary")),
     )
     for e in _list(c.get("experience")):
+        if not any(_s(e.get(k)) for k in ("title", "company", "start", "end", "description")):
+            continue  # a blank entry the user has not filled in
         facts.roles.append(Role(
             title=_s(e.get("title")), company=_s(e.get("company")), start=_s(e.get("start")),
             end=_s(e.get("end")), current=e.get("current") == "true", description=_s(e.get("description")),

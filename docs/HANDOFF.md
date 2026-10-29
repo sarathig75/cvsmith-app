@@ -1,7 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-29 · Last commit on main: a6b2a40 Summary: note when a name is not in the rest of the CV.
-Everything is committed and pushed; the session branch was merged into main (1222d23). Pilot not deployed.
+Updated: 2026-10-29 · Last commit on main: a01af1a docs: ATS framework written into the repo.
+Work of this session is on branch `claude/youthful-darwin-uv0663` (pushed, not merged). Pilot not deployed.
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
@@ -26,58 +26,48 @@ Everything is committed and pushed; the session branch was merged into main (122
 - Drop-off metrics in our own `events` table (`docs/FUNNEL.md`), never CV content.
 
 ## Current state
-- Backend: pytest 195/195, flake8 clean (run 2026-10-29); migrations up to 0009.
-- Frontend: type-check clean, vitest 104/104, build OK (run 2026-10-29).
-- Open branches / PRs: none. `claude/serene-thompson-8hp7uo` was merged into `main` on 2026-10-29.
-  `claude/clever-meitner-049zyv` is fully merged.
+- Backend: pytest 250/250, flake8 clean (run 2026-10-29); migrations up to 0010.
+- Frontend: type-check clean, vitest 120/120, build OK (run 2026-10-29).
+- Open branches / PRs: `claude/youthful-darwin-uv0663` (pushed, not merged; no PR): ATS Mode A, dashboard,
+  `/next`, Canvas before/after score, privacy text. For the user to test locally (`docs/LOCAL_SETUP.md` 3.2).
+- Real Chromium check in the cloud container: the Classic PDF gives layout facts `text ok, 3 headings,
+  0 tables, 1 page`; not yet seen by the user in the browser.
 - User's new Windows PC runs the full Docker stack (`docs/LOCAL_SETUP.md`): email-code login,
   upload + parsing and Google sign-in confirmed working. Rest of checklist 3.2 not yet reported.
-- Google sign-in: the user created an OAuth client (Web application) in Google Cloud on
-  2026-10-17; consent screen in **Testing**, so only listed test users can sign in. Origin
+- Google sign-in: OAuth client (Web application) in Google Cloud, consent screen in **Testing**; origin
   `http://localhost:5173` added; the production domain is not yet.
-- Privacy notice: DRAFT at `/privacy` and `docs/PRIVACY_DRAFT.md`, placeholders still open.
+- Privacy notice: DRAFT at `/privacy` and `docs/PRIVACY_DRAFT.md`; text now covers scores, the
+  unmatched-term store and edit counts. Placeholders (operator, contact email, law, links, hosting) still open.
 
 ## Done this session
-- 2026-10-29: suggestion guard tested by the user: working.
-- 2026-10-29 (`a6b2a40`): a note under the Professional Summary when the user leaves the field with a
-  name the rest of the CV does not contain (hint only; same rule as the AI guard, ported to
-  `frontend/src/utils/unlistedNames.ts`). Confirmed working by the user.
-- 2026-10-29 (`1222d23`): session branch merged into `main`.
-- 2026-10-28 (`9cdd6c9`): suggestion guard. A suggestion that names a skill, employer or person
-  not in the CV is not rejected. The create response carries `missing_details`, the modal asks the user to
-  add the detail first, and accepting is still allowed. Contract: `docs/API_CONTRACT.md` ("Suggestion
-  guard"). Rule lives in `backend/app/services/suggestion_guard.py`; the evaluation runner uses it too.
-  Backend 195 tests, frontend 97 tests, build OK.
-- 2026-10-28: prompt caching on suggestions and the CV parser (a8e02d1, committed).
-- 2026-10-28: house-style rules 12–14 (weak phrasing, decorative summaries, objectives replaced from CV
-  facts). Evaluation: prompt version 3 passes 4 of 5 checks in 2 runs (contract has the numbers).
-- 2026-10-28: ATS framework agreed (two modes, 100 points each); fixed lists approved, incl.
-  automotive, pharma, FMCG (`docs/ATS_RULES.md`). Unmatched items: not scored, not shown, stored
-  with text for review at ≥5 sightings.
-- 2026-10-28: learning store and counts built (contract: `docs/API_CONTRACT.md`, "Suggestion
-  effectiveness"): migration 0009, `unmatched_terms` table, `suggestions.edited_at`, edit endpoint,
-  CLI `suggestions report` and `unmatched report|ignore|resolve`. Frontend counts the first edit of
-  an accepted suggestion (no text). Backend 185 tests, frontend 96 tests.
-- 2026-10-28: evaluation set built: 25 invented cases (`backend/evals/cases.json`), checks, runner
-  `python -m evals.run_suggestions --repeats 2`. Baseline is in the contract. Results are local
-  (git-ignored).
+- 2026-10-29: **ATS Mode A** (`backend/app/services/ats/`: lists, facts, layout, text, score, service).
+  Checks A1-A11 from `docs/ATS_FRAMEWORK.md`; "before" score saved when the upload is parsed, "after" from
+  the PDF made from the saved CV (cached by content hash). Mode B scoring rules are in the code and
+  tested, but unused. How each check is measured: contract, "ATS format score".
+- 2026-10-29: `GET /api/dashboard`, `GET /api/ats`, `POST /api/next/viewed`; CV strength per the proposal
+  in the contract; migration 0010 (`cvs.ats_before`, `cvs.ats_layout_after`).
+- 2026-10-29: frontend `/dashboard`, `/next`, Canvas ATS card; logged-in users go to the dashboard (to the
+  Canvas right after sign-up/login with a CV chosen); every download lands on `/next`; Dashboard in header.
+- 2026-10-29: CLI `users set-plan <email> free|pro`; privacy text updated.
+- 2026-10-29: user paused **job alignment** ("Align to a job" box, Mode B endpoint, positioning text):
+  not built. User wants changes first (not yet described).
+- Earlier: suggestion guard `9cdd6c9`, summary name note `a6b2a40`, prompt caching `a8e02d1`, evaluation
+  set and learning store (see git log).
 
 ## Next steps
-0. Both name checks are confirmed working by the user: the suggestion guard (`9cdd6c9`) and the summary
-   note (`a6b2a40`). Still to check at the next test: upload, edit and PDF/JSON download after these changes.
-1. Evaluation: re-run `python -m evals.run_suggestions --repeats 2` after any prompt change. Open:
-   summary growth for positioning statements (1 of 2 in the last run, sales case).
-2. ATS score (contract ATS section; lists in `docs/ATS_RULES.md`): Mode A on the dashboard, Mode B in job
-   alignment; the unmatched store starts receiving terms here.
-3. Dashboard `/dashboard`, `/next`, job alignment, Canvas before/after (approved layouts:
-   `https://claude.ai/artifact/4CzxsdYGX3LX2KAUooUS8K`; `docs/USER_JOURNEYS.md`).
-4. Privacy notice must cover the unmatched-term store and suggestion counts before pilot users join.
-   Domain and operator details are still open.
-5. Pilot go-live per `docs/DEPLOY.md`; Week 10 billing.
+0. User tests the branch locally (checklist 3.2), then merge to `main`.
+1. Job alignment, after the user describes the changes. Already decided: option B result (Mode B score,
+   Gaps, AI positioning line and "Consider" ideas); shares the suggestion quota (Pro 50/month); Free sees
+   the sample result; the job spec text is not stored. Mode B scoring code exists in `ats/score.py`.
+2. Evaluation: re-run `python -m evals.run_suggestions --repeats 2` after any prompt change.
+3. Phone versions of the dashboard and `/next` mockups (design file, "pending"); check layouts at phone width.
+4. Fill the privacy placeholders; domain; pilot go-live per `docs/DEPLOY.md`; Week 10 billing.
 
 ## Open questions for the user
 - Decided 2026-10-29: accepting a suggestion is never blocked; a missing-detail note is only a suggestion.
 - Summary growth for positioning statements: keep the 1.5× limit as it is?
+- Job alignment: which changes does the user want before it is built?
+- Related job families for B5 (3 points): only HR/Operations and Data/Finance are listed; add more pairs?
 - Which domain name? Privacy notice: operator name, contact email, applicable law (still open).
 
 ## Setup notes

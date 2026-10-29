@@ -178,7 +178,11 @@ If the backend isn't up yet, wait 20 seconds and reload; to see why, run `docker
 - [ ] Move an entry up/down; delete an entry, reload, and check it stays deleted.
 - [ ] 💡 on Headline / Summary / a job or project description gives a suggestion
       (Free plan: 1 per month; see 3.3 to test more).
-- [ ] Download PDF works.
+- [ ] After you log in without choosing a file you land on the **Dashboard**: CV strength, ATS format
+      score (with its first fix), Update CV, Download. With no CV it shows an upload prompt, not a score.
+- [ ] On the Canvas, the **ATS format score** card shows Before (the file you uploaded) and After
+      (your saved CV); "Check again" saves your edits first, then scores again (takes a few seconds).
+- [ ] Download PDF works and then opens the **What next** page (CV strength and ATS cards, Dashboard).
 - [ ] Export JSON (Pro only; see 3.3).
 - [ ] Settings: plan and usage show; log out and log back in with a new code.
 - [ ] "Upload new CV" warns before replacing the current one.
@@ -191,6 +195,9 @@ docker compose exec postgres psql -U cvsmith_user -d cvsmith_db -c "update users
 ```
 
 It should reply `UPDATE 1`. Reload the browser.
+
+Or, shorter: `docker compose exec backend python -m app.cli users set-plan you@example.com pro`
+(`free` puts it back).
 
 ---
 
