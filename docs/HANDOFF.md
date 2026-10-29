@@ -76,7 +76,7 @@ Everything is committed and pushed; the session branch was merged into main (122
 5. Pilot go-live per `docs/DEPLOY.md`; Week 10 billing.
 
 ## Open questions for the user
-- Should accepting a suggestion with missing details be blocked until the detail is added to the CV?
+- Decided 2026-10-29: accepting a suggestion is never blocked; a missing-detail note is only a suggestion.
 - Summary growth for positioning statements: keep the 1.5× limit as it is?
 - Which domain name? Privacy notice: operator name, contact email, applicable law (still open).
 
