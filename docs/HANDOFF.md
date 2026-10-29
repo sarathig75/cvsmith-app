@@ -1,7 +1,7 @@
 # CVSmith handoff
 
 Updated: 2026-10-29 · Last commit on main: a01af1a docs: ATS framework written into the repo.
-Work of this session is on branch `claude/youthful-darwin-uv0663` (pushed, not merged). Pilot not deployed.
+This session's work is on `claude/youthful-darwin-uv0663` (pushed, not merged, no PR). Pilot not deployed.
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
@@ -23,6 +23,10 @@ Work of this session is on branch `claude/youthful-darwin-uv0663` (pushed, not m
 - Pilot: ≤25 testers in India, invited emails only (`INVITE_ONLY`; `python -m app.cli invites
   add …`), one server running `deploy/docker-compose.prod.yml`. Guide: `docs/DEPLOY.md`.
 - Start page claims only what works today (ATS/AI-readable, AI suggestions); no recruiter search.
+- ATS score: CVSmith's own checklist (`docs/ATS_FRAMEWORK.md`), never called "compliance". Job alignment
+  (Pro, shares the 50/month suggestion quota): result = Mode B score + headline + gaps + ideas; the user can
+  update the base CV with ticked changes or download a job-only PDF (not kept, no JSON). Job spec text is
+  never stored. Tab "Align to job" shows only on `/align*`. Contract: "Job alignment".
 - Drop-off metrics in our own `events` table (`docs/FUNNEL.md`), never CV content.
 
 ## Current state
@@ -33,6 +37,8 @@ Work of this session is on branch `claude/youthful-darwin-uv0663` (pushed, not m
   (`docs/LOCAL_SETUP.md` 3.2).
 - Real Chromium check in the cloud container: the Classic PDF gives layout facts `text ok, 3 headings,
   0 tables, 1 page`; not yet seen by the user in the browser.
+- User's local `docker compose up -d --build` of this branch was in progress: the backend `pip install` and
+  Chromium downloads ran at about 100 kB/s (slow network, not a bug); result not yet reported.
 - User's new Windows PC runs the full Docker stack (`docs/LOCAL_SETUP.md`): email-code login,
   upload + parsing and Google sign-in confirmed working. Rest of checklist 3.2 not yet reported.
 - Google sign-in: OAuth client (Web application) in Google Cloud, consent screen in **Testing**; origin
@@ -61,8 +67,7 @@ Work of this session is on branch `claude/youthful-darwin-uv0663` (pushed, not m
   (no `/next`); `/align` and its API need a saved CV (`content`), else "Open your CV on the Canvas first";
   a proposed headline naming something not in the CV is dropped (same guard as suggestions, which only checks
   capitalised words); Dismiss is on screen only and lasts until the page is left.
-- Earlier: suggestion guard `9cdd6c9`, summary name note `a6b2a40`, prompt caching `a8e02d1`, evaluation
-  set and learning store (see git log).
+- Earlier: suggestion guard `9cdd6c9`, summary name note `a6b2a40`, prompt caching `a8e02d1`, evaluation set, learning store.
 
 ## Next steps
 0. User tests the branch locally (checklist 3.2, incl. job alignment), then merge to `main`.
@@ -79,6 +84,8 @@ Work of this session is on branch `claude/youthful-darwin-uv0663` (pushed, not m
 - Which domain name? Privacy notice: operator name, contact email, applicable law (still open).
 
 ## Setup notes
+- Slow first Docker build (pip + Chromium downloads): let it finish; build `backend` before `celery`
+  (`docker compose build backend`) so they do not share the bandwidth; later builds use the cache.
 - Local problems: use the `local-troubleshoot` skill (symptom table + diagnostic file,
   `docs/LOCAL_SETUP.md` 5.1); add each newly solved problem to both.
 - Local Docker on Windows: follow `docs/LOCAL_SETUP.md`. Root `.env` holds `ANTHROPIC_API_KEY`
