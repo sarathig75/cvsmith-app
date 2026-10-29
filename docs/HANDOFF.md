@@ -38,6 +38,7 @@ Everything is committed and pushed; the session branch was merged into main (122
 - Privacy notice: DRAFT at `/privacy` and `docs/PRIVACY_DRAFT.md`, placeholders still open.
 
 ## Done this session
+- 2026-10-29: suggestion guard tested by the user: working.
 - 2026-10-29 (`a6b2a40`): a note under the Professional Summary when the user leaves the field with a
   name the rest of the CV does not contain (hint only; same rule as the AI guard, ported to
   `frontend/src/utils/unlistedNames.ts`). Confirmed working by the user.
@@ -62,12 +63,8 @@ Everything is committed and pushed; the session branch was merged into main (122
   (git-ignored).
 
 ## Next steps
-0. TEST (user): suggestion guard (`9cdd6c9`). The summary note (`a6b2a40`) is confirmed working.
-   a. 💡 on the summary with a suggestion that names an employer not in the CV: the note appears;
-      "Use suggestion" still works; the suggestion counts toward quota.
-   b. A suggestion with only names already in the CV: no note.
-   c. Summary 💡 with an objective ("Seeking a role…"): replaced by a statement from the CV.
-   d. Upload, edit and download still work (PDF, JSON).
+0. Both name checks are confirmed working by the user: the suggestion guard (`9cdd6c9`) and the summary
+   note (`a6b2a40`). Still to check at the next test: upload, edit and PDF/JSON download after these changes.
 1. Evaluation: re-run `python -m evals.run_suggestions --repeats 2` after any prompt change. Open:
    summary growth for positioning statements (1 of 2 in the last run, sales case).
 2. ATS score (contract ATS section; lists in `docs/ATS_RULES.md`): Mode A on the dashboard, Mode B in job
@@ -79,7 +76,6 @@ Everything is committed and pushed; the session branch was merged into main (122
 5. Pilot go-live per `docs/DEPLOY.md`; Week 10 billing.
 
 ## Open questions for the user
-- Results of the suggestion guard test (step 0)?
 - Should accepting a suggestion with missing details be blocked until the detail is added to the CV?
 - Summary growth for positioning statements: keep the 1.5× limit as it is?
 - Which domain name? Privacy notice: operator name, contact email, applicable law (still open).
