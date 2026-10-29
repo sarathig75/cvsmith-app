@@ -59,7 +59,9 @@ Everything else is merged. Pilot not deployed.
   (git-ignored).
 
 ## Next steps
-0. TEST (user): suggestion guard (committed 2026-10-29).
+0. TEST (user): suggestion guard (committed 2026-10-29). Also UNCOMMITTED on 2026-10-29: a note under the
+   Professional Summary when the user leaves the field with a name not in the rest of the CV (approved;
+   client-side, `frontend/src/utils/unlistedNames.ts`). Test it, then approve the commit.
    a. Open a CV, click 💡 on the summary, and check a suggestion that names an employer not in the CV: a
       note appears; "Use suggestion" still works; the suggestion counts toward quota.
    b. A suggestion with only names already in the CV: no note.

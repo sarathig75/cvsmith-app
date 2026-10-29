@@ -267,3 +267,15 @@ Instead the user is asked to add that detail to the CV first.
   `app/services/suggestion_guard.py`, and the evaluation runner imports it, so both use one definition.
 - Assumption to confirm: accepting is still allowed (the user decides). If you want it blocked until
   the details are added, say so.
+
+## Name check while typing the Professional Summary (approved 2026-10-29; client-side, no API)
+
+When the user leaves the Professional Summary field, the names in the summary that the rest of the
+CV does not contain are listed in a note under the field: "Not in your CV yet: Contoso, Ltd. Add them
+to your experience or skills first." It is a hint, not a block: nothing is changed or rejected. The
+note is shown on leaving the field, and hidden when the field is focused again.
+- Same rule as `suggestion_guard.py` (capitalised words, first word of a sentence or bullet skipped,
+  spelled-out acronyms that the CV uses are allowed), ported to `frontend/src/utils/unlistedNames.ts`.
+- The "known" words are the rest of the CV: the summary itself is not evidence.
+- Only the summary for now. Experience and project descriptions can get the same note later if wanted.
+- No API call, no stored data.

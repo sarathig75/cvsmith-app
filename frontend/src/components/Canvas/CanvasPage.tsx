@@ -13,6 +13,7 @@ import { draftFromSaved, emptyDraft } from '../../types/cvDraft';
 import type { CvDraft, Entry } from '../../types/cvDraft';
 import { mergeParsedIntoDraft, PART_SECTIONS, resumeToDraft } from '../../utils/resumeToDraft';
 import { Button } from '../Common/Button';
+import { unlistedNames } from '../../utils/unlistedNames';
 import { CanvasGroup } from './CanvasGroup';
 import type { PreviewTarget } from './CanvasGroup';
 import { CvStatus } from './CvStatus';
@@ -58,6 +59,8 @@ export function CanvasPage() {
   };
   useEffect(refreshQuota, []);
   const [suggesting, setSuggesting] = useState<{ request: SuggestionRequest; label: string } | null>(null);
+  // Names in the summary that the rest of the CV does not contain: shown when the user leaves the field.
+  const [summaryNames, setSummaryNames] = useState<string[]>([]);
   const suggestFor = (field: 'experience' | 'projects', label: string) => (entry: Entry, key: string) =>
     setSuggesting({
       label,
@@ -385,7 +388,15 @@ export function CanvasPage() {
                 placeholder="Brief overview of your experience..."
                 value={draft.summary}
                 onChange={(e) => patch({ summary: e.target.value })}
+                onFocus={() => setSummaryNames([])}
+                onBlur={() => setSummaryNames(unlistedNames(draft.summary, { ...draft, summary: '' }))}
               />
+              {summaryNames.length > 0 && (
+                <p role="note" className="mt-2 text-sm text-warning-text">
+                  Not in your CV yet: {summaryNames.join(', ')}. Add {summaryNames.length > 1 ? 'them' : 'it'} to your
+                  experience or skills first.
+                </p>
+              )}
             </div>
             <div data-preview-target="experience">
               <EntryListSection

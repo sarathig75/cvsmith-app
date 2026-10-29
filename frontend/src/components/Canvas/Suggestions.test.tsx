@@ -241,3 +241,26 @@ describe('💡 guard: names not in the CV', () => {
     expect(screen.getByRole('button', { name: 'Use suggestion' })).toBeEnabled(); // not rejected
   });
 });
+
+describe('summary: names not in the CV', () => {
+  it('shows a note when the user leaves the summary with a name the CV does not contain', async () => {
+    setup(() => ({ status: 201, data: suggestion() }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const summary = await screen.findByLabelText('Professional Summary');
+    await user.clear(summary);
+    await user.type(summary, 'Led teams at Contoso Ltd for ten years');
+    expect(screen.queryByRole('note')).toBeNull(); // no note while typing
+    await user.tab(); // leave the field
+    expect(await screen.findByRole('note')).toHaveTextContent('Not in your CV yet: Contoso, Ltd.');
+  });
+
+  it('shows no note for names the CV already contains', async () => {
+    setup(() => ({ status: 201, data: suggestion() }));
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const summary = await screen.findByLabelText('Professional Summary');
+    await user.clear(summary);
+    await user.type(summary, 'Led sales at Acme for ten years');
+    await user.tab();
+    expect(screen.queryByRole('note')).toBeNull();
+  });
+});
