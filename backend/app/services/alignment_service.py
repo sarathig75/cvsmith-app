@@ -107,7 +107,8 @@ def _numbers(text: str) -> set:
 def _summary_proposal(current: str, proposed: str, content: Dict[str, Any],
                       base: ScoreResult) -> Optional[Dict[str, str]]:
     """The proposed summary, or None when it must not be shown: unchanged, or it could add a claim the CV does not
-    support (a name, a number or a skill listed as missing), or it is much longer than the current one (more than 1.5 times, and over 500 characters)."""
+    support (a name, a number or a skill listed as missing), or it is much longer than the current one (more than
+    1.5 times, and over 500 characters)."""
     proposed = proposed.strip()
     if not proposed or " ".join(proposed.lower().split()) == " ".join(current.lower().split()):
         return None
