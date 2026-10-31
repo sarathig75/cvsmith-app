@@ -44,6 +44,10 @@ const run: Alignment = {
     gap('Employee relations', 'covered'),
     gap('Stakeholder management', 'covered'),
   ],
+  summary: {
+    current: 'HR professional with nine years in retail.',
+    proposed: 'People leader scaling retail operations across 40 stores.',
+  },
   consider: ['A short course in workforce analytics.'],
   score: score(71),
 };
@@ -76,8 +80,8 @@ function setup(handler: Handler, path = '/align/run1') {
 const resultHandler: Handler = (req) => {
   if (req.url === '/api/alignment/run1') return { status: 200, data: run };
   if (req.url === '/api/alignment/run1/preview') {
-    const sel = req.data as { use_headline: boolean; skills: string[] };
-    return { status: 200, data: score(71 + (sel.use_headline ? 3 : 0) + 4 * sel.skills.length) };
+    const sel = req.data as { use_headline: boolean; use_summary: boolean; skills: string[] };
+    return { status: 200, data: score(71 + (sel.use_headline ? 3 : 0) + (sel.use_summary ? 2 : 0) + 4 * sel.skills.length) };
   }
   return { status: 404, data: {} };
 };
@@ -152,7 +156,7 @@ describe('Align to job: result', () => {
     setup(resultHandler);
     expect(await screen.findByText(/2 must-have skills, 1 other skill, 6\+ years, management needed, sector Human resources/)).toBeInTheDocument();
     expect(screen.getByTestId('score-now')).toHaveTextContent('71');
-    await vi.waitFor(() => expect(screen.getByTestId('score-after')).toHaveTextContent('74')); // headline ticked by default
+    await vi.waitFor(() => expect(screen.getByTestId('score-after')).toHaveTextContent('76')); // headline ticked by default
     expect(screen.getByText('Human Resources Director')).toBeInTheDocument();
     expect(screen.getByText('People leader for scaling retail operations')).toBeInTheDocument();
     expect(screen.getByText('A short course in workforce analytics.')).toBeInTheDocument();
@@ -162,19 +166,19 @@ describe('Align to job: result', () => {
   it('keeps the "after" score live as items are ticked, and Addressed holds what was ticked', async () => {
     const calls = setup(resultHandler);
     const user = userEvent.setup();
-    await vi.waitFor(() => expect(screen.getByTestId('score-after')).toHaveTextContent('74'));
+    await vi.waitFor(() => expect(screen.getByTestId('score-after')).toHaveTextContent('76'));
     await user.click(screen.getByRole('checkbox', { name: 'I have Workforce planning: add to my skills' }));
-    await vi.waitFor(() => expect(screen.getByTestId('score-after')).toHaveTextContent('78'));
+    await vi.waitFor(() => expect(screen.getByTestId('score-after')).toHaveTextContent('80'));
     const addressed = screen.getByRole('list', { name: 'Addressed' });
     expect(within(addressed).getByText(/Workforce planning: you ticked it/)).toBeInTheDocument();
     expect(screen.getByText('Addressed (2)')).toBeInTheDocument(); // the ticked skill and the headline's "Retail operations"
     expect((calls.filter((c) => c.url.endsWith('/preview')).at(-1)?.data as { skills: string[] }).skills).toEqual(['Workforce planning']);
     // untick the headline: the headline's item goes back to Missing, the score drops
     await user.click(screen.getByRole('checkbox', { name: /People leader for scaling retail operations/ }));
-    await vi.waitFor(() => expect(screen.getByTestId('score-after')).toHaveTextContent('75'));
+    await vi.waitFor(() => expect(screen.getByTestId('score-after')).toHaveTextContent('77'));
     expect(screen.getByRole('checkbox', { name: 'I have Retail operations: add to my skills' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Undo Workforce planning' }));
-    await vi.waitFor(() => expect(screen.getByTestId('score-after')).toHaveTextContent('71'));
+    await vi.waitFor(() => expect(screen.getByTestId('score-after')).toHaveTextContent('73'));
   });
 
   it('collapses long lists after two rows with "Show N more"', async () => {
@@ -204,16 +208,17 @@ describe('Align to job: result', () => {
     const calls = setup((req) => (req.url === '/api/alignment/run1/apply' ? { status: 200, data: {} } : resultHandler(req)));
     const user = userEvent.setup();
     await user.click(await screen.findByRole('checkbox', { name: 'I have HRIS: add to my skills' }));
-    expect(screen.getByRole('heading', { name: 'What do you want to do with the 2 changes you ticked?' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'What do you want to do with the 3 changes you ticked?' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Update my CV' }));
     expect(await screen.findByRole('heading', { name: 'Canvas page' })).toBeInTheDocument();
-    expect(calls.find((c) => c.url.endsWith('/apply'))?.data).toEqual({ use_headline: true, skills: ['HRIS'] });
+    expect(calls.find((c) => c.url.endsWith('/apply'))?.data).toEqual({ use_headline: true, use_summary: true, skills: ['HRIS'] });
   });
 
   it('cannot update the base CV when nothing is ticked, but can still download', async () => {
     setup(resultHandler);
     const user = userEvent.setup();
     await user.click(await screen.findByRole('checkbox', { name: /People leader for scaling retail operations/ }));
+    await user.click(screen.getByRole('checkbox', { name: /People leader scaling retail operations across 40 stores/ }));
     expect(screen.getByRole('button', { name: 'Update my CV' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Download PDF for this job' })).toBeEnabled();
   });
@@ -225,7 +230,7 @@ describe('Align to job: result', () => {
     const user = userEvent.setup();
     await user.click(await screen.findByRole('button', { name: 'Download PDF for this job' }));
     expect(await screen.findByRole('status')).toHaveTextContent('Your saved CV is unchanged.');
-    expect(calls.find((c) => c.url.endsWith('/download'))?.data).toEqual({ use_headline: true, skills: [] });
+    expect(calls.find((c) => c.url.endsWith('/download'))?.data).toEqual({ use_headline: true, use_summary: true, skills: [] });
     expect(screen.getByRole('heading', { name: /Align to a job: HR Business Partner/ })).toBeInTheDocument();
     expect(calls.some((c) => c.url.endsWith('/apply'))).toBe(false); // the base CV is not touched
   });
@@ -236,10 +241,28 @@ describe('Align to job: result', () => {
     expect(screen.queryByRole('button', { name: /JSON/ })).not.toBeInTheDocument();
   });
 
+  it('proposes the summary next to the headline, with its own tick box that counts and changes the score', async () => {
+    const calls = setup(resultHandler);
+    const user = userEvent.setup();
+    expect(await screen.findByText('HR professional with nine years in retail.')).toBeInTheDocument();
+    await vi.waitFor(() => expect(screen.getByTestId('score-after')).toHaveTextContent('76'));
+    await user.click(screen.getByRole('checkbox', { name: /People leader scaling retail operations across 40 stores/ }));
+    await vi.waitFor(() => expect(screen.getByTestId('score-after')).toHaveTextContent('74'));
+    expect(screen.getByRole('heading', { name: 'What do you want to do with the 1 change you ticked?' })).toBeInTheDocument();
+    expect((calls.filter((c) => c.url.endsWith('/preview')).at(-1)?.data as { use_summary: boolean }).use_summary).toBe(false);
+  });
+
+  it('says so when no summary could be proposed, and still works for runs made before summaries existed', async () => {
+    setup((req) => (req.url === '/api/alignment/run1' ? { status: 200, data: { ...run, summary: undefined } } : resultHandler(req)));
+    expect(await screen.findByText(/couldn't propose a summary that stays true to your CV/)).toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /40 stores/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'What do you want to do with the 1 change you ticked?' })).toBeInTheDocument();
+  });
+
   it('says so when no headline could be proposed', async () => {
     setup((req) => (req.url === '/api/alignment/run1' ? { status: 200, data: { ...run, positioning: null } } : resultHandler(req)));
     expect(await screen.findByText(/couldn't propose a headline that stays true to your CV/)).toBeInTheDocument();
-    expect(screen.queryByRole('checkbox', { name: /People leader/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('checkbox', { name: /People leader for scaling/ })).not.toBeInTheDocument();
   });
 
   it('shows the three-line explanation and the quota used', async () => {

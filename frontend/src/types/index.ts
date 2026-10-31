@@ -153,14 +153,16 @@ export type Alignment = {
   requirements: JobRequirements;
   /** null: no headline that stays true to the CV. */
   positioning: { current: string; proposed: string } | null;
+  /** The professional summary, same rules as the headline. Missing on runs made before 2026-10-31. */
+  summary?: { current: string; proposed: string } | null;
   gaps: Gap[];
   /** Ideas only; never added to the CV. */
   consider: string[];
   /** Mode B score of the saved CV. */
   score: AtsScore;
 };
-/** What the user ticked: the proposed headline, and missing skills to add. */
-export type Selection = { use_headline: boolean; skills: string[] };
+/** What the user ticked: the proposed headline and summary, and missing skills to add. */
+export type Selection = { use_headline: boolean; use_summary: boolean; skills: string[] };
 
 export type ApiErrorCode =
   | 'VALIDATION_ERROR'

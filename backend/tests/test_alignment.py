@@ -18,11 +18,12 @@ SPEC = ("We are hiring an HR Business Partner to lead people programmes across o
 
 
 class FakeAI:
-    def __init__(self, requirements=None, proposed="Senior Engineer · Monitoring Platform", consider=None, fail=None):
+    def __init__(self, requirements=None, proposed="Senior Engineer · Monitoring Platform", consider=None, fail=None,
+                 summary="Engineer who leads teams and builds monitoring platforms."):
         self.requirements = requirements or Requirements(
             job_title="Lead Engineer", core_skills=["Kubernetes", "Workforce planning"],
             secondary_skills=["Terraform"], years_required=5, needs_management=True, sector="Software")
-        self.proposed, self.fail = proposed, fail
+        self.proposed, self.fail, self.summary = proposed, fail, summary
         self.consider = ["A short course in workforce analytics."] if consider is None else consider
         self.specs, self.positioning_calls = [], []
 
@@ -32,11 +33,11 @@ class FakeAI:
             raise AlignmentAIError
         return self.requirements
 
-    def write_positioning(self, req, cv_facts, headline, missing):
-        self.positioning_calls.append((cv_facts, headline, missing))
+    def write_positioning(self, req, cv_facts, headline, summary, missing):
+        self.positioning_calls.append((cv_facts, headline, summary, missing))
         if self.fail == "positioning":
             raise AlignmentAIError
-        return self.proposed, self.consider
+        return self.proposed, self.summary, self.consider
 
 
 @pytest.fixture()
@@ -271,3 +272,67 @@ def test_job_file_names_are_safe():
         "Jane Doe CV - HR Business Partner.pdf"
     assert alignment_service.job_file_name({}, "") == "CV.pdf"
     assert "/" not in alignment_service.job_file_name({"personal": {"name": "A/B"}}, "../../etc")
+
+
+# --- the proposed summary ----------------------------------------------------------------------
+
+def test_a_run_proposes_a_summary_next_to_the_headline(client, pro, ai):
+    body = align(client, pro).json()
+    assert body["summary"] == {"current": "Engineer.",
+                               "proposed": "Engineer who leads teams and builds monitoring platforms."}
+    assert ai.positioning_calls[0][2] == "Engineer."          # the AI sees the current summary
+
+
+def test_the_summary_is_dropped_when_it_could_claim_something_the_cv_does_not_support(client, pro, ai):
+    cases = {
+        "a name": "Engineer who worked at Acme Corporation and builds monitoring platforms.",
+        "a number": "Engineer who led 40 teams and builds monitoring platforms.",
+        "a missing skill": "Engineer who leads teams and owns workforce planning for monitoring platforms.",
+        "much longer": "Engineer who leads teams and builds monitoring platforms. " * 10,
+        "unchanged": "Engineer.",
+        "empty": "",
+    }
+    for why, text in cases.items():
+        ai.summary = text
+        assert align(client, pro).json()["summary"] is None, why
+
+
+def test_a_number_the_cv_already_has_is_fine_in_the_summary(client, pro, ai):
+    ai.summary = "Engineer who led a team of 5 engineers and builds monitoring platforms."
+    assert align(client, pro).json()["summary"]["proposed"].startswith("Engineer who led a team of 5")
+
+
+def test_an_empty_summary_can_be_written_from_the_facts(client, auth, renderer, ai):
+    set_plan(client, "pro")
+    client.patch("/api/cv", headers=auth[0], json={"content": cv_content(summary="")})
+    body = align(client, auth[0]).json()
+    assert body["summary"] == {"current": "", "proposed": ai.summary}
+
+
+def test_preview_and_apply_use_the_ticked_summary(client, pro, ai):
+    run = align(client, pro).json()
+    base = client.post(f"/api/alignment/{run['id']}/preview", headers=pro, json={}).json()["score"]
+    ticked = client.post(f"/api/alignment/{run['id']}/preview", headers=pro, json={"use_summary": True})
+    assert ticked.status_code == 200 and ticked.json()["score"] >= base
+    saved = client.get("/api/cv", headers=pro).json()["content"]
+    assert saved["summary"] == "Engineer."                      # a preview changes nothing
+    assert client.post(f"/api/alignment/{run['id']}/apply", headers=pro, json={"use_summary": True}).status_code == 200
+    saved = client.get("/api/cv", headers=pro).json()["content"]
+    assert saved["summary"] == ai.summary and saved["personal"]["headline"] == "Engineer"   # only the summary changed
+
+
+def test_the_job_pdf_has_the_ticked_summary_and_leaves_the_base_cv_alone(client, pro, ai, renderer):
+    run = align(client, pro).json()
+    renderer.drafts = []
+    renderer.render = lambda draft, _orig=renderer.render: (renderer.drafts.append(draft), _orig(draft))[1]
+    r = client.post(f"/api/alignment/{run['id']}/download", headers=pro,
+                    json={"use_summary": True, "use_headline": True})
+    assert r.status_code == 200
+    assert renderer.drafts[-1]["summary"] == ai.summary and renderer.drafts[-1]["personal"]["headline"] == ai.proposed
+    assert client.get("/api/cv", headers=pro).json()["content"]["summary"] == "Engineer."
+
+
+def test_a_summary_cannot_be_used_when_none_was_proposed(client, pro, ai):
+    ai.summary = ""
+    run = align(client, pro).json()
+    assert client.post(f"/api/alignment/{run['id']}/apply", headers=pro, json={"use_summary": True}).status_code == 422

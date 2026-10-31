@@ -19,6 +19,7 @@ class SelectionIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     use_headline: bool = False
+    use_summary: bool = False
     skills: List[str] = Field(default_factory=list, max_length=40)
 
 
@@ -50,6 +51,7 @@ class AlignmentOut(BaseModel):
     created_at: datetime
     requirements: RequirementsOut
     positioning: Optional[PositioningOutSchema] = None
+    summary: Optional[PositioningOutSchema] = None
     gaps: List[GapOut]
     consider: List[str]
     score: AtsScoreOut

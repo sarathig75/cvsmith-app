@@ -1,7 +1,7 @@
 """The two AI steps of a job alignment. Contract: docs/API_CONTRACT.md, "Job alignment".
 
 1. read_spec: the job spec -> requirements (the only place the spec text is used; it is not stored).
-2. write_positioning: requirements + the CV's facts -> a proposed headline and ideas to consider.
+2. write_positioning: requirements + the CV's facts -> a proposed headline and summary, and ideas to consider.
 Everything scored afterwards is fixed rules (app/services/ats).
 """
 import logging
@@ -39,14 +39,15 @@ class SpecOut(BaseModel):
 
 class PositioningOut(BaseModel):
     headline: str = Field(description="The candidate's headline for this job: one line, at most 12 words")
+    summary: str = Field(description="The candidate's professional summary for this job: 2 to 4 sentences")
     consider: List[str] = Field(description="At most 3 ideas for the candidate to consider")
 
 
 class AlignmentAI(Protocol):
     def read_spec(self, job_spec: str) -> Requirements: ...
 
-    def write_positioning(self, req: Requirements, cv_facts: str, headline: str,
-                          missing: List[str]) -> Tuple[str, List[str]]: ...
+    def write_positioning(self, req: Requirements, cv_facts: str, headline: str, summary: str,
+                          missing: List[str]) -> Tuple[str, str, List[str]]: ...
 
 
 SPEC_TASK = """You read a job description and extract what it asks for.
@@ -66,6 +67,12 @@ You get the job's requirements, the candidate's facts and their current headline
   under <cv_facts>. Reflect the job's focus only where those facts support it. Never claim a title, skill,
   employer, tool or number the facts do not show, and never copy the job title if the facts do not show the
   candidate in that role. If the current headline already fits the job, return it unchanged.
+- summary: the candidate's professional summary rewritten for this job, 2 to 4 sentences, no first person. Start
+  from <current_summary> and the facts: reorder and reword so it leads with what this job asks for, using the
+  job's own wording for things the facts support. It may be about as long as the current summary, not much
+  longer. Never add a skill, tool, employer, number or claim the facts do not show, and never use any skill
+  listed under <missing>. If the current summary is empty, write one from the facts; if there are too few
+  facts, or it already fits, return it unchanged.
 - consider: at most 3 short ideas the candidate could consider to close the gaps listed under <missing>
   (a course, a certification, or the kind of evidence to add if it is true). Each is a suggestion, never a
   statement about the candidate's history. No numbers or names that are not in the requirements.
@@ -114,18 +121,19 @@ class ClaudeAlignmentAI:
             sector="" if out.sector == "Other" else out.sector,
         )
 
-    def write_positioning(self, req: Requirements, cv_facts: str, headline: str,
-                          missing: List[str]) -> Tuple[str, List[str]]:
+    def write_positioning(self, req: Requirements, cv_facts: str, headline: str, summary: str,
+                          missing: List[str]) -> Tuple[str, str, List[str]]:
         user = "\n".join([
             f"<requirements>\nJob title: {req.job_title}\nMust-have: {', '.join(req.core_skills)}\n"
             f"Preferred: {', '.join(req.secondary_skills)}\nYears: {req.years_required or 'not stated'}\n"
             f"Manages people: {'yes' if req.needs_management else 'no'}\n</requirements>",
             f"<cv_facts>\n{cv_facts}\n</cv_facts>",
             f"<current_headline>{headline}</current_headline>",
+            f"<current_summary>{summary}</current_summary>",
             f"<missing>{'; '.join(missing)}</missing>",
         ])
         out = self._parse(f"{HOUSE_STYLE}\n\n{POSITIONING_TASK}", user, PositioningOut)
-        return " ".join(out.headline.split()), _clean(out.consider, 3, 200)
+        return " ".join(out.headline.split()), out.summary.strip(), _clean(out.consider, 3, 200)
 
 
 def _clean(items: List[str], limit: int, max_chars: int = 60) -> List[str]:

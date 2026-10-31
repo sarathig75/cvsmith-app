@@ -217,11 +217,13 @@ Gap = { skill: string, importance: "core" | "secondary",
         by_headline: boolean }                    // missing, but the proposed headline contains it
 Alignment = { id: string, created_at: string,
               requirements: JobRequirements,      // what we read from the spec; the spec itself is not kept
-              positioning: { current: string, proposed: string } | null,  // null: no headline that stays true to the CV
+              positioning: { current: string, proposed: string } | null,  // the headline; null: none that stays true to the CV
+              summary: { current: string, proposed: string } | null,      // the professional summary, same rules; null on runs made before 2026-10-31
               gaps: Gap[],
               consider: string[],                 // ideas only, never added to the CV (at most 3)
               score: AtsScore }                   // Mode B of the saved CV; checks include B1-B7 that apply
-Selection = { use_headline: boolean, skills: string[] }   // skills: names of missing gaps to add
+Selection = { use_headline: boolean, use_summary: boolean,   // use_summary defaults to false
+              skills: string[] }                             // skills: names of missing gaps to add
 ```
 
 | Method | Path | Auth | Body | Response |
@@ -229,7 +231,7 @@ Selection = { use_headline: boolean, skills: string[] }   // skills: names of mi
 | POST | /api/alignment | yes | `{ job_spec: string }` (80-20000 chars) | 201 `Alignment`. 402 `PRO_REQUIRED` for Free; 402 `QUOTA_EXCEEDED` when the month's 50 are used; 404 `NOT_FOUND` if the user has no saved CV (`content` is null: open the Canvas first); 503 `ALIGNMENT_FAILED` if the AI step failed (nothing stored or counted) |
 | GET | /api/alignment/{id} | yes | - | 200 `Alignment` (404 if not the user's) |
 | POST | /api/alignment/{id}/preview | yes | `Selection` | 200 `AtsScore`: Mode B of the saved CV with the selection applied, recomputed by the rules (no AI). Used live while the user ticks |
-| POST | /api/alignment/{id}/apply | yes | `Selection` | 200 `CV`: the selection is applied to the saved CV (headline replaced; skills appended if not there already). The client then opens the Canvas |
+| POST | /api/alignment/{id}/apply | yes | `Selection` | 200 `CV`: the selection is applied to the saved CV (headline and/or summary replaced; skills appended if not there already). The client then opens the Canvas |
 | POST | /api/alignment/{id}/download | yes | `Selection` | 200 PDF of the saved CV with the selection applied, named "Jane Doe CV - Job title.pdf". Nothing is stored. PDF only: JSON export stays with the base CV |
 
 Rules:
@@ -241,7 +243,13 @@ Rules:
   AI call writes the proposed headline and the ideas from the requirements and the CV's facts (not the spec),
   in the house style. The headline is dropped (`positioning: null`) if it names a skill, employer or person the
   CV does not contain (same guard as suggestions). Ideas never claim anything about the user's history.
-- `skills` in a Selection must be names of `missing` gaps of that run; anything else is a 422.
+- The proposed summary (added 2026-10-31) rewords and reorders the current summary and the CV's facts to lead
+  with what the job asks for, using the job's wording where the facts support it; empty summary: written from
+  the facts. It is dropped (`summary: null`) if it names a skill, employer or person the CV does not contain,
+  contains a number the CV does not, contains any skill listed as missing (that would claim it), or is more
+  longer than 500 characters and more than 1.5 times the current summary (plus 60 characters). Unchanged text is not a proposal.
+- `skills` in a Selection must be names of `missing` gaps of that run; `use_headline` / `use_summary` need a
+  proposal on that run; anything else is a 422.
 - Nothing is added to the CV unless the user ticked it. "Dismiss" is only on the screen (not stored).
 - Mode B unmatched terms (skill, title, sector, requirement kinds) are recorded for review once per run.
 - Funnel events: `alignment_run` (step only); a job PDF records `pdf_downloaded` with `{"job_version": true}`.

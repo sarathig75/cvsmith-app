@@ -45,7 +45,7 @@ def preview_alignment(
     renderer: PdfRenderer = Depends(get_pdf_renderer),
 ):
     row = alignment_service.get(db, user, run_id)
-    return alignment_service.preview(db, user, renderer, row, body.use_headline, body.skills)
+    return alignment_service.preview(db, user, renderer, row, body.use_headline, body.skills, body.use_summary)
 
 
 @router.post("/{run_id}/apply", response_model=CVOut)
@@ -53,7 +53,7 @@ def apply_alignment(
     run_id: uuid.UUID, body: SelectionIn, user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     row = alignment_service.get(db, user, run_id)
-    return alignment_service.apply(db, user, row, body.use_headline, body.skills)
+    return alignment_service.apply(db, user, row, body.use_headline, body.skills, body.use_summary)
 
 
 @router.post("/{run_id}/download")
@@ -66,7 +66,7 @@ def download_job_version(
 ):
     """A PDF of the saved CV with the ticked changes, for this job only. Nothing is stored."""
     row = alignment_service.get(db, user, run_id)
-    content = alignment_service.job_version(db, user, row, body.use_headline, body.skills)
+    content = alignment_service.job_version(db, user, row, body.use_headline, body.skills, body.use_summary)
     try:
         pdf = renderer.render(content)
     except PdfError:

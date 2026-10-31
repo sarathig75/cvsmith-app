@@ -53,6 +53,7 @@ export function AlignResultPage() {
   const [loadError, setLoadError] = useState('');
   const [quota, setQuota] = useState<Quota | null>(null);
   const [headline, setHeadline] = useState(true);
+  const [summaryTick, setSummaryTick] = useState(true);
   const [ticked, setTicked] = useState<string[]>([]);
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [after, setAfter] = useState<AtsScore | null>(null);
@@ -75,8 +76,8 @@ export function AlignResultPage() {
   }, [id]);
 
   const selection: Selection = useMemo(
-    () => ({ use_headline: headline && !!run?.positioning, skills: ticked }),
-    [headline, ticked, run],
+    () => ({ use_headline: headline && !!run?.positioning, use_summary: summaryTick && !!run?.summary, skills: ticked }),
+    [headline, summaryTick, ticked, run],
   );
 
   // The "after" score follows the ticks live. It is recomputed by the rules on the server (no AI), a moment
@@ -136,7 +137,7 @@ export function AlignResultPage() {
   );
   const dismissedGaps = missingGaps.filter((g) => dismissed.includes(g.skill) && !ticked.includes(g.skill));
   const covered = gaps.filter((g) => g.status === 'covered');
-  const changes = (selection.use_headline ? 1 : 0) + ticked.length;
+  const changes = (selection.use_headline ? 1 : 0) + (selection.use_summary ? 1 : 0) + ticked.length;
   const now = run.score.score;
   const afterScore = after?.score ?? now;
   const diff = afterScore - now;
@@ -235,7 +236,8 @@ export function AlignResultPage() {
           <div className="flex min-w-0 flex-col gap-5">
             {/* positioning */}
             <div>
-              <h2 className="text-sm font-semibold">Positioning (your headline)</h2>
+              <h2 className="text-sm font-semibold">Positioning (your headline and summary)</h2>
+              <h3 className="mt-2 text-xs font-semibold text-slate-600">Headline</h3>
               {run.positioning ? (
                 <>
                   <div className="mt-1 text-sm text-slate-600 line-through">{run.positioning.current || '(no headline yet)'}</div>
@@ -255,6 +257,30 @@ export function AlignResultPage() {
               ) : (
                 <p className="mt-1 text-sm text-slate-600">
                   We couldn&apos;t propose a headline that stays true to your CV, so your headline stays as it is.
+                </p>
+              )}
+              <h3 className="mt-4 text-xs font-semibold text-slate-600">Summary</h3>
+              {run.summary ? (
+                <>
+                  <p className="mt-1 line-clamp-3 text-sm text-slate-600 line-through">
+                    {run.summary.current || '(no summary yet)'}
+                  </p>
+                  <label className="mt-1.5 flex items-start gap-2.5 rounded-sm border border-slate-200 bg-slate-50 p-3 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={summaryTick}
+                      onChange={(e) => setSummaryTick(e.target.checked)}
+                      className="mt-0.5 h-[18px] w-[18px] shrink-0"
+                    />
+                    <span>
+                      <span className="sr-only">Use this summary: </span>
+                      {run.summary.proposed}
+                    </span>
+                  </label>
+                </>
+              ) : (
+                <p className="mt-1 text-sm text-slate-600">
+                  We couldn&apos;t propose a summary that stays true to your CV, so your summary stays as it is.
                 </p>
               )}
             </div>
@@ -383,7 +409,7 @@ export function AlignResultPage() {
             <div className="flex flex-col gap-2 rounded-md border border-slate-300 p-4">
               <span className="text-sm font-semibold">Update my CV</span>
               <span className="text-sm leading-relaxed text-slate-700">
-                Your saved CV changes: the new headline and the skills you ticked. We then open the Canvas so you can see the
+                Your saved CV changes: the new headline and summary and the skills you ticked. We then open the Canvas so you can see the
                 updated CV. Every download after this has them.
               </span>
               <Button className="self-start" onClick={update} loading={busy === 'update'} disabled={busy !== null || changes === 0}>
