@@ -14,12 +14,14 @@ Each list is a plain file in the backend, with a test that checks no word appear
 A bullet "starts with a strong verb" when its first word is in this list (past tense for past
 roles, present tense for the current role; the matcher accepts both forms).
 
-accelerated, achieved, administered, analysed, architected, automated, built, consolidated,
-created, cut, defined, delivered, designed, developed, directed, drove, eliminated, established,
-expanded, forecast, generated, grew, implemented, improved, increased, initiated, introduced,
-launched, led, managed, migrated, modernised, negotiated, optimised, orchestrated, owned, piloted,
-planned, recruited, redesigned, reduced, resolved, restructured, scaled, secured, simplified,
-standardised, streamlined, supervised, transformed, trained, validated
+accelerated, achieved, administered, advised, analysed, architected, assessed, audited, automated, built, coached, collaborated, conducted, configured, consolidated, coordinated, created, cut, defined, delivered, deployed, designed, developed, directed, documented, drove, eliminated, engineered, established, evaluated, executed, expanded, facilitated, forecast, generated, grew, identified, implemented, improved, increased, initiated, integrated, introduced, launched, led, maintained, managed, mentored, migrated, modernised, monitored, negotiated, onboarded, optimised, orchestrated, organised, oversaw, owned, partnered, piloted, planned, prepared, presented, processed, produced, reconciled, recruited, redesigned, reduced, resolved, restructured, reviewed, saved, scaled, secured, simplified, spearheaded, standardised, streamlined, supervised, tested, trained, transformed, validated, wrote
+
+Added 2026-10-31 (approved by the user, because real strong verbs such as Coordinated, Conducted and Prepared were
+counted as not strong): coordinated, conducted, prepared, oversaw, spearheaded, mentored, partnered, executed,
+facilitated, evaluated, presented, reviewed, maintained, monitored, organised, wrote, advised, audited,
+documented, coached, onboarded, collaborated, engineered, produced, processed, tested, deployed, integrated,
+configured, reconciled, assessed, identified, saved. House-style rule 15 lists the same verbs (a test keeps them
+in sync).
 
 Not on the list (weak or filler): responsible, assisted, helped, supported, worked, involved,
 participated, handled, contributed, familiar, various.

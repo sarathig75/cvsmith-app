@@ -14,6 +14,11 @@ ACTION_VERBS = (
     "modernised negotiated optimised orchestrated owned piloted planned recruited redesigned reduced "
     "resolved restructured scaled secured simplified standardised streamlined supervised transformed "
     "trained validated"
+    # added 2026-10-31 (user approved widening the list): common strong verbs the check missed
+    " coordinated conducted prepared oversaw spearheaded mentored partnered executed facilitated evaluated"
+    " presented reviewed maintained monitored organised wrote advised audited documented coached onboarded"
+    " collaborated engineered produced processed tested deployed integrated configured reconciled assessed"
+    " identified saved"
 ).split()
 
 # Weak or filler openers: never strong, and never recorded as unmatched verbs.

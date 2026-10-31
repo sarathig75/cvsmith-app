@@ -213,7 +213,7 @@ points, what to change and, where there is one, a button chosen by `fix_kind`:
 | fix_kind | Button on the Canvas |
 |---|---|
 | `dates_format` | "Show years only on every date": every date becomes the year only (a month cannot be added where it was never given). Automatic, with Undo |
-| `improve_wording` | Pro: opens "Improve all". Free: jumps to the job descriptions, where each has a 💡 |
+| `improve_wording` | Pro: opens "Improve all". (A6 uses `go_experience` instead when only weak openers such as Supported or Helped remain: the suggestions leave those alone because they cannot tell what the person did.) Free: jumps to the job descriptions, where each has a 💡 |
 | `go_contact`, `go_experience`, `go_sections` | Jumps to that part of the Canvas with the field focused; only the user knows the answer (phone, location, numbers, a job title) |
 | none | No button (layout of the file, length) |
 

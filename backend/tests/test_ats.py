@@ -458,11 +458,11 @@ def _bullets_content(bullets):
 
 
 def test_a6_names_the_words_that_count_against_the_user():
-    f = _bullets_content(["Coordinated onboarding for new joiners in four regional offices every single year",
-                          "Prepared monthly headcount reports for the finance director and the board",
+    f = _bullets_content(["Liaised with vendors about onboarding for new joiners in four regional offices each year",
+                          "Compiled monthly headcount reports for the finance director and the board",
                           "Led a team of five engineers to cut costs by 20% across three product lines"])
     a6 = check(score.score_mode_a(f, GOOD_LAYOUT, TODAY), "A6")
-    assert "(Coordinated, Prepared)" in a6["fix"]          # only the words that count against them
+    assert "(Liaised, Compiled)" in a6["fix"]          # only the words that count against them
     assert a6["fix_kind"] == "improve_wording"          # the suggestions can swap in a listed verb
 
 
@@ -473,3 +473,12 @@ def test_a6_when_only_weak_openers_remain_it_says_the_user_has_to_reword_them():
     a6 = check(score.score_mode_a(f, GOOD_LAYOUT, TODAY), "A6")
     assert "Supported" in a6["fix"] and "left as written" in a6["fix"]
     assert a6["fix_kind"] == "go_experience"             # Improve all would not change these
+
+
+def test_common_strong_verbs_added_on_2026_10_31_count_as_strong():
+    for word in ("coordinated", "conducted", "prepared", "oversaw", "wrote", "spearheaded", "organised", "onboarded"):
+        assert tx.is_strong_verb(word), word
+    for form in ("oversee", "overseeing", "writing", "coordinates", "preparing"):
+        assert tx.is_strong_verb(form), form
+    for weak in ("supported", "helped", "assisted", "handled", "responsible"):
+        assert not tx.is_strong_verb(weak), weak

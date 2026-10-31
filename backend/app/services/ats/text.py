@@ -9,6 +9,7 @@ _IRREGULAR_FORMS = {
     "built": ("build", "builds", "building"), "led": ("lead", "leads", "leading"),
     "drove": ("drive", "drives", "driving"), "grew": ("grow", "grows", "growing"),
     "cut": ("cuts", "cutting"), "forecast": ("forecasts", "forecasting"),
+    "oversaw": ("oversee", "oversees", "overseeing"), "wrote": ("write", "writes", "writing"),
 }
 
 

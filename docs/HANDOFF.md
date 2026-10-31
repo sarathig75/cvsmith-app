@@ -59,13 +59,18 @@ Everything is merged into `main` (PR #1, CI green on its head). Open branches: n
   `/align` needs a saved CV (`content`); a proposed headline/summary naming something not in the CV is dropped;
   Dismiss is on screen only; "Fix all" only does the date format.
 
+- 2026-10-31 (after the merge, on branch `claude/youthful-darwin-uv0663`): A6 now names the first words that count
+  against the user; the verb list was widened from 52 to 85 (user chose "widen"; list in `docs/ATS_RULES.md` section
+  1, also in house-style rule 15, so the zip must be re-uploaded again); a weak opener (Supported, Helped...) is the
+  user's to reword (`fix_kind` `go_experience`), not an Improve all job. Evaluation 1 run: 24/25 on
+  `summary_not_longer` (known borderline, see open questions), the rest 25/25.
+
 ## Next steps
 1. User tests on the laptop (`docs/LOCAL_SETUP.md` 3.2): `git checkout main && git pull`, `docker compose up -d
    --build` (see Setup notes if the build is slow or runs out of memory), then the score panel, Fix all, Improve
    all, job alignment with the summary.
 2. Re-upload `cv-house-style.zip` (rules 15-16) to the user's claude.ai account (the backend copy is current).
-3. Verb list: propose additions to `docs/ATS_RULES.md` section 1 for the user's review (e.g. coordinated,
-   conducted, oversaw, spearheaded, mentored, partnered); not decided.
+3. Review the widened verb list with the user if they want to change it (`docs/ATS_RULES.md` section 1).
 4. Phone layouts of dashboard, `/next`, Align to job and the score panel (no mocks wanted; check at phone width).
 5. Evaluation: re-run `python -m evals.run_suggestions --repeats 2` after any prompt change; consider one for the
    alignment headline/summary (does it invent anything?).
