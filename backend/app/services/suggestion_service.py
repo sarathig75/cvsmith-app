@@ -40,7 +40,9 @@ TASK = """You improve one field of a CV, following the house style above.
 - Only suggest a rewrite that materially improves the text: clearer structure, stronger
   action verbs, outcomes made prominent, vague phrases or first person removed. Small edits
   (an added article, a synonym, punctuation) are not worth it: then return the text unchanged
-  and set changed to false. Likewise if it already follows the rules.
+  and set changed to false. Likewise if it already follows the rules. A bullet that does not start with an
+  action verb (rule 15), or is under 15 or over 30 words (rule 16), is a material improvement when the facts
+  in the description allow it.
 - A positioning statement (it says where the candidate is heading and states facts about their
   experience) keeps its content and claims: improve its wording only, and add nothing to it.
 - An objective (it says what the candidate wants, e.g. "Seeking a role...", "Looking for...") is

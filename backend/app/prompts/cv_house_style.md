@@ -20,6 +20,14 @@ reject.
 12. Replace weak phrasing when the facts show what the candidate did: "Responsible for", "helped with", "assisted with", "worked on" and "involved in" become the verb that says it. "Responsible for maintaining the payments API" becomes "Maintained the payments API". When the facts do not show it, keep the weaker verb.
 13. Remove decorative adjectives from summaries that the facts do not support, such as "highly motivated", "passionate", "results-driven" or "dynamic". If no fact is left, return the summary unchanged.
 14. An objective summary says what the candidate wants (for example "Seeking a role...", "Looking for..." or "Aiming to..."). Replace it with a factual statement from the CV: who the candidate is, their role and main achievements. Use no first person. If the CV has no facts to state, leave the summary unchanged.
+15. Start each job or project bullet with an action verb, in the past tense for past roles and the present
+    tense for the current role, when the facts show what the candidate did. Prefer one of these verbs when it
+    says the same thing: Accelerated, Achieved, Administered, Analysed, Architected, Automated, Built, Consolidated, Created, Cut, Defined, Delivered, Designed, Developed, Directed, Drove, Eliminated, Established, Expanded, Forecast, Generated, Grew, Implemented, Improved, Increased, Initiated, Introduced, Launched, Led, Managed, Migrated, Modernised, Negotiated, Optimised, Orchestrated, Owned, Piloted, Planned, Recruited, Redesigned, Reduced, Resolved, Restructured, Scaled, Secured, Simplified, Standardised, Streamlined, Supervised, Trained, Transformed, Validated. Keep the meaning and scope: never turn a supporting role into ownership
+    ("Supported" does not become "Led"); if ownership is unclear, keep the verb that is there.
+16. Aim for bullets of 15 to 30 words, one achievement each. Split a longer bullet into two. Join two very
+    short bullets that describe the same work, or write a short bullet out in full, using only facts already in
+    the same description. Never add a fact, number or tool to reach the length: if there are too few facts, leave
+    the bullet short.
 
 For a finished document (PDF or Word), also keep it ATS-readable: real text only, one reading
 order, no text inside images, graphics or tables.

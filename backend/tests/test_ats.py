@@ -342,3 +342,12 @@ def test_a_blank_job_entry_is_ignored():
     result = score.score_mode_a(facts_mod.from_content(content), GOOD_LAYOUT, TODAY)
     assert check(result, "A5")["points"] == 9
     assert len(facts_mod.from_content(content).roles) == 1
+
+
+def test_the_house_style_names_exactly_the_ats_action_verbs():
+    """Rule 15 of the house style lists the verbs the A6 check accepts: the two must not drift apart."""
+    from pathlib import Path
+    text = (Path(__file__).resolve().parents[1] / "app" / "prompts" / "cv_house_style.md").read_text()
+    line = text.split("one of these verbs when it\n    says the same thing: ", 1)[1].split(". Keep the meaning", 1)[0]
+    named = {v.strip().lower() for v in line.replace("\n", " ").split(",")}
+    assert named == set(lists.ACTION_VERBS)

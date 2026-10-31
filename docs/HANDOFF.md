@@ -30,7 +30,7 @@ This session's work is on `claude/youthful-darwin-uv0663` (pushed, not merged, n
 - Drop-off metrics in our own `events` table (`docs/FUNNEL.md`), never CV content.
 
 ## Current state
-- Backend: pytest 272/272, flake8 clean (run 2026-10-29); migrations up to 0011.
+- Backend: pytest 281/281, flake8 clean (run 2026-10-29); migrations up to 0011.
 - Frontend: type-check clean, vitest 158/158, build OK (run 2026-10-29).
 - Open branches / PRs: `claude/youthful-darwin-uv0663` (pushed, not merged; no PR): ATS Mode A, dashboard,
   `/next`, Canvas before/after score, job alignment, privacy text. For the user to test locally
@@ -68,6 +68,12 @@ This session's work is on `claude/youthful-darwin-uv0663` (pushed, not merged, n
   without `missing_details`, "Undo all"; dashboard "Upload a new CV" button; Pro quota message fixed.
   Finding: some checks (bullets of 15-30 words, strong verbs, one date format) cannot be raised by 💡
   suggestions, because the house style calls those fields "already in good shape".
+- 2026-10-31: job alignment also proposes a **summary** (tick box, live score, Update my CV / job PDF; guarded
+  against new names, numbers, missing skills and bloat: contract "Job alignment"). House style rules 15-16
+  (start bullets with an ATS action verb; 15-30 words per bullet, facts only), prompt tweak, test that rule 15
+  lists exactly the ATS verbs; evaluation 25/25 on all checks (1 run). Real check: long bullets are split,
+  weak verbs become strong where ownership is clear; "Supported/Helped" stay and very short bullets stay
+  short (not enough facts). cv-house-style zip must be re-uploaded to the user's claude.ai account.
 - 2026-10-29: **Decisions made without asking** (reverse if wrong): a job PDF download stays on the result page
   (no `/next`); `/align` and its API need a saved CV (`content`), else "Open your CV on the Canvas first";
   a proposed headline naming something not in the CV is dropped (same guard as suggestions, which only checks
@@ -85,6 +91,7 @@ This session's work is on `claude/youthful-darwin-uv0663` (pushed, not merged, n
   drop); `CV/` (real CVs) is git-ignored; the Docker build there was still running when the user left.
 
 ## Next steps
+0a. Verb list: propose additions to `docs/ATS_RULES.md` section 1 for the user's review (not decided).
 0. User tests the branch locally (checklist 3.2, incl. job alignment), then merge to `main`.
 1. Phone layouts of the dashboard, `/next` and the Align to job screens (no mocks wanted; check at phone width).
 2. Evaluation: re-run `python -m evals.run_suggestions --repeats 2` after any prompt change; consider a small
