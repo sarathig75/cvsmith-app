@@ -30,7 +30,7 @@ This session's work is on `claude/youthful-darwin-uv0663` (pushed, not merged, n
 - Drop-off metrics in our own `events` table (`docs/FUNNEL.md`), never CV content.
 
 ## Current state
-- Backend: pytest 281/281, flake8 clean (run 2026-10-29); migrations up to 0011.
+- Backend: pytest 284/284, flake8 clean (run 2026-10-29); migrations up to 0011.
 - Frontend: type-check clean, vitest 158/158, build OK (run 2026-10-29).
 - Open branches / PRs: `claude/youthful-darwin-uv0663` (pushed, not merged; no PR): ATS Mode A, dashboard,
   `/next`, Canvas before/after score, job alignment, privacy text. For the user to test locally
@@ -74,6 +74,12 @@ This session's work is on `claude/youthful-darwin-uv0663` (pushed, not merged, n
   lists exactly the ATS verbs; evaluation 25/25 on all checks (1 run). Real check: long bullets are split,
   weak verbs become strong where ownership is clear; "Supported/Helped" stay and very short bullets stay
   short (not enough facts). cv-house-style zip must be re-uploaded to the user's claude.ai account.
+- 2026-10-31: **ATS framework v2** (`docs/ATS_FRAMEWORK.md`, "Changes after the first agreement"): PDF
+  template heading is "Professional experience"; plain "Experience" no longer counts for A2; new A12 (job
+  title and employer on every role); A4 penalises contact details only in a Word header/footer; points
+  re-split to keep 100 (the split is Claude's proposal). Stored "before" scores from v1 are not recomputed.
+  Mock "ATS score visual (proposal)" (ring + Searchability/Writing/Hard skills/Job fit bars, details
+  collapsed, "Improve all" button) is **not yet approved or built**.
 - 2026-10-29: **Decisions made without asking** (reverse if wrong): a job PDF download stays on the result page
   (no `/next`); `/align` and its API need a saved CV (`content`), else "Open your CV on the Canvas first";
   a proposed headline naming something not in the CV is dropped (same guard as suggestions, which only checks
@@ -91,6 +97,7 @@ This session's work is on `claude/youthful-darwin-uv0663` (pushed, not merged, n
   drop); `CV/` (real CVs) is git-ignored; the Docker build there was still running when the user left.
 
 ## Next steps
+0b. Ask the user to approve the ATS visual mock, then build it (group bars, collapsed issue lists).
 0a. Verb list: propose additions to `docs/ATS_RULES.md` section 1 for the user's review (not decided).
 0. User tests the branch locally (checklist 3.2, incl. job alignment), then merge to `main`.
 1. Phone layouts of the dashboard, `/next` and the Align to job screens (no mocks wanted; check at phone width).

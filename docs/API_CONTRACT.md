@@ -125,7 +125,7 @@ AtsScore = { score: number,                      // 0-100, Mode A (docs/ATS_FRAM
                        fix: string | null }[],   // null when passed; names the real check
              // Checks that do not apply are left out of `checks` and of the score (not zero).
              first_fix: { check_id: string, text: string, points: number } | null,
-             framework: string }                // e.g. "ats-framework-v1"
+             framework: string }                // e.g. "ats-framework-v2"
 
 Dashboard = { state: "no_cv" | "parsing" | "ready" | "needs_details",
               cv_strength: CvStrength | null,   // null when state is "no_cv"
@@ -151,7 +151,7 @@ Rules:
 
 ### ATS format score
 
-Framework and points: `docs/ATS_FRAMEWORK.md` (id `ats-framework-v1`). Mode A (CV only) is the dashboard
+Framework and points: `docs/ATS_FRAMEWORK.md` (id `ats-framework-v2`). Mode A (CV only) is the dashboard
 score; Mode B (with a job spec) is shown in job alignment. Word lists: `docs/ATS_RULES.md`
 (code: `backend/app/services/ats/lists.py`).
 
@@ -172,10 +172,14 @@ How each check is measured (decisions the framework left open; change them here 
 - **A1** text integrity: under 200 characters of text = unreadable (0); garbled characters (replacement or
   private-use) over 2% of the text, or over 40% of lines of two characters or fewer = scrambled (half
   points); otherwise ok.
-- **A2** counts how many of Experience, Education and Skills appear as heading lines in the file's text
-  (accepted variants in `lists.py`): 3 = full, 1-2 = half, 0 = none.
-- **A4** is an estimate: Word files count tables, text boxes and drawings; in a PDF only images (as icons)
-  can be counted, so tables and text boxes there are not detected. The check says "(estimated)".
+- **A2** counts how many of Professional experience (or Work experience, or Work history), Education and
+  Skills appear as heading lines in the file's text (accepted variants in `lists.py`): 3 = full, 1-2 = half,
+  0 = none. Plain "Experience" does not count (decided 2026-10-31). The Classic PDF template heads the work
+  section "Professional experience".
+- **A4** is an estimate: Word files count tables, text boxes and drawings, and whether the email or phone sits
+  only in a header or footer (`layout.header_contact`, 2 points); in a PDF only images (as icons) can be
+  counted, so tables, text boxes and header contact there are not detected. The check says "(estimated)".
+- **A12** every role has a job title and an employer (blank entries ignored): all = full, at least half = half.
 - **A5** all dates one format (all month+year or all year-only) and every job has a start date, no end
   before its start = full; mixed formats = 4/9; a job without a start date, a non-date, an end before a
   start, or no jobs = 0.

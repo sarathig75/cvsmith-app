@@ -94,7 +94,7 @@ export function CvTemplate({ draft }: { draft: CvDraft }) {
         </Section>
       )}
       {draft.experience.length > 0 && (
-        <Section title="Experience" target="experience">
+        <Section title="Professional experience" target="experience">
           {draft.experience.map((e) => (
             <EntryRow key={e.id} title={e.title || 'Role'} sub={e.company} dates={range(e)} body={e.description} />
           ))}

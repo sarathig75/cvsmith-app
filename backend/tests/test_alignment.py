@@ -92,7 +92,7 @@ def test_a_run_returns_score_gaps_positioning_and_ideas(client, pro, ai):
                                               "status": "missing", "by_headline": False}
     assert by_skill["Terraform"]["importance"] == "secondary"
     assert body["consider"] == ["A short course in workforce analytics."]
-    assert body["score"]["framework"] == "ats-framework-v1" and 0 < body["score"]["score"] <= 100
+    assert body["score"]["framework"] == "ats-framework-v2" and 0 < body["score"]["score"] <= 100
     assert {"B1", "B2", "B3", "B5"} <= {c["id"] for c in body["score"]["checks"]}
     assert client.get(f"/api/alignment/{body['id']}", headers=pro).json() == body
 

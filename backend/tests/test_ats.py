@@ -85,13 +85,13 @@ def test_a_complete_cv_scores_high_and_has_no_fix_for_passed_checks():
     assert result.score >= 85
     assert {c["id"] for c in result.checks} == set(score.MODE_A)
     assert all(c["fix"] is None for c in result.checks if c["passed"])
-    assert result.public()["framework"] == "ats-framework-v1"
+    assert result.public()["framework"] == "ats-framework-v2"
 
 
 def test_checks_use_the_framework_points():
     f = facts_mod.from_content(cv_content())
     result = score.score_mode_a(f, GOOD_LAYOUT, TODAY)
-    assert check(result, "A3")["points"] == 11 and check(result, "A1")["max"] == 14
+    assert check(result, "A3")["points"] == 11 and check(result, "A1")["max"] == 12
     # mixed date formats (month+year jobs, month+year education here) are consistent
     assert check(result, "A5")["points"] == 9
     mixed = cv_content(education=[{"start": "2010", "end": "2014"}])
@@ -174,7 +174,7 @@ def test_text_integrity_levels():
 
 
 def test_pdf_layout_counts_pages_and_headings():
-    pdf = make_text_pdf("Jane Doe\nExperience\nAcme Ltd, Data Analyst, built dashboards for sales teams. " * 3
+    pdf = make_text_pdf("Jane Doe\nProfessional experience\nAcme Ltd, Data Analyst, built dashboards for sales. " * 3
                         + "\nEducation\nUniversity of Leeds, BSc Mathematics\nSkills\nPython, SQL, Tableau" * 2)
     facts = layout.from_pdf(pdf)
     assert facts["pages"] == 1 and facts["headings"] == 3 and facts["text"] == "ok" and facts["tables"] == 0
@@ -220,7 +220,7 @@ class Renderer:
         return self.pdf
 
 
-GOOD_PDF = make_text_pdf("Jane Doe\nExperience\nAcme Ltd, Data Analyst, built dashboards for the sales teams. "
+GOOD_PDF = make_text_pdf("Jane Doe\nProfessional experience\nAcme Ltd, Data Analyst, built dashboards for sales. "
                          "\nEducation\nUniversity of Leeds, BSc Mathematics, 2014 to 2017, first class honours degree\n"
                          "Skills\nPython, SQL, Tableau, statistics, communication, stakeholder management")
 
@@ -258,7 +258,7 @@ def test_dashboard_scores_the_saved_cv(client, auth, renderer):
     body = client.get("/api/dashboard", headers=auth[0]).json()
     assert body["state"] == "ready" and body["plan"] == "free"
     assert 0 < body["cv_strength"]["percent"] <= 100
-    assert body["ats"]["framework"] == "ats-framework-v1" and 0 < body["ats"]["score"] <= 100
+    assert body["ats"]["framework"] == "ats-framework-v2" and 0 < body["ats"]["score"] <= 100
     ids = {c["id"] for c in body["ats"]["checks"]}
     assert {"A1", "A2", "A4", "A11"} <= ids                 # layout read from the generated PDF
     assert body["ats"]["first_fix"]["text"]
@@ -302,7 +302,7 @@ def test_parsing_keeps_the_before_score_and_records_unmatched_terms(client, auth
         parsing_service.run_parsing(db, storage, FakeParser(), cv_id, key)
         cv = db.get(CV, cv_id)
         before = cv.ats_before
-        assert before["framework"] == "ats-framework-v1" and before["layout"]["headings"] == 3
+        assert before["framework"] == "ats-framework-v2" and before["layout"]["headings"] == 3
         assert "layout" in before and before["checks"]
         assert ({t.kind for t in db.scalars(select(UnmatchedTerm))} - {"verb", "skill", "title"}) == set()
     assert not list(client.upload_dir.rglob("*.pdf"))          # the file itself is still deleted
@@ -351,3 +351,55 @@ def test_the_house_style_names_exactly_the_ats_action_verbs():
     line = text.split("one of these verbs when it\n    says the same thing: ", 1)[1].split(". Keep the meaning", 1)[0]
     named = {v.strip().lower() for v in line.replace("\n", " ").split(",")}
     assert named == set(lists.ACTION_VERBS)
+
+
+def test_the_header_experience_must_be_work_experience_professional_experience_or_work_history():
+    cases = (("Professional experience", 3), ("Work experience", 3), ("Work history", 3), ("Experience", 2))
+    for heading, expected in cases:
+        text = f"{heading}\nAcme\nEducation\nLeeds\nSkills\nPython\n"
+        assert layout.headings_found(text) == expected, heading
+
+
+def test_a_role_needs_a_job_title_and_an_employer():
+    def role(title, company):
+        return {"title": title, "company": company, "start": "2020-01", "end": "2021-01", "description": ""}
+
+    def a12_check(*roles):
+        f = facts_mod.from_content(cv_content(experience=list(roles)))
+        return check(score.score_mode_a(f, GOOD_LAYOUT, TODAY), "A12")
+
+    def a12(*roles):
+        return a12_check(*roles)["points"]
+    assert a12(role("Analyst", "Acme"), role("Intern", "Beta")) == 6
+    assert a12(role("Analyst", "Acme"), role("", "Beta")) == 3            # half of the roles are complete
+    assert a12(role("Analyst", ""), role("", "Beta"), role("Intern", "Gamma")) == 0
+    assert a12() == 0
+    fix = a12_check(role("", "Beta"))["fix"]
+    assert "job title" in fix and "employer" in fix
+
+
+def test_contact_details_only_in_a_word_header_cost_points_in_the_layout_check():
+    import io
+    import docx
+
+    def make(header_text):
+        document = docx.Document()
+        document.add_paragraph("Professional experience " * 20)
+        document.sections[0].header.paragraphs[0].text = header_text
+        buf = io.BytesIO()
+        document.save(buf)
+        return layout.from_docx(buf.getvalue())
+
+    only_header = make("Jane Doe | jane@example.com | +44 7700 900123")
+    assert only_header["header_contact"] is True
+    f = facts_mod.from_content(cv_content())
+    result = score.score_mode_a(f, {**GOOD_LAYOUT, "header_contact": True}, TODAY)
+    assert check(result, "A4")["points"] == 6 and "header" in check(result, "A4")["fix"]
+    assert make("Jane Doe")["header_contact"] is False
+    # an email that is also in the page body is read by every parser
+    document = docx.Document()
+    document.add_paragraph("jane@example.com " + "Professional experience " * 20)
+    document.sections[0].header.paragraphs[0].text = "jane@example.com"
+    buf = io.BytesIO()
+    document.save(buf)
+    assert layout.from_docx(buf.getvalue())["header_contact"] is False

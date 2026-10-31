@@ -19,7 +19,7 @@ const ready: Dashboard = {
   },
   ats: {
     score: 78,
-    framework: 'ats-framework-v1',
+    framework: 'ats-framework-v2',
     checks: [{ id: 'A3', label: 'Contact details complete', passed: false, points: 7, max: 11, fix: 'Add your phone.' }],
     first_fix: { check_id: 'A3', text: 'Add your phone.', points: 4 },
   },

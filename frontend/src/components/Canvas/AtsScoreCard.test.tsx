@@ -10,7 +10,7 @@ const score = (n: number, text = '') => ({
     { id: 'A3', label: 'Contact details complete', passed: false, points: 7, max: 11, fix: 'Add your phone.' },
     { id: 'A2', label: 'Standard section headings', passed: true, points: 14, max: 14, fix: null },
   ],
-  framework: 'ats-framework-v1',
+  framework: 'ats-framework-v2',
   first_fix: text ? { check_id: 'A6', text, points: 6 } : null,
 });
 

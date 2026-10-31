@@ -131,8 +131,8 @@ SECTOR_TERMS: Dict[str, Tuple[str, ...]] = {
 
 # Standard section headings (check A2): the three the check looks for.
 STANDARD_HEADINGS: Dict[str, Tuple[str, ...]] = {
-    "experience": ("experience", "work experience", "professional experience", "employment history",
-                   "work history", "career history"),
+    # Plain "Experience" is deliberately not here (decided 2026-10-31; docs/ATS_FRAMEWORK.md).
+    "experience": ("work experience", "professional experience", "work history"),
     "education": ("education", "education and training", "academic qualifications", "qualifications"),
     "skills": ("skills", "key skills", "technical skills", "core skills", "core competencies"),
 }

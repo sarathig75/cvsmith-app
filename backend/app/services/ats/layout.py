@@ -12,6 +12,7 @@ from typing import Any, Dict, Optional
 from pypdf import PdfReader
 
 from app.services.ats.lists import STANDARD_HEADINGS
+from app.services.contact_patterns import find_contact
 
 SCRAMBLED_SHARE = 0.02  # replacement/private-use characters, as a share of the text
 MIN_TEXT_CHARS = 200
@@ -39,9 +40,20 @@ def headings_found(text: str) -> int:
     return sum(1 for variants in STANDARD_HEADINGS.values() if any(v in lines for v in variants))
 
 
-def _facts(text: str, tables: int, textboxes: int, icons: int, pages: Optional[int]) -> Dict[str, Any]:
+def _facts(text: str, tables: int, textboxes: int, icons: int, pages: Optional[int],
+           header_contact: bool = False) -> Dict[str, Any]:
     return {"text": text_integrity(text), "headings": headings_found(text), "tables": tables,
-            "textboxes": textboxes, "icons": icons, "pages": pages}
+            "textboxes": textboxes, "icons": icons, "pages": pages, "header_contact": header_contact}
+
+
+def header_only_contact(body_text: str, header_footer_xml: str) -> bool:
+    """True when the email or phone is found in a Word header or footer but not in the page body: many ATS
+    parsers skip headers and footers, so such details are lost."""
+    if not header_footer_xml:
+        return False
+    outside = find_contact(re.sub(r"<[^>]+>", " ", header_footer_xml)).get("basics", {})
+    inside = find_contact(body_text).get("basics", {})
+    return any(outside.get(k) and not inside.get(k) for k in ("email", "phone"))
 
 
 def from_pdf(data: bytes) -> Optional[Dict[str, Any]]:
@@ -65,6 +77,9 @@ def from_docx(data: bytes) -> Optional[Dict[str, Any]]:
             body = zf.read("word/document.xml").decode("utf-8", "ignore")
             names = zf.namelist()
             app_xml = zf.read("docProps/app.xml").decode("utf-8", "ignore") if "docProps/app.xml" in names else ""
+            header_footer = " ".join(
+                zf.read(n).decode("utf-8", "ignore") for n in names if re.match(r"word/(header|footer)\d*\.xml$", n)
+            )
     except (ExtractionError, zipfile.BadZipFile, KeyError):
         return None
     pages = re.search(r"<Pages>(\d+)</Pages>", app_xml)
@@ -74,6 +89,7 @@ def from_docx(data: bytes) -> Optional[Dict[str, Any]]:
         textboxes=body.count("<w:txbxContent"),
         icons=body.count("<w:drawing") + body.count("<w:pict"),
         pages=int(pages.group(1)) if pages else None,
+        header_contact=header_only_contact(text, header_footer),
     )
 
 

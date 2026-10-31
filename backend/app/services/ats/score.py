@@ -15,20 +15,21 @@ from app.services.ats import text as tx
 from app.services.ats.facts import Facts, Role, parse_date
 from app.services.ats.lists import LADDERS, RELATED_FAMILIES, SECTOR_TERMS
 
-FRAMEWORK = "ats-framework-v1"
+FRAMEWORK = "ats-framework-v2"
 
-MODE_A: Dict[str, int] = {"A1": 14, "A2": 14, "A3": 11, "A4": 8, "A5": 9, "A6": 11, "A7": 11,
-                          "A8": 7, "A9": 5, "A10": 4, "A11": 6}
-MODE_B_CV: Dict[str, int] = {"A1": 9, "A2": 8, "A3": 6, "A4": 5, "A5": 5, "A6": 6, "A7": 6,
-                             "A8": 4, "A9": 3, "A10": 2, "A11": 6}
+MODE_A: Dict[str, int] = {"A1": 12, "A2": 12, "A3": 11, "A4": 8, "A5": 9, "A6": 10, "A7": 10,
+                          "A8": 7, "A9": 5, "A10": 4, "A11": 6, "A12": 6}
+MODE_B_CV: Dict[str, int] = {"A1": 8, "A2": 7, "A3": 6, "A4": 5, "A5": 5, "A6": 6, "A7": 6,
+                             "A8": 4, "A9": 3, "A10": 2, "A11": 4, "A12": 4}
 MODE_B_JOB: Dict[str, int] = {"B1": 14, "B2": 6, "B3": 4, "B4": 6, "B5": 6, "B6": 2, "B7": 2}
 
 LABELS = {
     "A1": "Text can be read in order", "A2": "Standard section headings", "A3": "Contact details complete",
-    "A4": "No tables, text boxes or icons (estimated)", "A5": "Consistent dates",
+    "A4": "No tables, text boxes, icons or header-only contact details (estimated)", "A5": "Consistent dates",
     "A6": "Bullets start with a strong verb", "A7": "Achievements have numbers",
     "A8": "No filler or passive phrases", "A9": "Bullets are 15 to 30 words",
     "A10": "Opening verbs are varied", "A11": "Length fits your experience",
+    "A12": "Job title and employer on every role",
     "B1": "Must-have skills", "B2": "Other skills asked for", "B3": "Skills used recently",
     "B4": "Years of experience", "B5": "Job title similarity", "B6": "Management scope",
     "B7": "Sector terms",
@@ -103,8 +104,12 @@ def _a3(f: Facts, layout, today):
 def _a4(f: Facts, layout, today):
     if not layout:
         return None, None
-    lost = 2 * layout["tables"] + 2 * layout["textboxes"] + layout["icons"]
-    return max(8 - lost, 0) / 8, "Remove tables, text boxes and icons used in place of text; ATS tools often skip them."
+    lost = 2 * layout["tables"] + 2 * layout["textboxes"] + layout["icons"] + (2 if layout.get("header_contact") else 0)
+    fix = ("Move your email and phone out of the Word header or footer into the page: ATS tools often skip headers."
+           if layout.get("header_contact") and lost <= 2 else
+           "Remove tables, text boxes and icons used in place of text, and keep contact details out of the header; "
+           "ATS tools often skip them.")
+    return max(8 - lost, 0) / 8, fix
 
 
 def _a5(f: Facts, layout, today):
@@ -187,8 +192,16 @@ def _a11(f: Facts, layout, today):
         f"Your CV is {pages} pages; for your experience aim for {ideal} page{'s' if ideal > 1 else ''} or fewer."
 
 
+def _a12(f: Facts, layout, today):
+    if not f.roles:
+        return 0.0, "Add your jobs, each with a job title and an employer."
+    done = sum(1 for r in f.roles if r.title and r.company)
+    share = done / len(f.roles)
+    return (1.0 if share == 1 else 0.5 if share >= 0.5 else 0.0), "Give every job a job title and an employer."
+
+
 CHECKS = {"A1": _a1, "A2": _a2, "A3": _a3, "A4": _a4, "A5": _a5, "A6": _a6, "A7": _a7, "A8": _a8,
-          "A9": _a9, "A10": _a10, "A11": _a11}
+          "A9": _a9, "A10": _a10, "A11": _a11, "A12": _a12}
 
 
 # --- Mode B checks -----------------------------------------------------------------------------

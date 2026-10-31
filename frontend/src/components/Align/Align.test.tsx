@@ -12,7 +12,7 @@ import type { Alignment, AtsScore } from '../../types';
 
 const score = (n: number): AtsScore => ({
   score: n,
-  framework: 'ats-framework-v1',
+  framework: 'ats-framework-v2',
   first_fix: null,
   checks: [{ id: 'B1', label: 'Must-have skills', passed: false, points: 7, max: 14, fix: 'Add them.' }],
 });
