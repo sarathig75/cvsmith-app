@@ -65,6 +65,39 @@ describe('dashboard', () => {
     expect(screen.queryByPlaceholderText(/Paste the job description/)).not.toBeInTheDocument(); // the paste box is on its own screen
   });
 
+  it('lets the user upload a new CV from the dashboard, after the replace warning, then opens the Canvas', async () => {
+    const calls = setup((req) =>
+      req.method === 'post' && req.url === '/api/cv/upload' ? { status: 201, data: {} } : { status: 200, data: ready },
+    );
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Upload a new CV' }));
+    expect(screen.getByText('What should happen to your current CV?')).toBeInTheDocument();
+    await user.upload(
+      screen.getByTestId('replace-cv-input'),
+      new File(['%PDF-1.4'], 'new.pdf', { type: 'application/pdf' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Upload and replace' }));
+    expect(await screen.findByRole('heading', { name: 'Canvas page' })).toBeInTheDocument();
+    expect(calls.some((c) => c.method === 'post' && c.url === '/api/cv/upload')).toBe(true);
+  });
+
+  it('shows the error and stays on the dashboard when the new CV cannot be uploaded', async () => {
+    setup((req) =>
+      req.method === 'post' && req.url === '/api/cv/upload'
+        ? apiError(415, 'UNSUPPORTED_FILE_TYPE', 'Only PDF and DOCX files are supported.')
+        : { status: 200, data: ready },
+    );
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole('button', { name: 'Upload a new CV' }));
+    await user.upload(
+      screen.getByTestId('replace-cv-input'),
+      new File(['%PDF-1.4'], 'new.pdf', { type: 'application/pdf' }),
+    );
+    await user.click(screen.getByRole('button', { name: 'Upload and replace' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Only PDF and DOCX files are supported.');
+    expect(screen.getByText('64%')).toBeInTheDocument();
+  });
+
   it('shows the upload prompt, not a 0% score, when there is no CV', async () => {
     setup(() => ({ status: 200, data: { state: 'no_cv', plan: 'free', cv_strength: null, ats: null } }));
     expect(await screen.findByRole('heading', { name: 'Start with your CV' })).toBeInTheDocument();

@@ -47,6 +47,7 @@ export function DashboardPage() {
   const [uploadError, setUploadError] = useState('');
   const upload = async (file: File) => {
     setUploadOpen(false);
+    setUploadError('');
     try {
       await uploadCv(file);
       navigate('/canvas');
@@ -158,9 +159,26 @@ export function DashboardPage() {
               <p className="text-sm text-slate-700">We couldn't work out your score just now. Please refresh in a moment.</p>
             )}
           </CardLink>
-          <CardLink to="/canvas" title="Update CV or start a new CV">
+          <div className={cardClass}>
+            <div className="text-sm text-slate-600">Update CV or start a new CV</div>
             <p className="text-sm text-slate-800">Edit your CV on the Canvas, or start again from a new upload.</p>
-          </CardLink>
+            <div className="mt-auto flex flex-wrap items-center gap-2">
+              <Link
+                to="/canvas"
+                className="inline-flex min-h-[32px] items-center rounded-sm border border-slate-200 bg-slate-100 px-3 py-1 text-xs font-medium hover:bg-slate-200"
+              >
+                Open Canvas
+              </Link>
+              <Button size="sm" variant="secondary" onClick={() => setUploadOpen(true)}>
+                Upload a new CV
+              </Button>
+            </div>
+            {uploadError && (
+              <p role="alert" className="text-sm text-error-text">
+                {uploadError}
+              </p>
+            )}
+          </div>
           <div className={cardClass}>
             <div className="text-sm text-slate-600">Download PDF and JSON</div>
             <p className="text-sm text-slate-800">Your CV as a PDF, or as JSON Resume data for other tools.</p>
@@ -200,7 +218,7 @@ export function DashboardPage() {
           </span>
         </Link>
       )}
-      {uploadOpen && <ReplaceCvModal hasCv={false} onUpload={upload} onClose={() => setUploadOpen(false)} />}
+      {uploadOpen && <ReplaceCvModal hasCv={data?.state !== 'no_cv'} onUpload={upload} onClose={() => setUploadOpen(false)} />}
       {upgradeMessage && <UpgradeModal message={upgradeMessage} onClose={() => setUpgradeMessage(null)} />}
       {user && <span className="sr-only">Signed in as {user.email}</span>}
     </div>
