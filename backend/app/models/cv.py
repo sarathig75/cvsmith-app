@@ -44,6 +44,11 @@ class CV(Base):
     content: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
     applied_parts: Mapped[List[str]] = mapped_column(JSON, nullable=False, default=list)
     content_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    # ATS score of the uploaded file, kept when parsing finishes (the file is deleted afterwards):
+    # {"score", "checks", "first_fix", "framework", "layout"}. Numbers and check names only.
+    ats_before: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
+    # Layout facts of the generated PDF for the saved CV, with the hash of the content they belong to.
+    ats_layout_after: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=utcnow
     )

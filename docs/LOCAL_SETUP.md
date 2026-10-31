@@ -178,8 +178,22 @@ If the backend isn't up yet, wait 20 seconds and reload; to see why, run `docker
 - [ ] Move an entry up/down; delete an entry, reload, and check it stays deleted.
 - [ ] 💡 on Headline / Summary / a job or project description gives a suggestion
       (Free plan: 1 per month; see 3.3 to test more).
-- [ ] Download PDF works.
+- [ ] After you log in without choosing a file you land on the **Dashboard**: CV strength, ATS format
+      score (with its first fix), Update CV, Download. With no CV it shows an upload prompt, not a score.
+- [ ] On the Canvas, the **ATS format score** card shows Before (the file you uploaded) and After
+      (your saved CV); "Check again" saves your edits first, then scores again (takes a few seconds).
+- [ ] Download PDF works and then opens the **What next** page (CV strength and ATS cards, Dashboard).
 - [ ] Export JSON (Pro only; see 3.3).
+- [ ] ATS score panel on the Canvas (right column): ring with the score, bars for Searchability and Writing;
+      "N issues to fix" opens only that group's issues with a fix or "Go to" button; "Fix all" shows every date
+      as the year only (Undo); the score updates by itself a moment after your edits are saved.
+- [ ] Pro only: "💡 Improve all" asks first (how many suggestions, how many left), then applies every
+      changed suggestion; "Undo all" puts the earlier text back. Free users do not see the button.
+- [ ] **Job alignment** (Pro, see 3.3): Dashboard → "Align to a job" card → paste a job description →
+      "Align CV to this job" (about 10-20 seconds). The tab "Align to job" appears only on these screens.
+      Result: score now vs after (updates as you tick), headline, gaps (tick "I have this" or Dismiss),
+      ideas. "Update my CV" opens the Canvas with the changes; "Download PDF for this job" leaves your CV
+      as it is. Each run uses one of your suggestions.
 - [ ] Settings: plan and usage show; log out and log back in with a new code.
 - [ ] "Upload new CV" warns before replacing the current one.
 
@@ -191,6 +205,9 @@ docker compose exec postgres psql -U cvsmith_user -d cvsmith_db -c "update users
 ```
 
 It should reply `UPDATE 1`. Reload the browser.
+
+Or, shorter: `docker compose exec backend python -m app.cli users set-plan you@example.com pro`
+(`free` puts it back).
 
 ---
 

@@ -15,6 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
+from app.models.alignment import AlignmentRun
 from app.models.suggestion import Suggestion
 from app.models.user import User, utcnow
 from app.services.cv_parser import NO_KEY_LOG, cache_system, claude_client, missing_credentials
@@ -39,7 +40,9 @@ TASK = """You improve one field of a CV, following the house style above.
 - Only suggest a rewrite that materially improves the text: clearer structure, stronger
   action verbs, outcomes made prominent, vague phrases or first person removed. Small edits
   (an added article, a synonym, punctuation) are not worth it: then return the text unchanged
-  and set changed to false. Likewise if it already follows the rules.
+  and set changed to false. Likewise if it already follows the rules. A bullet that does not start with an
+  action verb (rule 15), or is under 15 or over 30 words (rule 16), is a material improvement when the facts
+  in the description allow it.
 - A positioning statement (it says where the candidate is heading and states facts about their
   experience) keeps its content and claims: improve its wording only, and add nothing to it.
 - An objective (it says what the candidate wants, e.g. "Seeking a role...", "Looking for...") is
@@ -188,7 +191,7 @@ def _month(now: datetime) -> Tuple[datetime, datetime]:
 
 
 def quota(db: Session, user: User, now: Optional[datetime] = None) -> dict:
-    """Suggestions left this calendar month (UTC). Only changed suggestions count."""
+    """Suggestions left this calendar month (UTC). Only changed suggestions count, and each job alignment."""
     start, next_start = _month(now or utcnow())
     used = db.scalar(
         select(func.count()).select_from(Suggestion).where(
@@ -196,6 +199,14 @@ def quota(db: Session, user: User, now: Optional[datetime] = None) -> dict:
             Suggestion.changed.is_(True),
             Suggestion.created_at >= start,
             Suggestion.created_at < next_start,
+        )
+    ) or 0
+    # A job alignment counts as one suggestion (docs/API_CONTRACT.md, "Job alignment").
+    used += db.scalar(
+        select(func.count()).select_from(AlignmentRun).where(
+            AlignmentRun.user_id == user.id,
+            AlignmentRun.created_at >= start,
+            AlignmentRun.created_at < next_start,
         )
     ) or 0
     limit = PLAN_LIMITS.get(user.plan, PLAN_LIMITS["free"])
@@ -246,7 +257,7 @@ def suggest(
     """
     text, context = prepare_request(field, text, context, cv_content)
     if quota(db, user)["remaining"] <= 0:
-        raise errors.quota_exceeded()
+        raise errors.quota_exceeded(user.plan)
     try:
         suggested, changed = writer.write(field, text, context)
     except SuggestionError:

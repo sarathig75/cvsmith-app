@@ -38,9 +38,17 @@ export function fileNameFrom(disposition: string | undefined, fallback: string):
 }
 
 /** Downloads a file from the API and hands it to the browser to save. */
-async function download(url: string, fallbackName: string, timeout: number) {
+export async function download(
+  url: string,
+  fallbackName: string,
+  timeout: number,
+  post?: unknown,
+) {
   try {
-    const res = await api.get<Blob>(url, { responseType: 'blob', timeout });
+    const res =
+      post === undefined
+        ? await api.get<Blob>(url, { responseType: 'blob', timeout })
+        : await api.post<Blob>(url, post, { responseType: 'blob', timeout });
     const name = fileNameFrom(res.headers['content-disposition'] as string | undefined, fallbackName);
     const href = URL.createObjectURL(res.data);
     const a = document.createElement('a');

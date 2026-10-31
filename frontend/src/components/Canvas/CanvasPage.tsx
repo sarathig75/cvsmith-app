@@ -1,20 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useUploadStore } from '../../store/uploadStore';
 import { discardPendingFile, uploadPendingFile } from '../../utils/postAuth';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { onSessionEnd, parseApiError } from '../../services/api';
 import { clearUnsavedDraft, keepUnsavedDraft, takeUnsavedDraft } from '../../utils/unsavedDraft';
 import type { UnsavedDraft } from '../../utils/unsavedDraft';
 import { downloadPdf, exportJson, setPrivacy as savePrivacy } from '../../services/cvService';
 import { getQuota, markSuggestionEdited } from '../../services/suggestionService';
-import type { CV, ParsePart, Quota, SuggestionRequest } from '../../types';
+import type { AtsCheck, CV, ParsePart, Quota, SuggestionRequest } from '../../types';
 import { draftFromSaved, emptyDraft } from '../../types/cvDraft';
 import type { CvDraft, Entry } from '../../types/cvDraft';
 import { mergeParsedIntoDraft, PART_SECTIONS, resumeToDraft } from '../../utils/resumeToDraft';
 import { Button } from '../Common/Button';
+import { undoDates, yearOnlyDates } from '../../utils/dateFix';
+import type { DateUndo } from '../../utils/dateFix';
 import { unlistedNames } from '../../utils/unlistedNames';
+import { AtsScoreCard } from './AtsScoreCard';
 import { CanvasGroup } from './CanvasGroup';
+import { ImproveAll } from './ImproveAll';
 import type { PreviewTarget } from './CanvasGroup';
 import { CvStatus } from './CvStatus';
 import { EntryListSection } from './EntryListSection';
@@ -32,6 +37,7 @@ import { useAutosave } from './useAutosave';
 import type { SaveState } from './useAutosave';
 
 export function CanvasPage() {
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const [privacy, setPrivacy] = useState<CV['privacy']>('public');
   const [draft, setDraft] = useState<CvDraft>(() => emptyDraft(user?.email ?? ''));
@@ -80,6 +86,10 @@ export function CanvasPage() {
     userEdited.current = true;
     const key = request.entry_id ? `${request.field}:${request.entry_id}` : request.field;
     pendingEdits.current.set(key, { id: suggestionId, text, field: request.field, entryId: request.entry_id ?? undefined });
+    setFieldText(request, text);
+  };
+  // Puts the text of one field (the one a suggestion is for) into the canvas.
+  const setFieldText = (request: SuggestionRequest, text: string) =>
     setDraft((d) => {
       if (request.field === 'summary') return { ...d, summary: text };
       if (request.field === 'headline') return { ...d, personal: { ...d.personal, headline: text } };
@@ -87,6 +97,11 @@ export function CanvasPage() {
       const next = list.map((e) => (e.id === request.entry_id ? { ...e, description: text } : e));
       return request.field === 'experience' ? { ...d, experience: next } : { ...d, projects: next };
     });
+  // "Undo all" after "Improve all": the earlier text goes back, and is not counted as the user editing it.
+  const restoreSuggestion = (request: SuggestionRequest, oldText: string) => {
+    userEdited.current = true;
+    pendingEdits.current.delete(request.entry_id ? `${request.field}:${request.entry_id}` : request.field);
+    setFieldText(request, oldText);
   };
 
   // Count the first user edit of each accepted suggestion (no text is sent). Failures are ignored.
@@ -112,6 +127,11 @@ export function CanvasPage() {
   const privacyLoaded = useRef(false);
   const [cv, setCv] = useState<CV | null>(null);
   const { state: saveState, markSaved, flush, hasUnsaved } = useAutosave(load === 'ok', draft, appliedParts, userEdited);
+  // Counts finished saves, so the ATS score can be worked out again after the user's edits.
+  const [savedCount, setSavedCount] = useState(0);
+  useEffect(() => {
+    if (saveState === 'saved') setSavedCount((n) => n + 1);
+  }, [saveState]);
 
   // If the session ends with edits not yet saved, keep them on this device and offer them back
   // after the next login (auto-save keeps everything else).
@@ -167,24 +187,18 @@ export function CanvasPage() {
   // Download PDF (everyone) and Export JSON (Pro): both use the saved CV, so save first.
   const [busy, setBusy] = useState<'pdf' | 'json' | null>(null);
   const [actionError, setActionError] = useState('');
-  const [downloaded, setDownloaded] = useState('');
-  useEffect(() => {
-    if (!downloaded) return;
-    const t = setTimeout(() => setDownloaded(''), 8000);
-    return () => clearTimeout(t);
-  }, [downloaded]);
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
   const runDownload = async (kind: 'pdf' | 'json') => {
     setBusy(kind);
     setActionError('');
-    setDownloaded('');
     try {
       if (!(await flush())) {
         setActionError("We couldn't save your latest changes, so they can't be included yet. Please try again.");
         return;
       }
-      const name = await (kind === 'pdf' ? downloadPdf() : exportJson());
-      setDownloaded(`Downloaded "${name}". You can download it again any time; it always uses your latest changes.`);
+      await (kind === 'pdf' ? downloadPdf() : exportJson());
+      // After every download the user sees what they can do next (the download is never blocked).
+      navigate('/next');
     } catch (err) {
       const e = parseApiError(err);
       if (e.code === 'PRO_REQUIRED') setUpgradeMessage(e.message);
@@ -237,6 +251,87 @@ export function CanvasPage() {
   };
 
 
+  // --- Fixes offered by the ATS score panel (docs/API_CONTRACT.md, "ATS score panel") -------------------------
+  const [improveSignal, setImproveSignal] = useState(0);
+  const [fixNotice, setFixNotice] = useState<ReactNode>(null);
+  const dateUndo = useRef<DateUndo>([]);
+  /** Scrolls to a part of the Canvas and focuses the first empty field there (else the first field). */
+  const focusSection = (target: PreviewTarget) => {
+    const group = document.querySelector<HTMLElement>(`[data-preview-target="${target}"]`);
+    if (!group) return;
+    group.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const fields = Array.from(group.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input:not([type=checkbox]), textarea'));
+    (fields.find((f) => f.value === '') ?? fields[0])?.focus({ preventScroll: true });
+  };
+  const applyDateFix = (): boolean => {
+    const { draft: next, undo, changed } = yearOnlyDates(draft);
+    if (!changed) return false;
+    userEdited.current = true;
+    dateUndo.current = undo;
+    setDraft(next);
+    return true;
+  };
+  const undoDateFix = () => {
+    userEdited.current = true;
+    setDraft((d) => undoDates(d, dateUndo.current));
+    setFixNotice(null);
+  };
+  const showDateNotice = () =>
+    setFixNotice(
+      <p role="status" className="rounded-sm bg-success-bg p-3 text-sm text-success-text">
+        Every date now shows the year only.{' '}
+        <button type="button" onClick={undoDateFix} className="font-medium underline">
+          Undo
+        </button>
+      </p>,
+    );
+  const fixAll = () => {
+    setFixNotice(null);
+    if (applyDateFix()) showDateNotice();
+  };
+  /** The button under one failing check, chosen by its fix_kind. Nothing is invented: only the user knows the rest. */
+  const renderFix = (check: AtsCheck): ReactNode => {
+    const go = (label: string, target: PreviewTarget) => (
+      <Button size="sm" variant="secondary" onClick={() => focusSection(target)}>
+        {label}
+      </Button>
+    );
+    switch (check.fix_kind) {
+      case 'dates_format':
+        return (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              setFixNotice(null);
+              if (applyDateFix()) showDateNotice();
+            }}
+          >
+            Show years only on every date
+          </Button>
+        );
+      case 'improve_wording':
+        return quota?.plan === 'pro' ? (
+          <Button size="sm" variant="secondary" onClick={() => setImproveSignal((n) => n + 1)}>
+            Improve all
+          </Button>
+        ) : (
+          go('Go to the job descriptions (use 💡)', 'experience')
+        );
+      case 'go_contact':
+        return go('Go to contact details', 'personal');
+      case 'go_experience':
+        return go('Go to work experience', 'experience');
+      case 'go_sections':
+        return go(
+          draft.skills.length === 0 ? 'Go to skills' : draft.education.length === 0 ? 'Go to education' : 'Go to work experience',
+          draft.skills.length === 0 ? 'skills' : draft.education.length === 0 ? 'education' : 'experience',
+        );
+      default:
+        return null;
+    }
+  };
+
   // A note under a group's heading while its parts are still being read, or if one failed.
   const groupNote = (...groupParts: ParsePart[]) => {
     if (!cv) return undefined;
@@ -286,11 +381,6 @@ export function CanvasPage() {
             Settings
           </Link>
         </div>
-        {downloaded && (
-          <p role="status" className="rounded-sm bg-success-bg p-3 text-sm text-success-text md:basis-full">
-            {downloaded}
-          </p>
-        )}
         {actionError && (
           <p role="alert" className="rounded-sm bg-warning-bg p-3 text-sm text-warning-text md:basis-full">
             {actionError}
@@ -481,7 +571,29 @@ export function CanvasPage() {
           )}
           <PrivacyToggle value={privacy} onChange={changePrivacy} error={privacyError} />
         </div>
-        <div className="lg:col-span-2">
+        <div className="flex flex-col gap-6 lg:col-span-2">
+          <AtsScoreCard
+            ready={load === 'ok' && !!cv && cv.parsing_status !== 'pending' && cv.parsing_status !== 'in_progress'}
+            flush={flush}
+            savedCount={savedCount}
+            improveSlot={
+              quota?.plan === 'pro' ? (
+                <ImproveAll
+                  draft={draft}
+                  quota={quota}
+                  flush={flush}
+                  apply={acceptSuggestion}
+                  restore={restoreSuggestion}
+                  onUsed={refreshQuota}
+                  disabled={load !== 'ok' || busy !== null}
+                  openSignal={improveSignal}
+                />
+              ) : undefined
+            }
+            renderFix={renderFix}
+            onFixAll={fixAll}
+            notice={fixNotice}
+          />
           <PreviewPanel draft={draft} focusTarget={focusTarget} />
         </div>
       </div>

@@ -1,7 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-29 · Last commit on main: a6b2a40 Summary: note when a name is not in the rest of the CV.
-Everything is committed and pushed; the session branch was merged into main (1222d23). Pilot not deployed.
+Updated: 2026-10-29 · Last commit on main: a01af1a docs: ATS framework written into the repo.
+This session's work is on `claude/youthful-darwin-uv0663` (pushed, not merged, no PR). Pilot not deployed.
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
@@ -23,64 +23,104 @@ Everything is committed and pushed; the session branch was merged into main (122
 - Pilot: ≤25 testers in India, invited emails only (`INVITE_ONLY`; `python -m app.cli invites
   add …`), one server running `deploy/docker-compose.prod.yml`. Guide: `docs/DEPLOY.md`.
 - Start page claims only what works today (ATS/AI-readable, AI suggestions); no recruiter search.
+- ATS score: CVSmith's own checklist (`docs/ATS_FRAMEWORK.md`), never called "compliance". Job alignment
+  (Pro, shares the 50/month suggestion quota): result = Mode B score + headline + gaps + ideas; the user can
+  update the base CV with ticked changes or download a job-only PDF (not kept, no JSON). Job spec text is
+  never stored. Tab "Align to job" shows only on `/align*`. Contract: "Job alignment".
 - Drop-off metrics in our own `events` table (`docs/FUNNEL.md`), never CV content.
 
 ## Current state
-- Backend: pytest 195/195, flake8 clean (run 2026-10-29); migrations up to 0009.
-- Frontend: type-check clean, vitest 104/104, build OK (run 2026-10-29).
-- Open branches / PRs: none. `claude/serene-thompson-8hp7uo` was merged into `main` on 2026-10-29.
-  `claude/clever-meitner-049zyv` is fully merged.
+- Backend: pytest 292/292, flake8 clean (run 2026-10-29); migrations up to 0011.
+- Frontend: type-check clean, vitest 178/178, build OK (run 2026-10-29).
+- Open branches / PRs: `claude/youthful-darwin-uv0663` (pushed, not merged; no PR): ATS Mode A, dashboard,
+  `/next`, Canvas before/after score, job alignment, privacy text. For the user to test locally
+  (`docs/LOCAL_SETUP.md` 3.2).
+- Real Chromium check in the cloud container: the Classic PDF gives layout facts `text ok, 3 headings,
+  0 tables, 1 page`; not yet seen by the user in the browser.
+- User's local `docker compose up -d --build` of this branch was in progress: the backend `pip install` and
+  Chromium downloads ran at about 100 kB/s (slow network, not a bug); result not yet reported.
 - User's new Windows PC runs the full Docker stack (`docs/LOCAL_SETUP.md`): email-code login,
   upload + parsing and Google sign-in confirmed working. Rest of checklist 3.2 not yet reported.
-- Google sign-in: the user created an OAuth client (Web application) in Google Cloud on
-  2026-10-17; consent screen in **Testing**, so only listed test users can sign in. Origin
+- Google sign-in: OAuth client (Web application) in Google Cloud, consent screen in **Testing**; origin
   `http://localhost:5173` added; the production domain is not yet.
-- Privacy notice: DRAFT at `/privacy` and `docs/PRIVACY_DRAFT.md`, placeholders still open.
+- Privacy notice: DRAFT at `/privacy` and `docs/PRIVACY_DRAFT.md`; text now covers scores, the
+  unmatched-term store and edit counts. Placeholders (operator, contact email, law, links, hosting) still open.
 
 ## Done this session
-- 2026-10-29: suggestion guard tested by the user: working.
-- 2026-10-29 (`a6b2a40`): a note under the Professional Summary when the user leaves the field with a
-  name the rest of the CV does not contain (hint only; same rule as the AI guard, ported to
-  `frontend/src/utils/unlistedNames.ts`). Confirmed working by the user.
-- 2026-10-29 (`1222d23`): session branch merged into `main`.
-- 2026-10-28 (`9cdd6c9`): suggestion guard. A suggestion that names a skill, employer or person
-  not in the CV is not rejected. The create response carries `missing_details`, the modal asks the user to
-  add the detail first, and accepting is still allowed. Contract: `docs/API_CONTRACT.md` ("Suggestion
-  guard"). Rule lives in `backend/app/services/suggestion_guard.py`; the evaluation runner uses it too.
-  Backend 195 tests, frontend 97 tests, build OK.
-- 2026-10-28: prompt caching on suggestions and the CV parser (a8e02d1, committed).
-- 2026-10-28: house-style rules 12–14 (weak phrasing, decorative summaries, objectives replaced from CV
-  facts). Evaluation: prompt version 3 passes 4 of 5 checks in 2 runs (contract has the numbers).
-- 2026-10-28: ATS framework agreed (two modes, 100 points each); fixed lists approved, incl.
-  automotive, pharma, FMCG (`docs/ATS_RULES.md`). Unmatched items: not scored, not shown, stored
-  with text for review at ≥5 sightings.
-- 2026-10-28: learning store and counts built (contract: `docs/API_CONTRACT.md`, "Suggestion
-  effectiveness"): migration 0009, `unmatched_terms` table, `suggestions.edited_at`, edit endpoint,
-  CLI `suggestions report` and `unmatched report|ignore|resolve`. Frontend counts the first edit of
-  an accepted suggestion (no text). Backend 185 tests, frontend 96 tests.
-- 2026-10-28: evaluation set built: 25 invented cases (`backend/evals/cases.json`), checks, runner
-  `python -m evals.run_suggestions --repeats 2`. Baseline is in the contract. Results are local
-  (git-ignored).
+- 2026-10-29: **ATS Mode A** (`backend/app/services/ats/`: lists, facts, layout, text, score, service).
+  Checks A1-A11 from `docs/ATS_FRAMEWORK.md`; "before" score saved when the upload is parsed, "after" from
+  the PDF made from the saved CV (cached by content hash). Mode B scoring rules are in the code and
+  tested, but unused. How each check is measured: contract, "ATS format score".
+- 2026-10-29: `GET /api/dashboard`, `GET /api/ats`, `POST /api/next/viewed`; CV strength per the proposal
+  in the contract; migration 0010 (`cvs.ats_before`, `cvs.ats_layout_after`).
+- 2026-10-29: frontend `/dashboard`, `/next`, Canvas ATS card; logged-in users go to the dashboard (to the
+  Canvas right after sign-up/login with a CV chosen); every download lands on `/next`; Dashboard in header.
+- 2026-10-29: CLI `users set-plan <email> free|pro`; privacy text updated.
+- 2026-10-29: **Job alignment** (contract "Job alignment"; mocks approved in the design file, boards "Align to
+  job"). Pro only, shares the 50/month suggestion quota, migration 0011 (`alignment_runs`, no job spec text).
+  `POST /api/alignment` (2 AI steps: spec to requirements, then headline + ideas), `GET /{id}`, `/preview`
+  (live Mode B score as items are ticked, no AI), `/apply` (updates the saved CV, then the Canvas opens),
+  `/download` (job-only PDF, nothing stored, no JSON). Frontend: small dashboard card, `/align`, `/align/:id`,
+  "Align to job" tab only on those screens, card 1 on `/next`. Checked end to end in the cloud container with
+  the real Claude API and Chromium (screens and a job PDF); not yet by the user.
+- 2026-10-31: Canvas ATS card lists every check and re-scores after each save; **Improve all** (Pro): confirm
+  with the count, one suggestion per field in order (jobs, projects, summary, headline), applies changed ones
+  without `missing_details`, "Undo all"; dashboard "Upload a new CV" button; Pro quota message fixed.
+  Finding: some checks (bullets of 15-30 words, strong verbs, one date format) cannot be raised by 💡
+  suggestions, because the house style calls those fields "already in good shape".
+- 2026-10-31: job alignment also proposes a **summary** (tick box, live score, Update my CV / job PDF; guarded
+  against new names, numbers, missing skills and bloat: contract "Job alignment"). House style rules 15-16
+  (start bullets with an ATS action verb; 15-30 words per bullet, facts only), prompt tweak, test that rule 15
+  lists exactly the ATS verbs; evaluation 25/25 on all checks (1 run). Real check: long bullets are split,
+  weak verbs become strong where ownership is clear; "Supported/Helped" stay and very short bullets stay
+  short (not enough facts). cv-house-style zip must be re-uploaded to the user's claude.ai account.
+- 2026-10-31: **ATS framework v2** (`docs/ATS_FRAMEWORK.md`, "Changes after the first agreement"): PDF
+  template heading is "Professional experience"; plain "Experience" no longer counts for A2; new A12 (job
+  title and employer on every role); A4 penalises contact details only in a Word header/footer; points
+  re-split to keep 100 (the split is Claude's proposal). Stored "before" scores from v1 are not recomputed.
+- 2026-10-31: **ATS score panel built** (mock approved): ring + group bars (Searchability, Writing; Hard
+  skills, Job fit in job match) on the Canvas (above the PDF preview), the dashboard card and the Align to job
+  result; details collapsed; per-issue fix buttons by `fix_kind` and a **Fix all** button (today: dates in one
+  format = year only, with Undo); Improve all moved into the panel. Header/footer contact details of Word
+  uploads are now found at parse time. Not auto-fixable (only the user knows): phone, location, numbers, job
+  titles; headings are the template's. The Align to job panel has no Improve all button (it needs the Canvas).
+- 2026-10-29: **Decisions made without asking** (reverse if wrong): a job PDF download stays on the result page
+  (no `/next`); `/align` and its API need a saved CV (`content`), else "Open your CV on the Canvas first";
+  a proposed headline naming something not in the CV is dropped (same guard as suggestions, which only checks
+  capitalised words); Dismiss is on screen only and lasts until the page is left.
+- Earlier: suggestion guard `9cdd6c9`, summary name note `a6b2a40`, prompt caching `a8e02d1`, evaluation set, learning store.
+
+## Resume on the laptop (user travelling Pune to Chennai, 2026-10-29)
+- `git fetch origin && git checkout claude/youthful-darwin-uv0663 && git pull`, then `docs/LOCAL_SETUP.md` 3.2.
+- Pune PC build result: `pip install` now passes (cached); `playwright install --with-deps chromium` was
+  killed (exit 137, "cannot allocate memory"): Docker/WSL ran out of RAM. Fix on that PC: `.wslconfig`
+  with `[wsl2] memory=6GB swap=6GB` (less if the PC has 8 GB), `wsl --shutdown`, restart Docker Desktop,
+  `docker compose build backend`. The apt download (99.5 MB) restarts on each retry; an apt cache mount in
+  `backend/Dockerfile` would help on the slow link (offered, not done). Check the laptop's RAM first.
+- On the Pune PC the old uncommitted copies of the summary-note work were stashed (`git stash list`; safe to
+  drop); `CV/` (real CVs) is git-ignored; the Docker build there was still running when the user left.
 
 ## Next steps
-0. Both name checks are confirmed working by the user: the suggestion guard (`9cdd6c9`) and the summary
-   note (`a6b2a40`). Still to check at the next test: upload, edit and PDF/JSON download after these changes.
-1. Evaluation: re-run `python -m evals.run_suggestions --repeats 2` after any prompt change. Open:
-   summary growth for positioning statements (1 of 2 in the last run, sales case).
-2. ATS score (contract ATS section; lists in `docs/ATS_RULES.md`): Mode A on the dashboard, Mode B in job
-   alignment; the unmatched store starts receiving terms here.
-3. Dashboard `/dashboard`, `/next`, job alignment, Canvas before/after (approved layouts:
-   `https://claude.ai/artifact/4CzxsdYGX3LX2KAUooUS8K`; `docs/USER_JOURNEYS.md`).
-4. Privacy notice must cover the unmatched-term store and suggestion counts before pilot users join.
-   Domain and operator details are still open.
-5. Pilot go-live per `docs/DEPLOY.md`; Week 10 billing.
+0a. Verb list: propose additions to `docs/ATS_RULES.md` section 1 for the user's review (not decided).
+0. User tests the branch locally (checklist 3.2, incl. job alignment), then merge to `main`.
+1. Phone layouts of the dashboard, `/next` and the Align to job screens (no mocks wanted; check at phone width).
+2. Evaluation: re-run `python -m evals.run_suggestions --repeats 2` after any prompt change; consider a small
+   evaluation for the alignment headline (does it invent anything?).
+3. Fill the privacy placeholders; domain; pilot go-live per `docs/DEPLOY.md`; Week 10 billing.
 
 ## Open questions for the user
 - Decided 2026-10-29: accepting a suggestion is never blocked; a missing-detail note is only a suggestion.
 - Summary growth for positioning statements: keep the 1.5× limit as it is?
+- Improve all applies suggestions that mention names not in the CV? Chosen: no (listed for review). OK?
+- A free user can open `/align` but is told to upgrade on submit: should Free see a sample result instead?
+- Related job families for B5 (3 points): only HR/Operations and Data/Finance are listed; add more pairs?
 - Which domain name? Privacy notice: operator name, contact email, applicable law (still open).
 
 ## Setup notes
+- Slow first Docker build (pip + Chromium downloads): let it finish; build `backend` before `celery`
+  (`docker compose build backend`) so they do not share the bandwidth; later builds use the cache.
+  `backend/Dockerfile` now has longer pip timeouts/retries and a pip cache mount (added after a pip exit 2 on
+  the slow link; not tested here, no Docker daemon in the cloud container).
 - Local problems: use the `local-troubleshoot` skill (symptom table + diagnostic file,
   `docs/LOCAL_SETUP.md` 5.1); add each newly solved problem to both.
 - Local Docker on Windows: follow `docs/LOCAL_SETUP.md`. Root `.env` holds `ANTHROPIC_API_KEY`

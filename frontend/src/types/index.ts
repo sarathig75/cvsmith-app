@@ -108,6 +108,75 @@ export type SuggestionRequest = {
 /** Suggestions per calendar month (UTC): free 1, pro 50. */
 export type Quota = { plan: 'free' | 'pro'; limit: number; used: number; remaining: number; resets_at: string };
 
+/** ATS format score (docs/ATS_FRAMEWORK.md). A check that does not apply is left out. */
+export type AtsCheck = {
+  id: string;
+  label: string;
+  passed: boolean;
+  points: number;
+  max: number;
+  fix: string | null;
+  /** Missing on scores stored before the panel existed. */
+  group?: string | null;
+  /** What the Canvas can do about a failing check; see docs/API_CONTRACT.md, "ATS score panel". */
+  fix_kind?: string | null;
+};
+export type AtsGroup = { key: string; label: string; points: number; max: number; percent: number; issues: number };
+export type AtsScore = {
+  score: number;
+  checks: AtsCheck[];
+  first_fix: { check_id: string; text: string; points: number } | null;
+  framework: string;
+  groups?: AtsGroup[];
+};
+/** before: the uploaded file; after: the saved CV as the Classic PDF. Either can be null. */
+export type AtsPair = { before: AtsScore | null; after: AtsScore | null };
+
+export type CvStrength = {
+  percent: number;
+  sections: { key: string; label: string; points: number; max: number; complete: boolean }[];
+  next_step: { section: string; text: string; points: number } | null;
+};
+export type Dashboard = {
+  state: 'no_cv' | 'parsing' | 'ready' | 'needs_details';
+  cv_strength: CvStrength | null;
+  ats: AtsScore | null;
+  plan: 'free' | 'pro';
+};
+
+/** Job alignment (docs/API_CONTRACT.md, "Job alignment"). The job spec itself is never kept. */
+export type JobRequirements = {
+  job_title: string;
+  core_skills: string[];
+  secondary_skills: string[];
+  years_required: number | null;
+  needs_management: boolean;
+  sector: string | null;
+};
+export type Gap = {
+  skill: string;
+  importance: 'core' | 'secondary';
+  status: 'covered' | 'missing';
+  /** Missing, but the proposed headline contains it. */
+  by_headline: boolean;
+};
+export type Alignment = {
+  id: string;
+  created_at: string;
+  requirements: JobRequirements;
+  /** null: no headline that stays true to the CV. */
+  positioning: { current: string; proposed: string } | null;
+  /** The professional summary, same rules as the headline. Missing on runs made before 2026-10-31. */
+  summary?: { current: string; proposed: string } | null;
+  gaps: Gap[];
+  /** Ideas only; never added to the CV. */
+  consider: string[];
+  /** Mode B score of the saved CV. */
+  score: AtsScore;
+};
+/** What the user ticked: the proposed headline and summary, and missing skills to add. */
+export type Selection = { use_headline: boolean; use_summary: boolean; skills: string[] };
+
 export type ApiErrorCode =
   | 'VALIDATION_ERROR'
   | 'EMAIL_EXISTS'
@@ -122,6 +191,7 @@ export type ApiErrorCode =
   | 'SUGGESTION_FAILED'
   | 'PRO_REQUIRED'
   | 'PDF_FAILED'
+  | 'ALIGNMENT_FAILED'
   | 'INVALID_CODE'
   | 'RATE_LIMITED'
   | 'EMAIL_FAILED'

@@ -90,6 +90,11 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
   parser and `content` only by PATCH, so a save and a finishing parse never overwrite each other. On load the
   frontend restores `content`, then merges parsed parts not in `applied_parts` (filling empty fields only).
   Last write wins between two open tabs. New CVs default `privacy = "public"`.
+- "Improve all" (Pro, Canvas) is client-side: it asks `POST /api/suggestions` once per field (job and project
+  descriptions, then summary, then headline, saving the canvas before the last two), applies each changed
+  suggestion that has no `missing_details`, records `accepted`, and "Undo all" restores the text and records
+  `declined`. The user confirms first, with the number of suggestions it may use. No new endpoint.
+- QUOTA_EXCEEDED for a Pro user says all 50 are used (not "Upgrade to Pro").
 - Suggestions (house style: `.claude/skills/cv-house-style/SKILL.md`): one request improves one whole field.
   Quota per calendar month (UTC): free 1, pro 50; only suggestions with `changed: true` count. Applying an
   accepted suggestion is done by the client (it replaces the field, then auto-saves); PATCH records the decision.
@@ -98,7 +103,7 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
 - Downloads use the last saved `content`: the client saves pending edits first.
 - No Apple sign-in in Release 1.
 
-## Dashboard (planned 2026-10-28; not built yet)
+## Dashboard (built 2026-10-29)
 
 Home for logged-in users (see `docs/USER_JOURNEYS.md`). Scores are computed on each read from
 the saved CV (`content`); nothing is stored. The "before" ATS score is the one exception: it is
@@ -115,9 +120,16 @@ CvStrength = { percent: number,                 // 0-100, sum of section points
 
 AtsScore = { score: number,                      // 0-100, Mode A (docs/ATS_FRAMEWORK.md)
              checks: { id: string, label: string, passed: boolean,
-                       points: number, fix: string | null }[],
+                       points: number,           // earned, on this mode's scale (A1 14, A2 14, ...)
+                       max: number,              // what the check is worth
+                       fix: string | null,       // null when passed; names the real check
+                       group: "searchability" | "writing" | "hard_skills" | "job_fit",
+                       fix_kind: string | null }[], // what the Canvas can do, see "ATS score panel" below
+             groups: { key: string, label: string, points: number, max: number,
+                       percent: number, issues: number }[],   // the bars; a group with no applicable check is left out
+             // Checks that do not apply are left out of `checks` and of the score (not zero).
              first_fix: { check_id: string, text: string, points: number } | null,
-             framework: string }                // e.g. "ats-framework-v1"
+             framework: string }                // e.g. "ats-framework-v2"
 
 Dashboard = { state: "no_cv" | "parsing" | "ready" | "needs_details",
               cv_strength: CvStrength | null,   // null when state is "no_cv"
@@ -127,7 +139,9 @@ Dashboard = { state: "no_cv" | "parsing" | "ready" | "needs_details",
 
 | Method | Path | Auth | Body | Response |
 |---|---|---|---|---|
-| GET | /api/dashboard | yes | - | 200 `Dashboard`. `state` is "no_cv" when the user has no CV (404 is not used here); "parsing" while `parsing_status` is pending or in_progress; "needs_details" when parsing failed; "ready" otherwise |
+| GET | /api/dashboard | yes | - | 200 `Dashboard`. `state` is "no_cv" when the user has no CV (404 is not used here); "parsing" while there is no saved canvas and `parsing_status` is pending or in_progress; "needs_details" when there is no saved canvas and parsing failed; "ready" otherwise. `cv_strength` and `ats` are null unless "ready". `ats` is also null if scoring failed (logged), never a made-up number |
+| GET | /api/ats | yes | - | 200 `{ before: AtsScore \| null, after: AtsScore \| null }` for the Canvas. `before`: the uploaded file, scored when parsing finished (null if there was no upload, or it was uploaded before this existed). `after`: the saved CV (before the first save: the parsed upload). No CV: both null |
+| POST | /api/next/viewed | yes | - | 204. Funnel step `next_viewed` (step only), sent when the "what next" page opens |
 
 Rules:
 - Points for CV strength, per section (proposal, to confirm before build):
@@ -137,13 +151,140 @@ Rules:
 - `next_step.text` names the section and the points it adds, e.g. "Add two roles with dates to
   reach 90%". It never says "compliant" or promises a job outcome.
 - The dashboard never shows a 0% score for "no_cv"; it shows the upload prompt instead.
-- Job alignment is not part of this response. It gets its own endpoints when built.
+- Job alignment is not part of this response. It has its own endpoints ("Job alignment" below).
 
 ### ATS format score
 
-Framework and points: `docs/ATS_FRAMEWORK.md` (id `ats-framework-v1`). Mode A (CV only) is the dashboard
-score; Mode B (with a job spec) is shown in job alignment. Word lists: `docs/ATS_RULES.md`.
-Not built yet.
+Framework and points: `docs/ATS_FRAMEWORK.md` (id `ats-framework-v2`). Mode A (CV only) is the dashboard
+score; Mode B (with a job spec) is shown in job alignment. Word lists: `docs/ATS_RULES.md`
+(code: `backend/app/services/ats/lists.py`).
+
+Built 2026-10-29: Mode A and the dashboard/Canvas display. The Mode B scoring rules are in the code
+(`ats/score.py`) and are used by job alignment (below).
+
+On the Canvas the ATS card lists every check (points, fix) and is worked out again about 1.5 s after each
+finished save (a PDF is only rendered again when the content changed).
+
+How each check is measured (decisions the framework left open; change them here first):
+- **Where facts come from.** Layout facts (A1, A2, A4, A11) are read from a file: the upload when it is
+  parsed, and the PDF made from the saved CV (rendered with the same Chromium as the download; kept on the
+  CV row with a hash of the content, so a PDF is only made again when the content changed). Only the numbers
+  are kept; the upload is deleted as before. Text checks (A3, A5-A10) read the saved CV (`content`), or the
+  parsed data (`json_resume`, mapped to the canvas shape) before the first save.
+- **No file or no PDF.** If no layout is available (the PDF could not be made), A1, A2, A4 and A11 are
+  left out as "not applicable"; the score is earned / applicable. A CV typed on the Canvas has no "before".
+- **A1** text integrity: under 200 characters of text = unreadable (0); garbled characters (replacement or
+  private-use) over 2% of the text, or over 40% of lines of two characters or fewer = scrambled (half
+  points); otherwise ok.
+- **A2** counts how many of Professional experience (or Work experience, or Work history), Education and
+  Skills appear as heading lines in the file's text (accepted variants in `lists.py`): 3 = full, 1-2 = half,
+  0 = none. Plain "Experience" does not count (decided 2026-10-31). The Classic PDF template heads the work
+  section "Professional experience".
+- **A4** is an estimate: Word files count tables, text boxes and drawings, and whether the email or phone sits
+  only in a header or footer (`layout.header_contact`, 2 points); in a PDF only images (as icons) can be
+  counted, so tables, text boxes and header contact there are not detected. The check says "(estimated)".
+- **A12** every role has a job title and an employer (blank entries ignored): all = full, at least half = half.
+- **A5** all dates one format (all month+year or all year-only) and every job has a start date, no end
+  before its start = full; mixed formats = 4/9; a job without a start date, a non-date, an end before a
+  start, or no jobs = 0.
+- **A6-A10** read every bullet of every job and project description (a description without bullet marks
+  counts each line). A strong verb matches in any form (managed, manages, managing). Only past-tense
+  first words not on the list and not weak are recorded for review (kind `verb`).
+- **A11** pages: from the PDF; for a Word upload only if the file states its page count.
+- **First fix:** the applicable check that lost the most points; `points` is that loss on the 100 scale.
+- **Unmatched terms** (`unmatched_terms`) are recorded once per upload, when the "before" score is made,
+  never on each dashboard read.
+- Mode B choices (not shown to users yet): B3 counts a skill in the latest role, or in a role that ended
+  within 3 years, as recent (4); in older roles only 2 of 4 (stored as half); in the skills list only
+  a quarter. B5 gives half points for a different rung of the same family and for the two related-family
+  pairs named in `ATS_RULES.md` (only those two are listed; more pairs are added through review).
+
+CV strength points are the proposal above, built as written, with partial credit for contact (5 points
+each for name, email and headline), skills (3 points each up to 5) and a work role without all of title,
+employer and dates (10 of 30).
+
+### ATS score panel (approved 2026-10-31; mock "ATS score visual")
+
+A ring with the score (amber under 50, blue 50-79, green 80 and over; the number is always shown) and one bar
+per group: Searchability (A1-A5, A11, A12), Writing (A6-A10) and, in job match, Hard skills (B1-B3) and Job
+fit (B4-B7). "N issues to fix" opens only that group's failing checks (collapsed by default), each with its
+points, what to change and, where there is one, a button chosen by `fix_kind`:
+
+| fix_kind | Button on the Canvas |
+|---|---|
+| `dates_format` | "Show years only on every date": every date becomes the year only (a month cannot be added where it was never given). Automatic, with Undo |
+| `improve_wording` | Pro: opens "Improve all". Free: jumps to the job descriptions, where each has a 💡 |
+| `go_contact`, `go_experience`, `go_sections` | Jumps to that part of the Canvas with the field focused; only the user knows the answer (phone, location, numbers, a job title) |
+| none | No button (layout of the file, length) |
+
+"Fix all" (Canvas) applies every automatic fix (today: `dates_format`) and offers Undo; it is shown only when
+there is one. The suggestions ("Improve all") stay a separate, AI step. The panel sits above the PDF preview
+on the Canvas; on the dashboard it is the same ring and bars inside the card that opens the Canvas, and in job
+alignment the ring shows the score after the ticked changes. Nothing here invents a fact.
+
+Contact details found in a Word file's header or footer are filled in when the file is parsed (pattern match,
+never sent to the AI).
+
+### Data (migration 0010)
+
+`cvs.ats_before` (JSON, nullable): `{score, checks, first_fix, framework, layout}` of the uploaded file, set when
+parsing completes, cleared by a new upload. `cvs.ats_layout_after` (JSON, nullable): `{hash, layout}` of the PDF
+made from `content`. `layout` = `{text, headings, tables, textboxes, icons, pages}`: numbers only.
+
+## Job alignment (approved 2026-10-29; mocks in the design file, boards "Align to job")
+
+Pro feature. The user pastes a job spec on `/align`; the result is on `/align/{id}`. A run shows the Mode B
+score (docs/ATS_FRAMEWORK.md), a proposed headline (positioning), gaps, and ideas to consider. The user then
+either updates the saved CV with the changes they ticked, or downloads a PDF with the same changes for this
+job only. The saved CV is never changed by a run or by a download.
+
+```ts
+JobRequirements = { job_title: string, core_skills: string[], secondary_skills: string[],
+                    years_required: number | null, needs_management: boolean,
+                    sector: string | null }      // sector: a name from docs/ATS_RULES.md section 5, or null
+Gap = { skill: string, importance: "core" | "secondary",
+        status: "covered" | "missing",
+        by_headline: boolean }                    // missing, but the proposed headline contains it
+Alignment = { id: string, created_at: string,
+              requirements: JobRequirements,      // what we read from the spec; the spec itself is not kept
+              positioning: { current: string, proposed: string } | null,  // the headline; null: none that stays true to the CV
+              summary: { current: string, proposed: string } | null,      // the professional summary, same rules; null on runs made before 2026-10-31
+              gaps: Gap[],
+              consider: string[],                 // ideas only, never added to the CV (at most 3)
+              score: AtsScore }                   // Mode B of the saved CV; checks include B1-B7 that apply
+Selection = { use_headline: boolean, use_summary: boolean,   // use_summary defaults to false
+              skills: string[] }                             // skills: names of missing gaps to add
+```
+
+| Method | Path | Auth | Body | Response |
+|---|---|---|---|---|
+| POST | /api/alignment | yes | `{ job_spec: string }` (80-20000 chars) | 201 `Alignment`. 402 `PRO_REQUIRED` for Free; 402 `QUOTA_EXCEEDED` when the month's 50 are used; 404 `NOT_FOUND` if the user has no saved CV (`content` is null: open the Canvas first); 503 `ALIGNMENT_FAILED` if the AI step failed (nothing stored or counted) |
+| GET | /api/alignment/{id} | yes | - | 200 `Alignment` (404 if not the user's) |
+| POST | /api/alignment/{id}/preview | yes | `Selection` | 200 `AtsScore`: Mode B of the saved CV with the selection applied, recomputed by the rules (no AI). Used live while the user ticks |
+| POST | /api/alignment/{id}/apply | yes | `Selection` | 200 `CV`: the selection is applied to the saved CV (headline and/or summary replaced; skills appended if not there already). The client then opens the Canvas |
+| POST | /api/alignment/{id}/download | yes | `Selection` | 200 PDF of the saved CV with the selection applied, named "Jane Doe CV - Job title.pdf". Nothing is stored. PDF only: JSON export stays with the base CV |
+
+Rules:
+- One run = one suggestion of the monthly quota (`GET /api/suggestions/quota` counts both). Only runs that
+  produced a result count. Pro only; a Free user gets `PRO_REQUIRED`.
+- The job spec text is read once by the AI and not stored, logged or sent anywhere else. The run keeps the
+  requirements (shown on the result) and the result.
+- The AI reads the spec into `requirements`; everything scored afterwards is the fixed rules (Mode B). A second
+  AI call writes the proposed headline and the ideas from the requirements and the CV's facts (not the spec),
+  in the house style. The headline is dropped (`positioning: null`) if it names a skill, employer or person the
+  CV does not contain (same guard as suggestions). Ideas never claim anything about the user's history.
+- The proposed summary (added 2026-10-31) rewords and reorders the current summary and the CV's facts to lead
+  with what the job asks for, using the job's wording where the facts support it; empty summary: written from
+  the facts. It is dropped (`summary: null`) if it names a skill, employer or person the CV does not contain,
+  contains a number the CV does not, contains any skill listed as missing (that would claim it), or is more
+  longer than 500 characters and more than 1.5 times the current summary (plus 60 characters). Unchanged text is not a proposal.
+- `skills` in a Selection must be names of `missing` gaps of that run; `use_headline` / `use_summary` need a
+  proposal on that run; anything else is a 422.
+- Nothing is added to the CV unless the user ticked it. "Dismiss" is only on the screen (not stored).
+- Mode B unmatched terms (skill, title, sector, requirement kinds) are recorded for review once per run.
+- Funnel events: `alignment_run` (step only); a job PDF records `pdf_downloaded` with `{"job_version": true}`.
+- Data (migration 0011): table `alignment_runs` (id, user_id, cv_id, requirements, result, created_at), deleted
+  with the user; `cv_id` is set to null when the CV is deleted (the run still counts toward the quota).
 
 ## Suggestion effectiveness and ATS monitoring (approved 2026-10-28)
 
@@ -171,8 +312,7 @@ unmatched_terms = { id: uuid, kind: "title" | "sector" | "skill" | "verb" | "req
   it is empty, longer than 60 characters, has more than 4 words, or contains a digit or "@".
   Otherwise insert or increment `count` and update `last_seen_at`. Never raises: failures are
   logged and ignored, so a user's action is never slowed or broken (same rule as funnel events).
-- Recorded only by the ATS scoring code (not built yet; step 1e). The store is built now so the
-  scoring code has somewhere to write.
+- Recorded by the ATS scoring code, once per upload when the "before" score is made (built 2026-10-29).
 - `ignored` items are never reported again. `resolved` = added to a list.
 
 ### Endpoints

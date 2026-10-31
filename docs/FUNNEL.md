@@ -15,6 +15,8 @@ time, the user id and small metadata; never CV content, names, emails or file na
 | `upgrade_prompt_shown` | a Pro-only action was refused: suggestion quota used, or JSON export by a free user | `field` (suggestions) or `feature: "json_export"` |
 | `pdf_downloaded` | a PDF was downloaded (every download) | none |
 | `json_exported` | a JSON Resume export was downloaded (Pro) | none |
+| `alignment_run` | a job alignment was run (Pro) | none |
+| `next_viewed` | the user reached the "what next" page after a download | none |
 | `cv_deleted` | the user deleted their CV (Settings) | none |
 | `account_deleted` | the user deleted their account; their events stay with `user_id` empty | none |
 

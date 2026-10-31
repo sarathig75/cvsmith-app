@@ -44,6 +44,7 @@ describe('session expiry', () => {
     let expired = false;
     mockHttp((req) => {
       if (req.url === '/api/suggestions/quota') return quota;
+      if (req.url === '/api/ats') return { status: 200, data: { before: null, after: null } };
       if (expired) return apiError(401, 'UNAUTHORIZED', 'Invalid or expired token.');
       return { status: 200, data: cv };
     });

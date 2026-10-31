@@ -1,12 +1,12 @@
-# ATS score framework (agreed 2026-10-28; framework id `ats-framework-v1`)
+# ATS score framework (agreed 2026-10-28, changed 2026-10-31; framework id `ats-framework-v2`)
 
 The ATS score measures how well the CV is written for applicant tracking systems. It is CVSmith's own
 checklist, not a real ATS's score, and it is never called "compliance". CV strength (completeness) is a
 separate score.
 
 Two modes on one 100-point scale:
-- **Mode A, CV only (dashboard):** 100 points, checks A1 to A11.
-- **Mode B, with a job spec (job alignment):** 60 points from checks A1 to A11 (scaled down), plus
+- **Mode A, CV only (dashboard):** 100 points, checks A1 to A12.
+- **Mode B, with a job spec (job alignment):** 60 points from checks A1 to A12 (scaled down), plus
   40 points from job-match checks B1 to B7.
 
 Word lists (action verbs, passive phrases, aliases, title ladders, sector terms) are in `docs/ATS_RULES.md`.
@@ -31,23 +31,24 @@ Word lists (action verbs, passive phrases, aliases, title ladders, sector terms)
 
 | # | Check | Pts | Rule |
 |---|---|---|---|
-| A1 | Text extraction integrity | 14 | 14 if the text reads in order; 7 if some text is scrambled; 0 if unreadable (e.g. scanned PDF) |
-| A2 | Standard section headings | 14 | 14 if all headings are standard (Experience, Education, Skills); 7 if mixed; 0 if missing |
+| A1 | Text extraction integrity | 12 | 12 if the text reads in order; 6 if some text is scrambled; 0 if unreadable (e.g. scanned PDF) |
+| A2 | Standard section headings | 12 | 12 if all three headings are standard (Work experience or Professional experience or Work history, Education, Skills); 6 if only one or two are; 0 if none. Plain "Experience" is not counted (decided 2026-10-31) |
 | A3 | Contact completeness | 11 | name 2, email 3, phone 2, location 2, LinkedIn or portfolio 2 |
-| A4 | Layout traps | 8 | start at 8; minus 2 per table, 2 per text box, 1 per icon used in place of text; floor 0 |
+| A4 | Layout traps | 8 | start at 8; minus 2 per table, 2 per text box, 1 per icon used in place of text, 2 if the email or phone sits only in a Word header or footer; floor 0 |
 | A5 | Date consistency | 9 | 9 if one format and a consistent timeline; 4 if mixed; 0 if dates are missing or broken |
-| A6 | Action verb strength | 11 | 11 if 80% or more of bullets start with a listed verb; 5 if 50–79%; 0 below 50% |
-| A7 | Quantified achievements | 11 | 11 if 40% or more of bullets have a metric; 5 if 20–39%; 0 below 20% |
+| A6 | Action verb strength | 10 | 10 if 80% or more of bullets start with a listed verb; 5 if 50–79%; 0 below 50% |
+| A7 | Quantified achievements | 10 | 10 if 40% or more of bullets have a metric; 5 if 20–39%; 0 below 20% |
 | A8 | Passive phrasing | 7 | 7 for none; 3 for 1–3; 0 for more than 3 |
 | A9 | Bullet length | 5 | 5 if 80% or more are 15–30 words; 2 if 50–79%; 0 below 50% |
 | A10 | Verb repetition | 4 | 4 if no verb starts more than 4 bullets; 0 otherwise |
 | A11 | Length vs experience | 6 | 6 if the page count fits the years of experience (under 5 years: 1 page; 5–15: up to 2; over 15: up to 3); 3 if one band off; 0 otherwise |
+| A12 | Job title and employer on every role | 6 | 6 if every role has a job title and an employer; 3 if at least half do; 0 if fewer, or there are no roles. Blank entries are ignored (added 2026-10-31) |
 
 Total: 100.
 
 ## Mode B: with a job spec (100 points)
 
-Checks A1 to A11 at reduced points: A1 9, A2 8, A3 6, A4 5, A5 5, A6 6, A7 6, A8 4, A9 3, A10 2, A11 6 (total 60).
+Checks A1 to A12 at reduced points: A1 8, A2 7, A3 6, A4 5, A5 5, A6 6, A7 6, A8 4, A9 3, A10 2, A11 4, A12 4 (total 60).
 
 Job-match checks:
 
@@ -63,7 +64,15 @@ Job-match checks:
 
 Total: 60 + 40 = 100.
 
+## Changes after the first agreement
+- 2026-10-31: the template's work section is headed **Professional experience**; plain "Experience" no longer
+  counts as a standard heading (the user's online checker preferred Work history or Professional experience).
+  Added A12 (job title and employer on every role) and a header/footer contact penalty in A4. To keep 100
+  points: A1 14 to 12, A2 14 to 12, A6 11 to 10, A7 11 to 10, A12 6 (Mode B: A1 9 to 8, A2 8 to 7, A11 6 to 4,
+  A12 4). The point split is Claude's proposal; change it here first if you want a different one.
+
 ## Build status
-Not built yet. The evaluation set (`backend/evals/`) and the word lists exist. The scoring code, the
-dashboard and job alignment still need to be built, in that order, with the API contract updated first
-(`docs/API_CONTRACT.md`, "Dashboard" and "ATS format score").
+Built 2026-10-29: the word lists (`backend/app/services/ats/lists.py`), Mode A and Mode B scoring
+(`backend/app/services/ats/`), the dashboard and the Canvas before/after score (Mode A). Mode B has no
+endpoint of its own, but job alignment (2026-10-29) uses it. How each check is measured in code:
+`docs/API_CONTRACT.md`, "ATS format score".

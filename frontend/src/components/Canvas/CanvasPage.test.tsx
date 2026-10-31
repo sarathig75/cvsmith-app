@@ -67,7 +67,7 @@ describe('CanvasPage with background CV parsing', () => {
     expect(screen.getByPlaceholderText('Brief overview of your experience...')).toHaveValue('Parsed summary.');
 
     // polling stops once parsing is complete (only the auto-save still talks to the server)
-    const gets = () => calls.filter((c) => c.method === 'get').length;
+    const gets = () => calls.filter((c) => c.method === 'get' && c.url === '/api/cv').length;
     const count = gets();
     await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3));
     expect(gets()).toBe(count);
@@ -161,9 +161,9 @@ describe('CanvasPage with background CV parsing', () => {
     await screen.findByText(/You can start editing now/);
     await act(() => vi.advanceTimersByTimeAsync(POLL_GIVE_UP_MS + POLL_INTERVAL_MS));
     expect(await screen.findByText(/taking longer than usual/)).toBeInTheDocument();
-    const count = calls.filter((c) => c.method === 'get').length;
+    const count = calls.filter((c) => c.method === 'get' && c.url === '/api/cv').length;
     await act(() => vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS * 3));
-    expect(calls.filter((c) => c.method === 'get').length).toBe(count);
+    expect(calls.filter((c) => c.method === 'get' && c.url === '/api/cv').length).toBe(count);
   });
 });
 
