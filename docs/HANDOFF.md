@@ -1,7 +1,7 @@
 # CVSmith handoff
 
-Updated: 2026-10-31 · Last commit on main: d0c31a2 Merge pull request #1 (ATS score, dashboard, job alignment, Improve all, score panel).
-Everything is merged into `main` (PR #1, CI green on its head). Open branches: none. Pilot not deployed.
+Updated: 2026-10-31 · `main` has PR #1 (ATS score, dashboard, job alignment, Improve all, score panel) and PR #2 (A6 wording,
+wider verb list, handoff). CI green on both heads. Open branches: none. Pilot not deployed.
 
 ## Product decisions (stable)
 - `docs/API_CONTRACT.md` is binding: change the contract first, then the code.
@@ -36,7 +36,7 @@ Everything is merged into `main` (PR #1, CI green on its head). Open branches: n
 - Drop-off metrics in our own `events` table (`docs/FUNNEL.md`), never CV content.
 
 ## Current state
-- Backend: pytest 292/292, flake8 clean; migrations up to 0011. Frontend: type-check clean, vitest 178/178,
+- Backend: pytest 294/294, flake8 clean; migrations up to 0011. Frontend: type-check clean, vitest 178/178,
   build OK. CI (backend, frontend) green on the PR head (2026-10-31).
 - Checked end to end in the cloud container with the real Claude API and Chromium (dashboard, job alignment,
   job PDF, Improve all, score panel). The user has checked on Windows/Docker: login, Google sign-in, parsing,
@@ -59,7 +59,7 @@ Everything is merged into `main` (PR #1, CI green on its head). Open branches: n
   `/align` needs a saved CV (`content`); a proposed headline/summary naming something not in the CV is dropped;
   Dismiss is on screen only; "Fix all" only does the date format.
 
-- 2026-10-31 (after the merge, on branch `claude/youthful-darwin-uv0663`): A6 now names the first words that count
+- 2026-10-31 (PR #2): A6 now names the first words that count
   against the user; the verb list was widened from 52 to 85 (user chose "widen"; list in `docs/ATS_RULES.md` section
   1, also in house-style rule 15, so the zip must be re-uploaded again); a weak opener (Supported, Helped...) is the
   user's to reword (`fix_kind` `go_experience`), not an Improve all job. Evaluation 1 run: 24/25 on
