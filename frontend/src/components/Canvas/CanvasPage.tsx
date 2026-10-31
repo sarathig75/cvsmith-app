@@ -16,6 +16,7 @@ import { Button } from '../Common/Button';
 import { unlistedNames } from '../../utils/unlistedNames';
 import { AtsScoreCard } from './AtsScoreCard';
 import { CanvasGroup } from './CanvasGroup';
+import { ImproveAll } from './ImproveAll';
 import type { PreviewTarget } from './CanvasGroup';
 import { CvStatus } from './CvStatus';
 import { EntryListSection } from './EntryListSection';
@@ -82,6 +83,10 @@ export function CanvasPage() {
     userEdited.current = true;
     const key = request.entry_id ? `${request.field}:${request.entry_id}` : request.field;
     pendingEdits.current.set(key, { id: suggestionId, text, field: request.field, entryId: request.entry_id ?? undefined });
+    setFieldText(request, text);
+  };
+  // Puts the text of one field (the one a suggestion is for) into the canvas.
+  const setFieldText = (request: SuggestionRequest, text: string) =>
     setDraft((d) => {
       if (request.field === 'summary') return { ...d, summary: text };
       if (request.field === 'headline') return { ...d, personal: { ...d.personal, headline: text } };
@@ -89,6 +94,11 @@ export function CanvasPage() {
       const next = list.map((e) => (e.id === request.entry_id ? { ...e, description: text } : e));
       return request.field === 'experience' ? { ...d, experience: next } : { ...d, projects: next };
     });
+  // "Undo all" after "Improve all": the earlier text goes back, and is not counted as the user editing it.
+  const restoreSuggestion = (request: SuggestionRequest, oldText: string) => {
+    userEdited.current = true;
+    pendingEdits.current.delete(request.entry_id ? `${request.field}:${request.entry_id}` : request.field);
+    setFieldText(request, oldText);
   };
 
   // Count the first user edit of each accepted suggestion (no text is sent). Failures are ignored.
@@ -114,6 +124,11 @@ export function CanvasPage() {
   const privacyLoaded = useRef(false);
   const [cv, setCv] = useState<CV | null>(null);
   const { state: saveState, markSaved, flush, hasUnsaved } = useAutosave(load === 'ok', draft, appliedParts, userEdited);
+  // Counts finished saves, so the ATS score can be worked out again after the user's edits.
+  const [savedCount, setSavedCount] = useState(0);
+  useEffect(() => {
+    if (saveState === 'saved') setSavedCount((n) => n + 1);
+  }, [saveState]);
 
   // If the session ends with edits not yet saved, keep them on this device and offer them back
   // after the next login (auto-save keeps everything else).
@@ -272,6 +287,17 @@ export function CanvasPage() {
           >
             Export JSON
           </Button>
+          {quota?.plan === 'pro' && (
+            <ImproveAll
+              draft={draft}
+              quota={quota}
+              flush={flush}
+              apply={acceptSuggestion}
+              restore={restoreSuggestion}
+              onUsed={refreshQuota}
+              disabled={load !== 'ok' || busy !== null}
+            />
+          )}
           <Button variant="secondary" onClick={() => setUploadOpen(true)} disabled={uploadStatus === 'uploading'}>
             Upload new CV
           </Button>
@@ -289,7 +315,7 @@ export function CanvasPage() {
         )}
       </div>
 
-      <AtsScoreCard ready={load === 'ok' && !!cv && cv.parsing_status !== 'pending' && cv.parsing_status !== 'in_progress'} flush={flush} />
+      <AtsScoreCard ready={load === 'ok' && !!cv && cv.parsing_status !== 'pending' && cv.parsing_status !== 'in_progress'} flush={flush} savedCount={savedCount} />
 
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="card lg:col-span-3" onFocus={onFormFocus}>

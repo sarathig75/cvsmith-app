@@ -86,6 +86,19 @@ def test_pro_user_gets_fifty(client, auth, writer):
     assert (q["plan"], q["limit"], q["used"], q["remaining"]) == ("pro", 50, 3, 47)
 
 
+def test_a_pro_user_who_used_all_fifty_is_not_told_to_upgrade(client, auth, writer):
+    set_plan(client, "pro")
+    with client.session_factory() as db:
+        user = db.query(User).one()
+        for _ in range(50):
+            db.add(Suggestion(user_id=user.id, field="summary", original_text="a", suggested_text="b", changed=True))
+        db.commit()
+    r = ask(client, auth[0])
+    assert r.status_code == 402 and r.json()["error"]["code"] == "QUOTA_EXCEEDED"
+    assert "all 50" in r.json()["error"]["message"] and "Upgrade" not in r.json()["error"]["message"]
+    assert writer.calls == []
+
+
 def test_no_change_needed_is_not_counted(client, auth, writer):
     writer.suggested, writer.changed = SUMMARY, True  # "changed" but the same text: guarded
     r = ask(client, auth[0])

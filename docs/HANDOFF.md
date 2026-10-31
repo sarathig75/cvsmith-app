@@ -30,8 +30,8 @@ This session's work is on `claude/youthful-darwin-uv0663` (pushed, not merged, n
 - Drop-off metrics in our own `events` table (`docs/FUNNEL.md`), never CV content.
 
 ## Current state
-- Backend: pytest 271/271, flake8 clean (run 2026-10-29); migrations up to 0011.
-- Frontend: type-check clean, vitest 138/138, build OK (run 2026-10-29).
+- Backend: pytest 272/272, flake8 clean (run 2026-10-29); migrations up to 0011.
+- Frontend: type-check clean, vitest 158/158, build OK (run 2026-10-29).
 - Open branches / PRs: `claude/youthful-darwin-uv0663` (pushed, not merged; no PR): ATS Mode A, dashboard,
   `/next`, Canvas before/after score, job alignment, privacy text. For the user to test locally
   (`docs/LOCAL_SETUP.md` 3.2).
@@ -63,6 +63,11 @@ This session's work is on `claude/youthful-darwin-uv0663` (pushed, not merged, n
   `/download` (job-only PDF, nothing stored, no JSON). Frontend: small dashboard card, `/align`, `/align/:id`,
   "Align to job" tab only on those screens, card 1 on `/next`. Checked end to end in the cloud container with
   the real Claude API and Chromium (screens and a job PDF); not yet by the user.
+- 2026-10-31: Canvas ATS card lists every check and re-scores after each save; **Improve all** (Pro): confirm
+  with the count, one suggestion per field in order (jobs, projects, summary, headline), applies changed ones
+  without `missing_details`, "Undo all"; dashboard "Upload a new CV" button; Pro quota message fixed.
+  Finding: some checks (bullets of 15-30 words, strong verbs, one date format) cannot be raised by 💡
+  suggestions, because the house style calls those fields "already in good shape".
 - 2026-10-29: **Decisions made without asking** (reverse if wrong): a job PDF download stays on the result page
   (no `/next`); `/align` and its API need a saved CV (`content`), else "Open your CV on the Canvas first";
   a proposed headline naming something not in the CV is dropped (same guard as suggestions, which only checks
@@ -89,6 +94,7 @@ This session's work is on `claude/youthful-darwin-uv0663` (pushed, not merged, n
 ## Open questions for the user
 - Decided 2026-10-29: accepting a suggestion is never blocked; a missing-detail note is only a suggestion.
 - Summary growth for positioning statements: keep the 1.5× limit as it is?
+- Improve all applies suggestions that mention names not in the CV? Chosen: no (listed for review). OK?
 - A free user can open `/align` but is told to upgrade on submit: should Free see a sample result instead?
 - Related job families for B5 (3 points): only HR/Operations and Data/Finance are listed; add more pairs?
 - Which domain name? Privacy notice: operator name, contact email, applicable law (still open).

@@ -90,6 +90,11 @@ Quota = { plan: "free" | "pro", limit: number, used: number, remaining: number,
   parser and `content` only by PATCH, so a save and a finishing parse never overwrite each other. On load the
   frontend restores `content`, then merges parsed parts not in `applied_parts` (filling empty fields only).
   Last write wins between two open tabs. New CVs default `privacy = "public"`.
+- "Improve all" (Pro, Canvas) is client-side: it asks `POST /api/suggestions` once per field (job and project
+  descriptions, then summary, then headline, saving the canvas before the last two), applies each changed
+  suggestion that has no `missing_details`, records `accepted`, and "Undo all" restores the text and records
+  `declined`. The user confirms first, with the number of suggestions it may use. No new endpoint.
+- QUOTA_EXCEEDED for a Pro user says all 50 are used (not "Upgrade to Pro").
 - Suggestions (house style: `.claude/skills/cv-house-style/SKILL.md`): one request improves one whole field.
   Quota per calendar month (UTC): free 1, pro 50; only suggestions with `changed: true` count. Applying an
   accepted suggestion is done by the client (it replaces the field, then auto-saves); PATCH records the decision.
@@ -152,6 +157,9 @@ score; Mode B (with a job spec) is shown in job alignment. Word lists: `docs/ATS
 
 Built 2026-10-29: Mode A and the dashboard/Canvas display. The Mode B scoring rules are in the code
 (`ats/score.py`) and are used by job alignment (below).
+
+On the Canvas the ATS card lists every check (points, fix) and is worked out again about 1.5 s after each
+finished save (a PDF is only rendered again when the content changed).
 
 How each check is measured (decisions the framework left open; change them here first):
 - **Where facts come from.** Layout facts (A1, A2, A4, A11) are read from a file: the upload when it is

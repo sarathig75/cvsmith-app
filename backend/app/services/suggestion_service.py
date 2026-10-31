@@ -255,7 +255,7 @@ def suggest(
     """
     text, context = prepare_request(field, text, context, cv_content)
     if quota(db, user)["remaining"] <= 0:
-        raise errors.quota_exceeded()
+        raise errors.quota_exceeded(user.plan)
     try:
         suggested, changed = writer.write(field, text, context)
     except SuggestionError:

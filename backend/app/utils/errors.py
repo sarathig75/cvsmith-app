@@ -46,7 +46,9 @@ def not_found(message: str = "Resource not found.") -> AppError:
     return AppError("NOT_FOUND", message, 404)
 
 
-def quota_exceeded() -> AppError:
+def quota_exceeded(plan: str = "free") -> AppError:
+    if plan == "pro":
+        return alignment_quota_exceeded()  # same wording: all 50 used, resets next month
     return AppError(
         "QUOTA_EXCEEDED",
         "You've used your free suggestion for this month. Upgrade to Pro for 50 suggestions a month ($9.99/month).",
