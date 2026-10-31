@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from app.services.ats import text as tx
 from app.services.ats.facts import Facts, Role, parse_date
-from app.services.ats.lists import LADDERS, RELATED_FAMILIES, SECTOR_TERMS
+from app.services.ats.lists import LADDERS, RELATED_FAMILIES, SECTOR_TERMS, WEAK_OPENERS
 
 FRAMEWORK = "ats-framework-v2"
 
@@ -35,7 +35,8 @@ LABELS = {
     "B7": "Sector terms",
 }
 # One check's outcome: the share of its points earned (None = does not apply) and the fix to show.
-Result = Tuple[Optional[float], Optional[str]]
+# A check may add a third item: the fix_kind to use instead of the one for its id.
+Result = Tuple[Any, ...]
 ORDER = list(MODE_A) + list(MODE_B_JOB)
 
 # The bars of the score panel: each check belongs to one group (docs/API_CONTRACT.md, "ATS format score").
@@ -156,10 +157,32 @@ def _a6(f: Facts, layout, today):
     bullets = f.bullets
     if not bullets:
         return 0.0, "Add bullets to your job descriptions, each starting with an action verb."
-    strong = sum(1 for b in bullets if tx.is_strong_verb(tx.first_word(b)))
+    words = [tx.first_word(b) for b in bullets]
+    strong = sum(1 for w in words if tx.is_strong_verb(w))
     share = _pct(strong, len(bullets))
-    return (1.0 if share >= 0.8 else 5 / 11 if share >= 0.5 else 0.0), \
-        "Start more bullets with an action verb such as 'Led', 'Built' or 'Reduced'."
+    frac = 1.0 if share >= 0.8 else 5 / 11 if share >= 0.5 else 0.0
+    if frac == 1.0:
+        return frac, None
+    # Name the words, so the user sees which bullets count against them. The suggestions rewrite a bullet that
+    # starts with a word that is merely not on the list, but leave a weak opener (Supported, Helped...) alone,
+    # because they cannot tell what the person did: those the user has to reword (kind "go_experience").
+    others = _distinct([w for w in words if w and not tx.is_strong_verb(w) and w not in WEAK_OPENERS])
+    weak = _distinct([w for w in words if w in WEAK_OPENERS])
+    examples = "'Led', 'Built' or 'Reduced'"
+    if others:
+        named = ", ".join(w.capitalize() for w in (others + weak)[:4])
+        return frac, (f"Some bullets start with words that are not on our action-verb list ({named}). Start them with "
+                      f"a verb such as {examples} where it says the same thing."), "improve_wording"
+    if weak:
+        named = ", ".join(w.capitalize() for w in weak[:4])
+        return frac, (f"Bullets that start with a weak verb ({named}) are left as written by the suggestions, because "
+                      f"they cannot tell what you did. Reword each with the verb that says it, such as {examples}."), \
+            "go_experience"
+    return frac, f"Start more bullets with an action verb such as {examples}."
+
+
+def _distinct(words: List[str]) -> List[str]:
+    return list(dict.fromkeys(words))
 
 
 def _a7(f: Facts, layout, today):
@@ -355,12 +378,12 @@ def _assemble(results: Dict[str, Result], maxima: Dict[str, int], mode: str) -> 
     total = sum(applicable.values())
     checks = []
     for cid in [c for c in ORDER if c in maxima]:
-        frac, fix = results[cid]
+        frac, fix, *extra = results[cid]
         if frac is None:
             continue  # left out: not shown, not scored
         earned = round(frac * maxima[cid], 1)
         failing = frac < 1.0
-        kind = FIX_KIND.get(cid) if failing else None
+        kind = (extra[0] if extra else FIX_KIND.get(cid)) if failing else None
         if cid == "A5" and failing and fix and fix.startswith("Use one date format"):
             kind = "dates_format"  # mixed formats: the Canvas can show every date in the same format
         checks.append({"id": cid, "label": LABELS[cid], "passed": not failing, "points": earned,
