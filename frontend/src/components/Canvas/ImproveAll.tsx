@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { parseApiError } from '../../services/api';
 import { decideSuggestion, requestSuggestion } from '../../services/suggestionService';
 import type { Quota, SuggestionRequest } from '../../types';
@@ -30,13 +30,15 @@ type Props = {
   /** Called after each request, so the quota shown on the canvas is refreshed. */
   onUsed: () => void;
   disabled?: boolean;
+  /** Goes up each time something else (a fix button) asks to open it. */
+  openSignal?: number;
 };
 
 /**
  * Pro: "Improve all" asks a suggestion for every field that has text, applies each one that changes it, and
  * lists what happened, with "Undo all". The user confirms first, with the number of suggestions it may use.
  */
-export function ImproveAll({ draft, quota, flush, apply, restore, onUsed, disabled }: Props) {
+export function ImproveAll({ draft, quota, flush, apply, restore, onUsed, disabled, openSignal = 0 }: Props) {
   const [phase, setPhase] = useState<Phase>('closed');
   const [targets, setTargets] = useState<ImproveTarget[]>([]);
   const [current, setCurrent] = useState(0);
@@ -49,6 +51,11 @@ export function ImproveAll({ draft, quota, flush, apply, restore, onUsed, disabl
     setPhase('confirm');
   };
   const close = () => setPhase('closed');
+  // A fix button elsewhere can open the confirm step.
+  useEffect(() => {
+    if (openSignal > 0 && !disabled) open();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openSignal]);
 
   const run = async () => {
     cancelled.current = false;
@@ -112,9 +119,12 @@ export function ImproveAll({ draft, quota, flush, apply, restore, onUsed, disabl
         variant="secondary"
         onClick={open}
         disabled={disabled}
+        fullWidth
+        className="!bg-blue-50 !text-brand-dark"
         title="Ask for a suggestion for every field and apply them (Pro)"
       >
-        <span aria-hidden="true">💡</span> Improve all
+        <span aria-hidden="true">✦</span> Improve all
+        <span className="rounded-full bg-brand-light px-1.5 text-[10px] font-semibold uppercase">Pro</span>
       </Button>
       {phase !== 'closed' && (
         <Modal

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useUploadStore } from '../../store/uploadStore';
 import { discardPendingFile, uploadPendingFile } from '../../utils/postAuth';
 import { Link, useNavigate } from 'react-router-dom';
@@ -8,11 +9,13 @@ import { clearUnsavedDraft, keepUnsavedDraft, takeUnsavedDraft } from '../../uti
 import type { UnsavedDraft } from '../../utils/unsavedDraft';
 import { downloadPdf, exportJson, setPrivacy as savePrivacy } from '../../services/cvService';
 import { getQuota, markSuggestionEdited } from '../../services/suggestionService';
-import type { CV, ParsePart, Quota, SuggestionRequest } from '../../types';
+import type { AtsCheck, CV, ParsePart, Quota, SuggestionRequest } from '../../types';
 import { draftFromSaved, emptyDraft } from '../../types/cvDraft';
 import type { CvDraft, Entry } from '../../types/cvDraft';
 import { mergeParsedIntoDraft, PART_SECTIONS, resumeToDraft } from '../../utils/resumeToDraft';
 import { Button } from '../Common/Button';
+import { undoDates, yearOnlyDates } from '../../utils/dateFix';
+import type { DateUndo } from '../../utils/dateFix';
 import { unlistedNames } from '../../utils/unlistedNames';
 import { AtsScoreCard } from './AtsScoreCard';
 import { CanvasGroup } from './CanvasGroup';
@@ -248,6 +251,87 @@ export function CanvasPage() {
   };
 
 
+  // --- Fixes offered by the ATS score panel (docs/API_CONTRACT.md, "ATS score panel") -------------------------
+  const [improveSignal, setImproveSignal] = useState(0);
+  const [fixNotice, setFixNotice] = useState<ReactNode>(null);
+  const dateUndo = useRef<DateUndo>([]);
+  /** Scrolls to a part of the Canvas and focuses the first empty field there (else the first field). */
+  const focusSection = (target: PreviewTarget) => {
+    const group = document.querySelector<HTMLElement>(`[data-preview-target="${target}"]`);
+    if (!group) return;
+    group.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const fields = Array.from(group.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input:not([type=checkbox]), textarea'));
+    (fields.find((f) => f.value === '') ?? fields[0])?.focus({ preventScroll: true });
+  };
+  const applyDateFix = (): boolean => {
+    const { draft: next, undo, changed } = yearOnlyDates(draft);
+    if (!changed) return false;
+    userEdited.current = true;
+    dateUndo.current = undo;
+    setDraft(next);
+    return true;
+  };
+  const undoDateFix = () => {
+    userEdited.current = true;
+    setDraft((d) => undoDates(d, dateUndo.current));
+    setFixNotice(null);
+  };
+  const showDateNotice = () =>
+    setFixNotice(
+      <p role="status" className="rounded-sm bg-success-bg p-3 text-sm text-success-text">
+        Every date now shows the year only.{' '}
+        <button type="button" onClick={undoDateFix} className="font-medium underline">
+          Undo
+        </button>
+      </p>,
+    );
+  const fixAll = () => {
+    setFixNotice(null);
+    if (applyDateFix()) showDateNotice();
+  };
+  /** The button under one failing check, chosen by its fix_kind. Nothing is invented: only the user knows the rest. */
+  const renderFix = (check: AtsCheck): ReactNode => {
+    const go = (label: string, target: PreviewTarget) => (
+      <Button size="sm" variant="secondary" onClick={() => focusSection(target)}>
+        {label}
+      </Button>
+    );
+    switch (check.fix_kind) {
+      case 'dates_format':
+        return (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              setFixNotice(null);
+              if (applyDateFix()) showDateNotice();
+            }}
+          >
+            Show years only on every date
+          </Button>
+        );
+      case 'improve_wording':
+        return quota?.plan === 'pro' ? (
+          <Button size="sm" variant="secondary" onClick={() => setImproveSignal((n) => n + 1)}>
+            Improve all
+          </Button>
+        ) : (
+          go('Go to the job descriptions (use 💡)', 'experience')
+        );
+      case 'go_contact':
+        return go('Go to contact details', 'personal');
+      case 'go_experience':
+        return go('Go to work experience', 'experience');
+      case 'go_sections':
+        return go(
+          draft.skills.length === 0 ? 'Go to skills' : draft.education.length === 0 ? 'Go to education' : 'Go to work experience',
+          draft.skills.length === 0 ? 'skills' : draft.education.length === 0 ? 'education' : 'experience',
+        );
+      default:
+        return null;
+    }
+  };
+
   // A note under a group's heading while its parts are still being read, or if one failed.
   const groupNote = (...groupParts: ParsePart[]) => {
     if (!cv) return undefined;
@@ -287,17 +371,6 @@ export function CanvasPage() {
           >
             Export JSON
           </Button>
-          {quota?.plan === 'pro' && (
-            <ImproveAll
-              draft={draft}
-              quota={quota}
-              flush={flush}
-              apply={acceptSuggestion}
-              restore={restoreSuggestion}
-              onUsed={refreshQuota}
-              disabled={load !== 'ok' || busy !== null}
-            />
-          )}
           <Button variant="secondary" onClick={() => setUploadOpen(true)} disabled={uploadStatus === 'uploading'}>
             Upload new CV
           </Button>
@@ -314,8 +387,6 @@ export function CanvasPage() {
           </p>
         )}
       </div>
-
-      <AtsScoreCard ready={load === 'ok' && !!cv && cv.parsing_status !== 'pending' && cv.parsing_status !== 'in_progress'} flush={flush} savedCount={savedCount} />
 
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="card lg:col-span-3" onFocus={onFormFocus}>
@@ -500,7 +571,29 @@ export function CanvasPage() {
           )}
           <PrivacyToggle value={privacy} onChange={changePrivacy} error={privacyError} />
         </div>
-        <div className="lg:col-span-2">
+        <div className="flex flex-col gap-6 lg:col-span-2">
+          <AtsScoreCard
+            ready={load === 'ok' && !!cv && cv.parsing_status !== 'pending' && cv.parsing_status !== 'in_progress'}
+            flush={flush}
+            savedCount={savedCount}
+            improveSlot={
+              quota?.plan === 'pro' ? (
+                <ImproveAll
+                  draft={draft}
+                  quota={quota}
+                  flush={flush}
+                  apply={acceptSuggestion}
+                  restore={restoreSuggestion}
+                  onUsed={refreshQuota}
+                  disabled={load !== 'ok' || busy !== null}
+                  openSignal={improveSignal}
+                />
+              ) : undefined
+            }
+            renderFix={renderFix}
+            onFixAll={fixAll}
+            notice={fixNotice}
+          />
           <PreviewPanel draft={draft} focusTarget={focusTarget} />
         </div>
       </div>

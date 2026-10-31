@@ -30,6 +30,18 @@ class AtsCheckOut(BaseModel):
     points: float
     max: int
     fix: Optional[str] = None
+    # Older stored scores lack these two.
+    group: Optional[str] = None
+    fix_kind: Optional[str] = None
+
+
+class GroupOut(BaseModel):
+    key: str
+    label: str
+    points: float
+    max: int
+    percent: int
+    issues: int
 
 
 class FirstFixOut(BaseModel):
@@ -43,6 +55,7 @@ class AtsScoreOut(BaseModel):
     checks: List[AtsCheckOut]
     first_fix: Optional[FirstFixOut] = None
     framework: str
+    groups: List[GroupOut] = []
 
 
 class DashboardOut(BaseModel):

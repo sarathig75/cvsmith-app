@@ -184,8 +184,9 @@ If the backend isn't up yet, wait 20 seconds and reload; to see why, run `docker
       (your saved CV); "Check again" saves your edits first, then scores again (takes a few seconds).
 - [ ] Download PDF works and then opens the **What next** page (CV strength and ATS cards, Dashboard).
 - [ ] Export JSON (Pro only; see 3.3).
-- [ ] ATS card on the Canvas: "See the checks" lists every check with points and what to fix; the score
-      updates by itself a moment after your edits are saved.
+- [ ] ATS score panel on the Canvas (right column): ring with the score, bars for Searchability and Writing;
+      "N issues to fix" opens only that group's issues with a fix or "Go to" button; "Fix all" shows every date
+      as the year only (Undo); the score updates by itself a moment after your edits are saved.
 - [ ] Pro only: "💡 Improve all" asks first (how many suggestions, how many left), then applies every
       changed suggestion; "Undo all" puts the earlier text back. Free users do not see the button.
 - [ ] **Job alignment** (Pro, see 3.3): Dashboard → "Align to a job" card → paste a job description →

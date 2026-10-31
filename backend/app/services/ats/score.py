@@ -38,6 +38,22 @@ LABELS = {
 Result = Tuple[Optional[float], Optional[str]]
 ORDER = list(MODE_A) + list(MODE_B_JOB)
 
+# The bars of the score panel: each check belongs to one group (docs/API_CONTRACT.md, "ATS format score").
+GROUP_OF = {"A1": "searchability", "A2": "searchability", "A3": "searchability", "A4": "searchability",
+            "A5": "searchability", "A11": "searchability", "A12": "searchability",
+            "A6": "writing", "A7": "writing", "A8": "writing", "A9": "writing", "A10": "writing",
+            "B1": "hard_skills", "B2": "hard_skills", "B3": "hard_skills",
+            "B4": "job_fit", "B5": "job_fit", "B6": "job_fit", "B7": "job_fit"}
+GROUP_LABELS = {"searchability": "Searchability", "writing": "Writing", "hard_skills": "Hard skills",
+                "job_fit": "Job fit"}
+GROUP_ORDER = ["searchability", "writing", "hard_skills", "job_fit"]
+
+# What the Canvas can offer for a failing check (docs/API_CONTRACT.md): "dates_format" is fixed automatically;
+# "improve_wording" runs the suggestions; "go_*" jumps to the field where only the user knows the answer.
+FIX_KIND = {"A2": "go_sections", "A3": "go_contact", "A5": "go_experience", "A6": "improve_wording",
+            "A7": "go_experience", "A8": "improve_wording", "A9": "improve_wording", "A10": "improve_wording",
+            "A12": "go_experience"}
+
 
 @dataclass
 class Requirements:
@@ -63,10 +79,11 @@ class ScoreResult:
     mode: str
     unmatched: List[Tuple[str, str]] = field(default_factory=list)
     detail: Dict[str, Any] = field(default_factory=dict)  # e.g. skills matched, for gaps
+    groups: List[Dict[str, Any]] = field(default_factory=list)
 
     def public(self) -> Dict[str, Any]:
         return {"score": self.score, "checks": self.checks, "first_fix": self.first_fix,
-                "framework": FRAMEWORK}
+                "framework": FRAMEWORK, "groups": self.groups}
 
 
 def _pct(part: int, whole: int) -> float:
@@ -342,15 +359,28 @@ def _assemble(results: Dict[str, Result], maxima: Dict[str, int], mode: str) -> 
         if frac is None:
             continue  # left out: not shown, not scored
         earned = round(frac * maxima[cid], 1)
-        checks.append({"id": cid, "label": LABELS[cid], "passed": frac >= 1.0, "points": earned,
-                       "max": maxima[cid], "fix": None if frac >= 1.0 else fix})
+        failing = frac < 1.0
+        kind = FIX_KIND.get(cid) if failing else None
+        if cid == "A5" and failing and fix and fix.startswith("Use one date format"):
+            kind = "dates_format"  # mixed formats: the Canvas can show every date in the same format
+        checks.append({"id": cid, "label": LABELS[cid], "passed": not failing, "points": earned,
+                       "max": maxima[cid], "fix": fix if failing else None, "group": GROUP_OF[cid],
+                       "fix_kind": kind})
     score = round(sum(c["points"] for c in checks) / total * 100) if total else 0
     first_fix = None
     lost = [(c["max"] - c["points"], i, c) for i, c in enumerate(checks) if c["fix"]]
     if lost:
         gap, _, c = sorted(lost, key=lambda x: (-x[0], x[1]))[0]
         first_fix = {"check_id": c["id"], "text": c["fix"], "points": round(gap / total * 100)}
-    return ScoreResult(score=score, checks=checks, first_fix=first_fix, mode=mode)
+    groups = []
+    for key in GROUP_ORDER:
+        members = [c for c in checks if c["group"] == key]
+        if not members:
+            continue
+        earned_g, max_g = sum(c["points"] for c in members), sum(c["max"] for c in members)
+        groups.append({"key": key, "label": GROUP_LABELS[key], "points": round(earned_g, 1), "max": max_g,
+                       "percent": round(earned_g / max_g * 100), "issues": sum(1 for c in members if c["fix"])})
+    return ScoreResult(score=score, checks=checks, first_fix=first_fix, mode=mode, groups=groups)
 
 
 def _record_verbs(f: Facts, unmatched: List[Tuple[str, str]]) -> None:

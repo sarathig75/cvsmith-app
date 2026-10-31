@@ -122,7 +122,11 @@ AtsScore = { score: number,                      // 0-100, Mode A (docs/ATS_FRAM
              checks: { id: string, label: string, passed: boolean,
                        points: number,           // earned, on this mode's scale (A1 14, A2 14, ...)
                        max: number,              // what the check is worth
-                       fix: string | null }[],   // null when passed; names the real check
+                       fix: string | null,       // null when passed; names the real check
+                       group: "searchability" | "writing" | "hard_skills" | "job_fit",
+                       fix_kind: string | null }[], // what the Canvas can do, see "ATS score panel" below
+             groups: { key: string, label: string, points: number, max: number,
+                       percent: number, issues: number }[],   // the bars; a group with no applicable check is left out
              // Checks that do not apply are left out of `checks` and of the score (not zero).
              first_fix: { check_id: string, text: string, points: number } | null,
              framework: string }                // e.g. "ats-framework-v2"
@@ -198,6 +202,28 @@ How each check is measured (decisions the framework left open; change them here 
 CV strength points are the proposal above, built as written, with partial credit for contact (5 points
 each for name, email and headline), skills (3 points each up to 5) and a work role without all of title,
 employer and dates (10 of 30).
+
+### ATS score panel (approved 2026-10-31; mock "ATS score visual")
+
+A ring with the score (amber under 50, blue 50-79, green 80 and over; the number is always shown) and one bar
+per group: Searchability (A1-A5, A11, A12), Writing (A6-A10) and, in job match, Hard skills (B1-B3) and Job
+fit (B4-B7). "N issues to fix" opens only that group's failing checks (collapsed by default), each with its
+points, what to change and, where there is one, a button chosen by `fix_kind`:
+
+| fix_kind | Button on the Canvas |
+|---|---|
+| `dates_format` | "Show years only on every date": every date becomes the year only (a month cannot be added where it was never given). Automatic, with Undo |
+| `improve_wording` | Pro: opens "Improve all". Free: jumps to the job descriptions, where each has a 💡 |
+| `go_contact`, `go_experience`, `go_sections` | Jumps to that part of the Canvas with the field focused; only the user knows the answer (phone, location, numbers, a job title) |
+| none | No button (layout of the file, length) |
+
+"Fix all" (Canvas) applies every automatic fix (today: `dates_format`) and offers Undo; it is shown only when
+there is one. The suggestions ("Improve all") stay a separate, AI step. The panel sits above the PDF preview
+on the Canvas; on the dashboard it is the same ring and bars inside the card that opens the Canvas, and in job
+alignment the ring shows the score after the ticked changes. Nothing here invents a fact.
+
+Contact details found in a Word file's header or footer are filled in when the file is parsed (pattern match,
+never sent to the AI).
 
 ### Data (migration 0010)
 

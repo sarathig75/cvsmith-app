@@ -403,3 +403,49 @@ def test_contact_details_only_in_a_word_header_cost_points_in_the_layout_check()
     buf = io.BytesIO()
     document.save(buf)
     assert layout.from_docx(buf.getvalue())["header_contact"] is False
+
+
+def test_checks_belong_to_groups_and_each_group_adds_up():
+    result = score.score_mode_a(facts_mod.from_content(cv_content()), GOOD_LAYOUT, TODAY)
+    groups = {g["key"]: g for g in result.groups}
+    assert list(groups) == ["searchability", "writing"]
+    assert groups["searchability"]["max"] == 12 + 12 + 11 + 8 + 9 + 6 + 6 and groups["writing"]["max"] == 36
+    for key, g in groups.items():
+        members = [c for c in result.checks if c["group"] == key]
+        assert g["points"] == round(sum(c["points"] for c in members), 1)
+        assert g["issues"] == sum(1 for c in members if c["fix"])
+        assert g["percent"] == round(g["points"] / g["max"] * 100)
+    assert sum(g["max"] for g in groups.values()) == 100
+
+
+def test_job_match_has_four_groups_and_a_group_with_nothing_applicable_is_left_out():
+    f = facts_mod.from_content(cv_content())
+    req = score.Requirements(job_title="Lead Engineer", core_skills=["Kubernetes"], years_required=5)
+    result = score.score_mode_b(f, GOOD_LAYOUT, req, TODAY)
+    assert [g["key"] for g in result.groups] == ["searchability", "writing", "hard_skills", "job_fit"]
+    bare = score.score_mode_b(f, GOOD_LAYOUT, score.Requirements(job_title="Zookeeper"), TODAY)
+    assert [g["key"] for g in bare.groups] == ["searchability", "writing"]
+
+
+def test_failing_checks_say_what_the_canvas_can_do_about_them():
+    mixed = cv_content(education=[{"start": "2010", "end": "2014"}])
+    result = score.score_mode_a(facts_mod.from_content(mixed), {**GOOD_LAYOUT, "pages": 3}, TODAY)
+    kinds = {c["id"]: c["fix_kind"] for c in result.checks}
+    assert kinds["A5"] == "dates_format"                       # mixed formats: fixed automatically
+    assert kinds["A8"] is None and kinds["A3"] is None         # passing checks offer nothing
+    missing_dates = cv_content(experience=[{"title": "T", "company": "C", "start": "", "end": "", "description": ""}])
+    assert {c["id"]: c["fix_kind"] for c in score.score_mode_a(
+        facts_mod.from_content(missing_dates), GOOD_LAYOUT, TODAY).checks}["A5"] == "go_experience"
+    c = cv_content()
+    c["personal"]["phone"] = ""
+    assert {x["id"]: x["fix_kind"] for x in score.score_mode_a(
+        facts_mod.from_content(c), GOOD_LAYOUT, TODAY).checks}["A3"] == "go_contact"
+    # layout problems cannot be fixed on the Canvas
+    assert {x["id"]: x["fix_kind"] for x in result.checks}["A11"] is None
+
+
+def test_the_api_returns_groups_and_fix_kinds(client, auth, renderer):
+    client.patch("/api/cv", headers=auth[0], json={"content": CONTENT})
+    body = client.get("/api/dashboard", headers=auth[0]).json()["ats"]
+    assert [g["key"] for g in body["groups"]] == ["searchability", "writing"]
+    assert all("group" in c and "fix_kind" in c for c in body["checks"])

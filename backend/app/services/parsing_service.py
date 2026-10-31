@@ -18,7 +18,7 @@ from app.services.ats import service as ats_service
 from app.services.contact_patterns import find_contact
 from app.services.cv_parser import CvParser, ParseError, PartResult, merge_fragment
 from app.services.storage_service import StorageService
-from app.services.text_extraction import ExtractionError, extract_text
+from app.services.text_extraction import ExtractionError, docx_header_footer_text, extract_text
 
 logger = logging.getLogger("cvsmith.parsing")
 
@@ -138,7 +138,9 @@ def _parse_file(storage: StorageService, parser: CvParser, key: str) -> Iterator
         raise ExtractionError("This file contains too much text to be a CV. Please upload your CV only.")
     # Email, phone and LinkedIn by pattern first: on screen within about a second, while the
     # AI parts take a few seconds (found nothing, e.g. a scan: still "complete").
-    yield "contact", find_contact(text)
+    # A Word file often keeps its email and phone in the header or footer: look there for contact details too.
+    header_footer = docx_header_footer_text(data) if extension == ".docx" else ""
+    yield "contact", find_contact(f"{text}\n{header_footer}" if header_footer else text)
     if len(text) >= settings.MIN_EXTRACTED_TEXT_CHARS:
         yield from parser.parse_text(text)
     elif extension == ".pdf":

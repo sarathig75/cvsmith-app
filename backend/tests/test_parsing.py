@@ -510,3 +510,26 @@ def test_uploaded_file_is_deleted_once_parsing_has_finished(client, stored_cv):
     # also when nothing could be read
     body, _ = stored_cv(make_pdf())
     assert body["parsing_status"] == "failed" and files() == []
+
+
+def make_docx_with_header(body, header):
+    document = docx.Document()
+    for p in body:
+        document.add_paragraph(p)
+    document.sections[0].header.paragraphs[0].text = header
+    buf = io.BytesIO()
+    document.save(buf)
+    return buf.getvalue()
+
+
+def test_contact_details_in_a_word_header_are_found(stored_cv):
+    data = make_docx_with_header(CV_TEXT.split("\n")[1:], "Jane Doe | header@example.com | +44 7700 900123")
+    body, _ = stored_cv(data, "cv.docx", DOCX_MIME)
+    basics = body["json_resume"]["basics"]
+    assert basics["email"] == "header@example.com" and basics["phone"] == "+44 7700 900123"
+
+
+def test_header_text_is_not_sent_to_the_ai(stored_cv):
+    data = make_docx_with_header(CV_TEXT.split("\n"), "Secret header line")
+    _, parser = stored_cv(data, "cv.docx", DOCX_MIME)
+    assert "Secret header line" not in parser.calls[0][1]

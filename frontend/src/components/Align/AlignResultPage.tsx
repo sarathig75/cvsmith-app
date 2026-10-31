@@ -6,6 +6,8 @@ import { applyAlignment, downloadJobPdf, getAlignment, previewAlignment } from '
 import { getQuota } from '../../services/suggestionService';
 import type { Alignment, AtsScore, Gap, Quota, Selection } from '../../types';
 import { Button } from '../Common/Button';
+import { ScoreGroups } from '../Common/ScoreGroups';
+import { ScoreRing } from '../Common/ScoreRing';
 import { Spinner } from '../Common/Spinner';
 import { HowItWorks } from './HowItWorks';
 
@@ -58,7 +60,6 @@ export function AlignResultPage() {
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [after, setAfter] = useState<AtsScore | null>(null);
   const [scoring, setScoring] = useState(false);
-  const [showChecks, setShowChecks] = useState(false);
   const [busy, setBusy] = useState<'update' | 'download' | null>(null);
   const [actionError, setActionError] = useState('');
   const [downloaded, setDownloaded] = useState('');
@@ -185,52 +186,27 @@ export function AlignResultPage() {
           </Link>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
-          {/* score */}
-          <div className="flex flex-col gap-1.5 lg:border-r lg:border-slate-200 lg:pr-6">
-            <span className="text-sm text-slate-600">Job match score</span>
-            <div className="mt-1 flex flex-col gap-0.5">
-              <span className="text-xs text-slate-500">Your saved CV now</span>
-              <span data-testid="score-now" className="text-2xl font-medium leading-tight text-slate-500">
-                {now}
-              </span>
+        <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+          {/* score: the ring is the score after the ticked changes; the saved CV's own score is shown beside it */}
+          <div className="flex flex-col gap-3 lg:border-r lg:border-slate-200 lg:pr-6">
+            <h2 className="text-center text-lg font-semibold">Job match</h2>
+            <div aria-busy={scoring}>
+              <ScoreRing score={afterScore} testId="score-after" label="Job match after your ticked changes" />
             </div>
-            <div
-              aria-busy={scoring}
-              className="mt-2 flex flex-col gap-0.5 rounded-md border border-emerald-200 bg-success-bg px-3 py-2.5"
-            >
-              <span className="text-xs font-semibold text-success-text">After your ticked changes</span>
-              <span data-testid="score-after" className="text-5xl font-bold leading-none text-success-text">
-                {afterScore}
-              </span>
-              <span className="text-xs text-success-text">
+            <p className="text-center text-xs font-semibold text-success-text">
+              After your ticked changes
+              <span className="block font-normal">
                 {diff === 0 ? 'No change yet: tick items below' : `${diff > 0 ? '+' : ''}${diff}, updates as you tick`}
               </span>
-            </div>
-            <p className="mt-1.5 text-xs text-slate-500">
+            </p>
+            <p className="text-center text-sm text-slate-600">
+              Your saved CV now: <strong data-testid="score-now">{now}</strong>
+            </p>
+            <ScoreGroups score={after ?? run.score} />
+            <p className="text-xs text-slate-500">
               60 points: how your CV is written for ATS tools. 40 points: how well it matches this job. Our own checklist, not a
               promise about any employer&apos;s system.
             </p>
-            <button
-              type="button"
-              onClick={() => setShowChecks(!showChecks)}
-              aria-expanded={showChecks}
-              className="mt-1 self-start text-sm text-brand-dark hover:underline"
-            >
-              {showChecks ? 'Hide the checks' : 'See the checks ›'}
-            </button>
-            {showChecks && (
-              <ul className="mt-1 flex flex-col gap-1 text-xs text-slate-700" aria-label="Checks">
-                {(after ?? run.score).checks.map((c) => (
-                  <li key={c.id}>
-                    <span className={c.passed ? 'text-success-text' : 'text-warning-text'}>
-                      {c.points}/{c.max}
-                    </span>{' '}
-                    {c.label}
-                  </li>
-                ))}
-              </ul>
-            )}
           </div>
 
           <div className="flex min-w-0 flex-col gap-5">

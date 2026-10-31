@@ -7,6 +7,8 @@ import { getDashboard } from '../../services/dashboardService';
 import { useAuthStore } from '../../store/authStore';
 import type { Dashboard } from '../../types';
 import { Button } from '../Common/Button';
+import { ScoreGroups } from '../Common/ScoreGroups';
+import { ScoreRing } from '../Common/ScoreRing';
 import { Spinner } from '../Common/Spinner';
 import { UpgradeModal } from '../Common/UpgradeModal';
 import { ReplaceCvModal } from '../Canvas/ReplaceCvModal';
@@ -145,7 +147,8 @@ export function DashboardPage() {
           <CardLink to="/canvas" title="ATS format score">
             {data.ats ? (
               <>
-                <div className="text-4xl font-semibold">{data.ats.score}</div>
+                <ScoreRing score={data.ats.score} size={110} label="ATS format score" />
+                <ScoreGroups score={data.ats} interactive={false} />
                 <p className="text-sm text-slate-800">
                   {data.ats.first_fix
                     ? `First fix: ${data.ats.first_fix.text} (+${data.ats.first_fix.points})`
