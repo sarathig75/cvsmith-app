@@ -462,7 +462,7 @@ def test_a6_names_the_words_that_count_against_the_user():
                           "Prepared monthly headcount reports for the finance director and the board",
                           "Led a team of five engineers to cut costs by 20% across three product lines"])
     a6 = check(score.score_mode_a(f, GOOD_LAYOUT, TODAY), "A6")
-    assert "Coordinated" in a6["fix"] and "Prepared" in a6["fix"] and "Led" not in a6["fix"]
+    assert "(Coordinated, Prepared)" in a6["fix"]          # only the words that count against them
     assert a6["fix_kind"] == "improve_wording"          # the suggestions can swap in a listed verb
 
 
